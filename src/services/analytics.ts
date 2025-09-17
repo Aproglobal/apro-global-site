@@ -1,86 +1,47 @@
-const GA_ID = import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined;
-const GTM_ID = import.meta.env.VITE_GTM_ID as string | undefined;
+// src/services/analytics.ts
 
-function loadScript(src: string, attrs: Record<string,string> = {}) {
-  return new Promise<void>((resolve) => {
-    const s = document.createElement('script');
-    s.async = true;
-    s.src = src;
-    Object.entries(attrs).forEach(([k,v]) => s.setAttribute(k, v));
-    s.onload = () => resolve();
-    document.head.appendChild(s);
-  });
-}
+// ----- 최소 타입(로컬에 @types/gtag.js 없어도 빌드되도록)
+type Gtag = (...args: any[]) => void;
 
-export async function initAnalytics() {
-  if (GTM_ID) {
-    (window as any).dataLayer = (window as any).dataLayer || [];
-    function gtm(){ (window as any).dataLayer.push(arguments); }
-    // @ts-ignore
-    gtm('js', new Date());
-    const src = `https://www.googletagmanager.com/gtm.js?id=${GTM_ID}`;
-    await loadScript(src);
-    return;
-  }
-
-  if (GA_ID) {
-    (window as any).dataLayer = (window as any).dataLayer || [];
-    function gtag(){ (window as any).dataLayer.push(arguments); }
-    // @ts-ignore
-    (window as any).gtag = gtag;
-    gtag('js', new Date());
-    const src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
-    await loadScript(src);
-    gtag('config', GA_ID, { send_page_view: false });
+declare global {
+  interface Window {
+    dataLayer: any[];
+    gtag: Gtag;
   }
 }
 
-export function trackPageview(path?: string) {
-  if ((window as any).gtag && GA_ID) {
-    (window as any).gtag('event', 'page_view', {
-      page_title: document.title,
-      page_location: window.location.href,
-      page_path: path ?? (window.location.pathname + window.location.hash),
-    });
-  } else if ((window as any).dataLayer) {
-    (window as any).dataLayer.push({
-      event: 'page_view',
-      page_title: document.title,
-      page_location: window.location.href,
-      page_path: path ?? (window.location.pathname + window.location.hash),
-    });
+// ----- GA4 초기화
+export function initAnalytics(measurementId: string) {
+  if (typeof window === "undefined") return;
+
+  // dataLayer 준비
+  window.dataLayer = window.dataLayer || [];
+
+  // gtag 함수(가변 인자) 보장
+  if (!window.gtag) {
+    // 주의: 화살표 함수가 아닌 function을 쓰면 arguments 사용 가능
+    window.gtag = function gtag(...args: any[]) {
+      // GA 스니펫은 arguments 자체를 push하지만, 배열로 넣어도 동작합니다.
+      // 더 원형에 가깝게 하려면 아래 주석 해제:
+      // // @ts-ignore
+      // window.dataLayer.push(arguments);
+      window.dataLayer.push(args);
+    } as Gtag;
   }
+
+  // 표준 GA4 부트스트랩
+  window.gtag("js", new Date());
+  window.gtag("config", measurementId);
 }
 
-export function setupSpaPageviews() {
-  trackPageview();
-  window.addEventListener('hashchange', () => trackPageview());
+// ----- 이벤트 트래킹
+export function trackEvent(eventName: string, params?: Record<string, any>) {
+  if (typeof window === "undefined" || !window.gtag) return;
+  window.gtag("event", eventName, params ?? {});
 }
 
-export function trackEvent(action: string, params: Record<string, any> = {}) {
-  if ((window as any).gtag && GA_ID) {
-    (window as any).gtag('event', action, params);
-  } else if ((window as any).dataLayer) {
-    (window as any).dataLayer.push({ event: action, ...params });
-  }
-}
-
-// Scroll depth tracking at 25/50/75/100%
-export function setupScrollDepth() {
-  const marks = new Set<number>();
-  function onScroll() {
-    const doc = document.documentElement;
-    const winH = window.innerHeight || doc.clientHeight;
-    const scrollTop = window.pageYOffset || doc.scrollTop;
-    const fullH = doc.scrollHeight - winH;
-    const pct = Math.min(100, Math.round((scrollTop / Math.max(1, fullH)) * 100));
-    [25,50,75,100].forEach(m => {
-      if (pct >= m && !marks.has(m)) {
-        marks.add(m);
-        trackEvent('scroll_depth', { percent: m });
-      }
-    });
-  }
-  window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
+// (선택) 페이지뷰 같은 커스텀 헬퍼가 필요하면 아래처럼 추가 가능
+export function trackPageView(path?: string) {
+  if (typeof window === "undefined" || !window.gtag) return;
+  window.gtag("event", "page_view", path ? { page_location: path } : {});
 }
