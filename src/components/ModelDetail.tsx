@@ -1,9 +1,8 @@
-
-import React, { useEffect, useState, useMemo } from 'react';
-import { MODELS, ModelSpec } from '../data/models';
+import React, { useEffect, useMemo, useState } from 'react';
+import { MODELS, type ModelSpec } from '../data/models';
 import { trackEvent } from '../services/analytics';
 import { openLead } from './LeadModal';
-import { SPECS, SPEC_LABELS, DetailedSpecs } from '../data/specs';
+import { SPECS, SPEC_LABELS, type DetailedSpecs } from '../data/specs';
 
 let openRef: (code: string) => void = () => {};
 
@@ -16,16 +15,27 @@ function imagesFor(code: string) {
 }
 
 const ORDER: (keyof DetailedSpecs)[] = [
-  'guidance','seating','deck','reverseSeating',
-  'dimensions','wheelbase','curbWeight',
-  'battery','motor','maxSpeed','gradeability','range','payload','charging',
-  'options'
+  'guidance',
+  'seating',
+  'deck',
+  'reverseSeating',
+  'dimensions',
+  'wheelbase',
+  'curbWeight',
+  'battery',
+  'motor',
+  'maxSpeed',
+  'gradeability',
+  'range',
+  'payload',
+  'charging',
+  'options',
 ];
 
-function renderValue(v: any) {
-  if (!v) return '—';
+function renderValue(v: unknown) {
+  if (v === undefined || v === null || v === '') return '—';
   if (Array.isArray(v)) return v.join(', ');
-  return v;
+  return String(v);
 }
 
 export default function ModelDetail() {
@@ -35,7 +45,7 @@ export default function ModelDetail() {
 
   useEffect(() => {
     openRef = (code: string) => {
-      const m = MODELS.find(x => x.code === code) || null;
+      const m = MODELS.find((x) => x.code === code) || null;
       setModel(m);
       setImgIdx(0);
       setOpen(!!m);
@@ -60,16 +70,21 @@ export default function ModelDetail() {
               <img src={imgs[imgIdx]} alt={model.name} className="w-full h-full object-cover" />
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
                 {imgs.map((_, i) => (
-                  <button key={i} aria-label={'thumb' + i}
+                  <button
+                    key={i}
+                    aria-label={'thumb' + i}
                     onClick={() => setImgIdx(i)}
-                    className={\`w-2 h-2 rounded-full \${i===imgIdx?'bg-white':'bg-white/50'}\`} />
+                    className={`w-2 h-2 rounded-full ${i === imgIdx ? 'bg-white' : 'bg-white/50'}`}
+                  />
                 ))}
               </div>
             </div>
+
             <div className="p-6">
               <h3 className="text-xl font-bold">{model.name}</h3>
               <p className="text-sm text-zinc-600 mt-1">
-                {model.guidance} • {model.seats} seats {model.deck ? \`• \${model.deck} deck\` : ''} {model.variant ? \`• \${model.variant}\` : ''} {model.reverse ? '• Reverse Seating' : ''}
+                {model.guidance} • {model.seats} seats {model.deck ? `• ${model.deck} deck` : ''}{' '}
+                {model.variant ? `• ${model.variant}` : ''} {model.reverse ? '• Reverse Seating' : ''}
               </p>
 
               <div className="mt-4">
@@ -77,8 +92,9 @@ export default function ModelDetail() {
                   <tbody>
                     {ORDER.map((key) => {
                       const label = SPEC_LABELS[key];
-                      // @ts-ignore tolerate bad key in seed data
-                      const value = spec?.[key] ?? (key === 'reverseSeating' && (model.reverse ? 'Yes' : 'No'));
+                      // @ts-ignore tolerate missing keys
+                      const value =
+                        spec?.[key] ?? (key === 'reverseSeating' ? (model.reverse ? 'Yes' : 'No') : undefined);
                       if (value === undefined) return null;
                       return (
                         <tr key={key} className="border-t">
@@ -92,7 +108,10 @@ export default function ModelDetail() {
               </div>
 
               <div className="mt-6 flex gap-3">
-                <button onClick={() => openLead(\`Model Detail \${model.code}\`)} className="px-5 py-3 rounded-full bg-black text-white font-semibold">
+                <button
+                  onClick={() => openLead(`Model Detail ${model.code}`)}
+                  className="px-5 py-3 rounded-full bg-black text-white font-semibold"
+                >
                   Talk to Sales
                 </button>
                 <a
@@ -105,7 +124,8 @@ export default function ModelDetail() {
               </div>
 
               <p className="mt-3 text-xs text-zinc-500">
-                To edit this table: open <code>src/data/specs.ts</code> and update the <code>SPECS['{model.code}']</code> object.
+                To edit this table: open <code>src/data/specs.ts</code> and update{' '}
+                <code>SPECS['{model.code}']</code>.
               </p>
             </div>
           </div>
