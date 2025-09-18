@@ -1,136 +1,105 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { MODELS, type ModelSpec } from '../data/models';
-import { trackEvent } from '../services/analytics';
-import { openLead } from './LeadModal';
-import { SPECS, SPEC_LABELS, type DetailedSpecs } from '../data/specs';
+// src/components/ModelDetail.tsx
+import React, { useState } from "react";
+import LeadModal from "./LeadModal";
 
-let openRef: (code: string) => void = () => {};
-
-export function openModel(code: string) {
-  openRef(code);
+interface ModelDetailProps {
+  title?: string;
+  subtitle?: string;
+  imageSrc?: string;
+  highlights?: string[];
+  specs?: Record<string, string | number | null | undefined>;
+  // 기존 코드에서 다른 prop을 넘겨도 에러 없도록
+  [key: string]: any;
 }
 
-function imagesFor(code: string) {
-  return [`/models/${code}_1.jpg`, `/models/${code}_2.jpg`];
-}
-
-const ORDER: (keyof DetailedSpecs)[] = [
-  'guidance',
-  'seating',
-  'deck',
-  'reverseSeating',
-  'dimensions',
-  'wheelbase',
-  'curbWeight',
-  'battery',
-  'motor',
-  'maxSpeed',
-  'gradeability',
-  'range',
-  'payload',
-  'charging',
-  'options',
-];
-
-function renderValue(v: unknown) {
-  if (v === undefined || v === null || v === '') return '—';
-  if (Array.isArray(v)) return v.join(', ');
-  return String(v);
-}
-
-export default function ModelDetail() {
-  const [open, setOpen] = useState(false);
-  const [model, setModel] = useState<ModelSpec | null>(null);
-  const [imgIdx, setImgIdx] = useState(0);
-
-  useEffect(() => {
-    openRef = (code: string) => {
-      const m = MODELS.find((x) => x.code === code) || null;
-      setModel(m);
-      setImgIdx(0);
-      setOpen(!!m);
-      if (m) trackEvent('model_view', { code: m.code, name: m.name });
-    };
-  }, []);
-
-  const spec = useMemo(() => (model ? SPECS[model.code] || {} : {}), [model]);
-
-  if (!open || !model) return null;
-
-  const imgs = imagesFor(model.code);
-  const specHref = `/specs/${model.code}.pdf`;
+const ModelDetail: React.FC<ModelDetailProps> = ({
+  title = "G2 VIP 6-Seater",
+  subtitle = "Premium electric cart for golf & resort operations",
+  imageSrc = "/models/g2-eg-vip-6_1.jpg",
+  highlights = [
+    "51V 110Ah Li-ion battery",
+    "AC 4.6 kW motor",
+    "Seating for 6",
+    "Options: Canopy, Windscreen, Remote",
+  ],
+  specs = {
+    Battery: "51V 110Ah Li-ion",
+    Motor: "AC 4.6 kW",
+    Seating: "6",
+    Dimensions: "3200 × 1200 × 1900 mm",
+  },
+}) => {
+  const [openLead, setOpenLead] = useState(false);
 
   return (
-    <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-black/70" onClick={() => setOpen(false)} />
-      <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className="w-full max-w-5xl rounded-2xl bg-white shadow-xl overflow-hidden">
-          <div className="grid md:grid-cols-2">
-            <div className="relative bg-black">
-              <img src={imgs[imgIdx]} alt={model.name} className="w-full h-full object-cover" />
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
-                {imgs.map((_, i) => (
-                  <button
-                    key={i}
-                    aria-label={'thumb' + i}
-                    onClick={() => setImgIdx(i)}
-                    className={`w-2 h-2 rounded-full ${i === imgIdx ? 'bg-white' : 'bg-white/50'}`}
-                  />
-                ))}
-              </div>
+    <section className="w-full bg-white text-neutral-900">
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-10 px-4 py-12 md:grid-cols-2">
+        {/* Left: Image */}
+        <div>
+          <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
+            <img
+              src={imageSrc}
+              alt={title}
+              className="h-auto w-full object-cover"
+              onError={(e) => ((e.currentTarget.style.opacity = "0"))}
+            />
+          </div>
+        </div>
+
+        {/* Right: Content */}
+        <div>
+          <h2 className="text-3xl font-bold">{title}</h2>
+          <p className="mt-2 text-neutral-600">{subtitle}</p>
+
+          {/* Highlights */}
+          {highlights?.length ? (
+            <ul className="mt-6 list-disc space-y-2 pl-5 text-sm text-neutral-800">
+              {highlights.map((h, i) => (
+                <li key={i}>{h}</li>
+              ))}
+            </ul>
+          ) : null}
+
+          {/* Specs */}
+          {specs && Object.keys(specs).length ? (
+            <div className="mt-8 overflow-hidden rounded-2xl border border-neutral-200 bg-white">
+              <table className="w-full table-auto text-left text-sm">
+                <tbody className="divide-y divide-neutral-200">
+                  {Object.entries(specs).map(([k, v]) => (
+                    <tr key={k} className="hover:bg-neutral-50/60">
+                      <th className="w-40 px-4 py-3 text-neutral-600">{k}</th>
+                      <td className="px-4 py-3 text-neutral-900">
+                        {v ?? "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
+          ) : null}
 
-            <div className="p-6">
-              <h3 className="text-xl font-bold">{model.name}</h3>
-              <p className="text-sm text-zinc-600 mt-1">
-                {model.guidance} • {model.seats} seats {model.deck ? `• ${model.deck} deck` : ''}{' '}
-                {model.variant ? `• ${model.variant}` : ''} {model.reverse ? '• Reverse Seating' : ''}
-              </p>
-
-              <div className="mt-4">
-                <table className="w-full text-sm">
-                  <tbody>
-                    {ORDER.map((key) => {
-                      const label = SPEC_LABELS[key];
-                      // @ts-ignore tolerate missing keys
-                      const value =
-                        spec?.[key] ?? (key === 'reverseSeating' ? (model.reverse ? 'Yes' : 'No') : undefined);
-                      if (value === undefined) return null;
-                      return (
-                        <tr key={key} className="border-t">
-                          <td className="py-2 pr-3 text-zinc-500 w-40">{label}</td>
-                          <td className="py-2">{renderValue(value)}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="mt-6 flex gap-3">
-                <button
-                  onClick={() => openLead(`Model Detail ${model.code}`)}
-                  className="px-5 py-3 rounded-full bg-black text-white font-semibold"
-                >
-                  Talk to Sales
-                </button>
-                <a
-                  href={specHref}
-                  onClick={() => trackEvent('spec_download', { code: model.code })}
-                  className="px-5 py-3 rounded-full border"
-                >
-                  Download specs (PDF)
-                </a>
-              </div>
-
-              <p className="mt-3 text-xs text-zinc-500">
-                To edit this table: open <code>src/data/specs.ts</code> and update{' '}
-                <code>SPECS['{model.code}']</code>.
-              </p>
-            </div>
+          {/* CTA */}
+          <div className="mt-8 flex gap-3">
+            <button
+              onClick={() => setOpenLead(true)}
+              className="rounded-full bg-black px-5 py-3 text-sm font-medium text-white hover:opacity-90"
+            >
+              Talk to Sales
+            </button>
+            <a
+              href="#specs"
+              className="rounded-full border border-neutral-300 px-5 py-3 text-sm font-medium hover:bg-neutral-50"
+            >
+              View Specs
+            </a>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Lead Modal */}
+      <LeadModal open={openLead} onClose={() => setOpenLead(false)} />
+    </section>
   );
-}
+};
+
+export default ModelDetail;
