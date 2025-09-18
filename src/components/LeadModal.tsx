@@ -2,8 +2,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 
 /** ---- Public API: 다른 컴포넌트에서 호출 ---- */
-export function openLead() {
-  window.dispatchEvent(new CustomEvent("lead:open"));
+export function openLead(source?: string) {
+  window.dispatchEvent(new CustomEvent("lead:open", { detail: { source } }));
 }
 export function closeLead() {
   window.dispatchEvent(new CustomEvent("lead:close"));
@@ -19,7 +19,6 @@ const overlayStyle: React.CSSProperties = {
   justifyContent: "center",
   zIndex: 1000,
 };
-
 const dialogStyle: React.CSSProperties = {
   position: "relative",
   width: "min(560px, 92vw)",
@@ -29,69 +28,26 @@ const dialogStyle: React.CSSProperties = {
   boxShadow: "0 12px 30px rgba(0,0,0,0.2)",
   padding: "24px 24px 20px",
 };
-
-const titleStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 20,
-  fontWeight: 700,
-  lineHeight: 1.2,
-};
-
-const subtitleStyle: React.CSSProperties = {
-  margin: "8px 0 20px",
-  fontSize: 14,
-  color: "#555",
-};
-
+const titleStyle: React.CSSProperties = { margin: 0, fontSize: 20, fontWeight: 700, lineHeight: 1.2 };
+const subtitleStyle: React.CSSProperties = { margin: "8px 0 20px", fontSize: 14, color: "#555" };
 const closeBtnStyle: React.CSSProperties = {
-  position: "absolute",
-  top: 10,
-  right: 10,
-  width: 36,
-  height: 36,
-  display: "grid",
-  placeItems: "center",
-  border: "none",
-  borderRadius: 8,
-  background: "transparent",
-  cursor: "pointer",
+  position: "absolute", top: 10, right: 10, width: 36, height: 36, display: "grid", placeItems: "center",
+  border: "none", borderRadius: 8, background: "transparent", cursor: "pointer",
 };
-
 const formRowStyle: React.CSSProperties = { display: "grid", gap: 12, marginBottom: 14 };
-
 const inputStyle: React.CSSProperties = {
-  width: "100%",
-  border: "1px solid #e5e7eb",
-  borderRadius: 10,
-  padding: "12px 14px",
-  fontSize: 14,
-  outline: "none",
+  width: "100%", border: "1px solid #e5e7eb", borderRadius: 10, padding: "12px 14px", fontSize: 14, outline: "none",
 };
-
 const ctaStyle: React.CSSProperties = {
-  width: "100%",
-  border: "none",
-  borderRadius: 10,
-  padding: "12px 16px",
-  fontSize: 16,
-  fontWeight: 700,
-  background: "#0d6efd", // 대비 확실
-  color: "#ffffff",
-  cursor: "pointer",
+  width: "100%", border: "none", borderRadius: 10, padding: "12px 16px", fontSize: 16, fontWeight: 700,
+  background: "#0d6efd", color: "#ffffff", cursor: "pointer",
 };
+const helperStyle: React.CSSProperties = { marginTop: 8, fontSize: 12, color: "#6b7280", textAlign: "center" };
 
-const helperStyle: React.CSSProperties = {
-  marginTop: 8,
-  fontSize: 12,
-  color: "#6b7280",
-  textAlign: "center",
-};
-
-/** ---- Default Export: 루트 컴포넌트(프롭스 없음) ----
- * App.tsx에서 <LeadModal /> 한 번만 렌더링하면 됨.
- */
+/** ---- Default Export: 루트 컴포넌트(프롭스 없음) ---- */
 export default function LeadModal() {
   const [open, setOpen] = useState(false);
+  const [source, setSource] = useState<string>("");
 
   const handleEsc = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") setOpen(false);
@@ -102,7 +58,12 @@ export default function LeadModal() {
   };
 
   useEffect(() => {
-    const onOpen = () => setOpen(true);
+    const onOpen = ((e: Event) => {
+      const ce = e as CustomEvent<{ source?: string }>;
+      setSource(ce.detail?.source ?? "");
+      setOpen(true);
+    }) as EventListener;
+
     const onClose = () => setOpen(false);
     window.addEventListener("lead:open", onOpen);
     window.addEventListener("lead:close", onClose);
@@ -126,26 +87,10 @@ export default function LeadModal() {
   if (!open) return null;
 
   return (
-    <div
-      style={overlayStyle}
-      onClick={onOverlayClick}
-      role="presentation"
-      aria-hidden={!open}
-    >
-      <div
-        style={dialogStyle}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="lead-modal-title"
-      >
+    <div style={overlayStyle} onClick={onOverlayClick} role="presentation" aria-hidden={!open}>
+      <div role="dialog" aria-modal="true" aria-labelledby="lead-modal-title" style={dialogStyle}>
         {/* 닫기(X) */}
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          style={closeBtnStyle}
-          aria-label="Close dialog"
-          title="Close"
-        >
+        <button type="button" onClick={() => setOpen(false)} style={closeBtnStyle} aria-label="Close dialog" title="Close">
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M18 6L6 18M6 6l12 12" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" />
           </svg>
@@ -174,8 +119,8 @@ export default function LeadModal() {
               name="message"
               placeholder="Models, quantity, timeline, site location..."
             />
-            {/* 추적용 hidden field (현재는 표시 안 함) */}
-            <input type="hidden" name="source" value="Hero CTA" />
+            {/* 추적용 hidden field: 호출부에서 넘긴 라벨을 반영 */}
+            <input type="hidden" name="source" value={source || "Unknown"} />
           </div>
 
           <button type="submit" style={ctaStyle}>Continue in email</button>
