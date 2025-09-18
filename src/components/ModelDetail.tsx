@@ -1,3 +1,4 @@
+// src/components/ModelDetail.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { MODELS, type ModelSpec } from '../data/models';
 import { trackEvent } from '../services/analytics';
@@ -53,6 +54,16 @@ export default function ModelDetail() {
     };
   }, []);
 
+  // ESC 키로 닫기
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open]);
+
   const spec = useMemo(() => (model ? SPECS[model.code] || {} : {}), [model]);
 
   if (!open || !model) return null;
@@ -64,7 +75,25 @@ export default function ModelDetail() {
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/70" onClick={() => setOpen(false)} />
       <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className="w-full max-w-5xl rounded-2xl bg-white shadow-xl overflow-hidden">
+        <div
+          className="w-full max-w-5xl rounded-2xl bg-white shadow-xl overflow-hidden relative"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="model-detail-title"
+        >
+          {/* 닫기(X) 버튼 */}
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            aria-label="Close dialog"
+            title="Close"
+            className="absolute right-3 top-3 inline-grid h-9 w-9 place-items-center rounded-lg hover:bg-zinc-100"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6L6 18M6 6l12 12" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+
           <div className="grid md:grid-cols-2">
             <div className="relative bg-black">
               <img src={imgs[imgIdx]} alt={model.name} className="w-full h-full object-cover" />
@@ -81,7 +110,7 @@ export default function ModelDetail() {
             </div>
 
             <div className="p-6">
-              <h3 className="text-xl font-bold">{model.name}</h3>
+              <h3 id="model-detail-title" className="text-xl font-bold">{model.name}</h3>
               <p className="text-sm text-zinc-600 mt-1">
                 {model.guidance} • {model.seats} seats {model.deck ? `• ${model.deck} deck` : ''}{' '}
                 {model.variant ? `• ${model.variant}` : ''} {model.reverse ? '• Reverse Seating' : ''}
