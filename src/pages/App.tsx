@@ -1,106 +1,117 @@
-import React, { useEffect } from 'react';
-import Header from '../components/Header';
-import ModelGrid from '../components/ModelGrid';
-import CompareTable from '../components/CompareTable';
-import TechSection from '../components/TechSection';
-import FleetSection from '../components/FleetSection';
-import LeadModal, { openLead } from '../components/LeadModal';
-import ModelDetail from '../components/ModelDetail';
-import { getVariant } from '../utils/ab';
-import { setupScrollDepth, trackEvent } from '../services/analytics';
+// src/pages/App.tsx
+import React from "react";
+import Header from "../components/Header";
+import CompareTable from "../components/CompareTable";
 
 export default function App() {
-  const variant = getVariant();
-
-  useEffect(() => {
-    setupScrollDepth();
-  }, []);
-
-  const primaryCta = 'Talk to Sales';
-  const secondaryCta = variant === 'A' ? 'Explore models' : 'Download brochure';
-
   return (
-    <div className="min-h-screen bg-black text-white">
+    <main className="min-h-screen bg-white text-neutral-900">
+      {/* Top Navigation */}
       <Header />
-      <main className="pt-16">
-        {/* HERO */}
-        <section id="home" className="relative">
-          <div className="relative h-[70vh] md:h-[80vh] w-full">
-            <img src="/assets/hero.jpg" className="absolute inset-0 w-full h-full object-cover" alt="APRO Golf Carts" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-            <div className="relative z-10 max-w-6xl mx-auto px-5 h-full flex flex-col justify-end pb-14">
-              <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">Electric Carts for Modern Courses</h1>
-              <p className="mt-3 max-w-2xl text-zinc-200">Premium guidance, flexible seating, and dependable service across APAC.</p>
-              <div className="mt-6 flex gap-3">
-                <button onClick={() => { openLead('Hero CTA'); trackEvent('cta_click', { where: 'hero', label: primaryCta, variant }); }}
-                        className="px-5 py-3 rounded-full bg-white text-black font-semibold">{primaryCta}</button>
-                {secondaryCta === 'Explore models' ? (
-                  <a href="#models" onClick={() => trackEvent('cta_click', { where: 'hero', label: secondaryCta, variant })}
-                     className="px-5 py-3 rounded-full border border-white/60">{secondaryCta}</a>
-                ) : (
-                  <a href="/brochure.pdf" onClick={() => trackEvent('brochure_download', { file: '/brochure.pdf', where: 'hero' })}
-                     className="px-5 py-3 rounded-full border border-white/60">{secondaryCta}</a>
-                )}
-              </div>
-            </div>
+
+      {/* Hero Section */}
+      <section className="relative w-full bg-white">
+        <div className="mx-auto max-w-6xl px-4 py-20 text-center">
+          <h1 className="text-4xl font-bold text-neutral-900 md:text-5xl">
+            Premium Electric Carts by APRO
+          </h1>
+          <p className="mt-4 text-lg text-neutral-600">
+            Tailored solutions for golf courses, resorts, and events
+          </p>
+          <div className="mt-6 flex justify-center">
+            <button
+              onClick={() =>
+                document
+                  .getElementById("models")
+                  ?.scrollIntoView({ behavior: "smooth" })
+              }
+              className="rounded-full bg-black px-6 py-3 text-white hover:opacity-90"
+            >
+              Explore Models
+            </button>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <ModelGrid />
-        <CompareTable />
-        <TechSection />
-        <FleetSection />
+      {/* Compare Models / Specs */}
+      <CompareTable />
 
-        <section id="support" className="py-20 bg-white text-black">
-          <div className="max-w-6xl mx-auto px-5">
-            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Support</h2>
-            <div className="mt-4 grid md:grid-cols-3 gap-6">
-              <div className="rounded-2xl border p-6">
-                <h4 className="font-semibold">Installation</h4>
-                <p className="text-sm text-zinc-600 mt-1">Onsite setup, guidance calibration, and safety training.</p>
-              </div>
-              <div className="rounded-2xl border p-6">
-                <h4 className="font-semibold">Maintenance</h4>
-                <p className="text-sm text-zinc-600 mt-1">Preventive checks, genuine parts, and service SLAs.</p>
-              </div>
-              <div className="rounded-2xl border p-6">
-                <h4 className="font-semibold">Operations</h4>
-                <p className="text-sm text-zinc-600 mt-1">Best practices for busy tee sheets and event logistics.</p>
-              </div>
+      {/* Footer */}
+      <footer className="mt-16 border-t border-neutral-200 bg-white text-neutral-800">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-4 py-10 md:grid-cols-3">
+          {/* APRO Brand */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <img
+                src="/assets/apro-logo.svg"
+                alt="APRO"
+                className="h-8 w-auto"
+                onError={(e) => ((e.currentTarget.style.display = "none"))}
+              />
+              <span className="text-lg font-bold">APRO</span>
             </div>
-          </div>
-        </section>
-
-        <section id="contact" className="py-20 bg-zinc-100 text-black">
-          <div className="max-w-6xl mx-auto px-5">
-            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Contact</h2>
-            <p className="mt-2 text-zinc-700 max-w-2xl">
-              Email us at <a href={`mailto:${import.meta.env.VITE_SALES_EMAIL || 'sales@example.com'}`} className="underline">{import.meta.env.VITE_SALES_EMAIL || 'sales@example.com'}</a> or open the form above.
+            <p className="text-sm leading-6 text-neutral-600">
+              Premium electric cart solutions for golf courses, resorts, and events.
             </p>
-            <div className="mt-6 flex gap-3">
-              <button onClick={() => { openLead('Contact CTA'); trackEvent('cta_click', { where: 'contact', label: 'Talk to Sales' }); }}
-                      className="px-5 py-3 rounded-full bg-black text-white font-semibold">Talk to Sales</button>
-              <a href="/brochure.pdf" onClick={() => trackEvent('brochure_download', { file: '/brochure.pdf', where: 'contact' })}
-                 className="px-5 py-3 rounded-full border">Download brochure (PDF)</a>
+          </div>
+
+          {/* Company Info */}
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-neutral-600">
+              Company
+            </h3>
+            <div className="mt-3 space-y-1 text-sm">
+              <div className="flex items-center gap-2">
+                <img
+                  src="/assets/kukje-logo.png"
+                  alt="KUKJE INTERTRADE Co., Ltd."
+                  className="h-6 w-auto"
+                  onError={(e) => ((e.currentTarget.style.display = "none"))}
+                />
+                <span className="font-medium">
+                  KUKJE INTERTRADE Co., Ltd.
+                </span>
+              </div>
+              <p>Business Reg. No.: 000-00-00000</p>
+              <p>Representative: John Doe</p>
+              <p>Address: Floor 0, 00 Building, 00-ro, 00-gu, Seoul, Korea</p>
             </div>
           </div>
-        </section>
-      </main>
 
-      {/* Sticky CTA */}
-      <button onClick={() => { openLead('Sticky CTA'); trackEvent('cta_click', { where: 'sticky', label: 'Talk to Sales' }); }}
-              className="fixed bottom-6 right-6 px-5 py-3 rounded-full bg-white text-black font-semibold shadow-lg">
-        Talk to Sales
-      </button>
+          {/* Contact */}
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-neutral-600">
+              Contact
+            </h3>
+            <div className="mt-3 space-y-1 text-sm">
+              <p>Tel: +82-2-000-0000</p>
+              <p>Email: sales@aproglobal.com</p>
+              <p>Hours: Mon–Fri 09:00–18:00 (KST)</p>
+            </div>
+            <div className="mt-4 flex gap-3">
+              <a
+                href="mailto:sales@aproglobal.com"
+                className="rounded-full border border-neutral-300 px-3 py-1 text-sm hover:bg-neutral-50"
+              >
+                Email us
+              </a>
+              <a
+                href="tel:+8220000000"
+                className="rounded-full border border-neutral-300 px-3 py-1 text-sm hover:bg-neutral-50"
+              >
+                Call us
+              </a>
+            </div>
+          </div>
+        </div>
 
-      <footer className="border-t border-zinc-800 bg-black">
-        <div className="max-w-6xl mx-auto px-5 py-6 text-sm text-zinc-400">
-          © {new Date().getFullYear()} APRO. All rights reserved.
+        <div className="border-t border-neutral-200">
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 text-xs text-neutral-500">
+            <span>© {new Date().getFullYear()} APRO. All rights reserved.</span>
+            <span>KUKJE INTERTRADE Co., Ltd.</span>
+          </div>
         </div>
       </footer>
-
-      <LeadModal />
-      <ModelDetail />
-    </div>
+    </main>
   );
 }
