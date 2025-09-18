@@ -1,11 +1,15 @@
 // src/components/LeadModal.tsx
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 
-interface LeadModalProps {
-  open: boolean;
-  onClose: () => void;
+/** ---- Public API: 다른 컴포넌트에서 호출 ---- */
+export function openLead() {
+  window.dispatchEvent(new CustomEvent("lead:open"));
+}
+export function closeLead() {
+  window.dispatchEvent(new CustomEvent("lead:close"));
 }
 
+/** ---- 스타일 ---- */
 const overlayStyle: React.CSSProperties = {
   position: "fixed",
   inset: 0,
@@ -71,9 +75,8 @@ const ctaStyle: React.CSSProperties = {
   padding: "12px 16px",
   fontSize: 16,
   fontWeight: 700,
-  // 명시적으로 높은 대비 색상 지정 (배경과 텍스트 색 분리)
-  background: "#0d6efd",   // 파란색 배경
-  color: "#ffffff",         // 흰색 텍스트
+  background: "#0d6efd", // 대비 확실
+  color: "#ffffff",
   cursor: "pointer",
 };
 
@@ -84,31 +87,43 @@ const helperStyle: React.CSSProperties = {
   textAlign: "center",
 };
 
-export default function LeadModal({ open, onClose }: LeadModalProps) {
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    },
-    [onClose]
-  );
+/** ---- Default Export: 루트 컴포넌트(프롭스 없음) ----
+ * App.tsx에서 <LeadModal /> 한 번만 렌더링하면 됨.
+ */
+export default function LeadModal() {
+  const [open, setOpen] = useState(false);
+
+  const handleEsc = useCallback((e: KeyboardEvent) => {
+    if (e.key === "Escape") setOpen(false);
+  }, []);
+
+  const onOverlayClick: React.MouseEventHandler<HTMLDivElement> = (e) => {
+    if (e.target === e.currentTarget) setOpen(false);
+  };
+
+  useEffect(() => {
+    const onOpen = () => setOpen(true);
+    const onClose = () => setOpen(false);
+    window.addEventListener("lead:open", onOpen);
+    window.addEventListener("lead:close", onClose);
+    return () => {
+      window.removeEventListener("lead:open", onOpen);
+      window.removeEventListener("lead:close", onClose);
+    };
+  }, []);
 
   useEffect(() => {
     if (!open) return;
-    document.addEventListener("keydown", handleKeyDown);
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden"; // 스크롤 잠금
+    document.addEventListener("keydown", handleEsc);
+    const orig = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = originalOverflow;
+      document.removeEventListener("keydown", handleEsc);
+      document.body.style.overflow = orig;
     };
-  }, [open, handleKeyDown]);
+  }, [open, handleEsc]);
 
   if (!open) return null;
-
-  // 오버레이 클릭 시 닫기
-  const onOverlayClick: React.MouseEventHandler<HTMLDivElement> = (e) => {
-    if (e.target === e.currentTarget) onClose();
-  };
 
   return (
     <div
@@ -123,52 +138,47 @@ export default function LeadModal({ open, onClose }: LeadModalProps) {
         aria-modal="true"
         aria-labelledby="lead-modal-title"
       >
-        {/* 닫기(X) 버튼 */}
+        {/* 닫기(X) */}
         <button
           type="button"
-          onClick={onClose}
+          onClick={() => setOpen(false)}
           style={closeBtnStyle}
           aria-label="Close dialog"
           title="Close"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M18 6L6 18M6 6l12 12"
-              stroke="#6b7280"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
+            <path d="M18 6L6 18M6 6l12 12" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" />
           </svg>
         </button>
 
         <h2 id="lead-modal-title" style={titleStyle}>Talk to Sales</h2>
         <p style={subtitleStyle}>
-          Leave your contact details and we’ll get back to you shortly.
+          Share your details and your request. We'll get back with pricing, lead time, and demos.
         </p>
 
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            // TODO: 실제 제출 로직 연결
-            onClose();
+            // TODO: 제출 로직 연결 (email/API)
+            setOpen(false);
           }}
         >
           <div style={formRowStyle}>
-            <input style={inputStyle} name="name" placeholder="Your name" required />
-            <input style={inputStyle} name="email" placeholder="Email" type="email" required />
-            <input style={inputStyle} name="company" placeholder="Company (optional)" />
+            <input style={inputStyle} name="firstName" placeholder="First name" required />
+            <input style={inputStyle} name="lastName" placeholder="Last name" required />
+            <input style={inputStyle} name="company" placeholder="Company" required />
+            <input style={inputStyle} name="email" placeholder="Work email" type="email" required />
+            <input style={inputStyle} name="phone" placeholder="Phone (optional)" />
             <textarea
               style={{ ...inputStyle, minHeight: 100, resize: "vertical" }}
               name="message"
-              placeholder="Tell us about your needs"
+              placeholder="Models, quantity, timeline, site location..."
             />
+            {/* 추적용 hidden field (현재는 표시 안 함) */}
+            <input type="hidden" name="source" value="Hero CTA" />
           </div>
 
-          {/* 대비 명확한 CTA 버튼 */}
-          <button type="submit" style={ctaStyle}>
-            Talk to sales
-          </button>
-
+          <button type="submit" style={ctaStyle}>Continue in email</button>
           <div style={helperStyle}>
             We respect your privacy. Your information will only be used to contact you regarding your inquiry.
           </div>
