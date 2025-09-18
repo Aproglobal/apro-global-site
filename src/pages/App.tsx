@@ -26,7 +26,7 @@ export default function App() {
         {/* HERO */}
         <section id="home" className="relative">
           <div className="relative h-[70vh] md:h-[80vh] w-full">
-            <img src="/assets/hero.jpg" className="absolute inset-0 w-full h-full object-cover" alt="OPANDA EV Golf Carts" />
+            <img src="/assets/hero.jpg" className="absolute inset-0 w-full h-full object-cover" alt="APRO Golf Carts" />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
             <div className="relative z-10 max-w-6xl mx-auto px-5 h-full flex flex-col justify-end pb-14">
               <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">Electric Carts for Modern Courses</h1>
@@ -95,7 +95,7 @@ export default function App() {
 
       <footer className="border-t border-zinc-800 bg-black">
         <div className="max-w-6xl mx-auto px-5 py-6 text-sm text-zinc-400">
-          © {new Date().getFullYear()} OPANDA EV. All rights reserved.
+          © {new Date().getFullYear()} APRO. All rights reserved.
         </div>
       </footer>
 
