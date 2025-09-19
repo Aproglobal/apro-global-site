@@ -1,7 +1,7 @@
 // src/components/LeadModal.tsx
 import React, { useEffect, useState, useCallback } from "react";
 
-/** 공개 API: 어디서든 호출 */
+/** ---- Public API: 다른 컴포넌트에서 호출 ---- */
 export function openLead(source?: string) {
   window.dispatchEvent(new CustomEvent("lead:open", { detail: { source } }));
 }
@@ -49,7 +49,7 @@ export default function LeadModal() {
 
   return (
     <div className="fixed inset-0 z-50">
-      {/* Overlay */}
+      {/* Overlay (클릭 시 닫힘) */}
       <div
         className="absolute inset-0 bg-black/70"
         onClick={() => setOpen(false)}
@@ -140,7 +140,7 @@ export default function LeadModal() {
                 className="min-h-[100px] w-full resize-y rounded-xl border border-zinc-200 px-3.5 py-3 text-sm outline-none focus:ring-2 focus:ring-black/10"
               />
 
-              {/* 추적용 hidden field (라벨 일관성 유지) */}
+              {/* 추적용 hidden field */}
               <input type="hidden" name="source" value={source || "Unknown"} />
             </div>
 
