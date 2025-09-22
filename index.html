@@ -56,12 +56,11 @@
       (function () {
         if (location.hostname !== 'apro.kukjeint.com') return;
 
-        // Vite가 빌드 시 %VITE_GA_MEASUREMENT_ID% -> G-XXXX 로 치환
-        var GA_ID = "%VITE_GA_MEASUREMENT_ID%";
+        var GA_ID = '%VITE_GA_MEASUREMENT_ID%'; // Vite가 빌드 시 G-XXXX로 치환
 
         var s = document.createElement('script');
         s.async = true;
-        s.src = "https://www.googletagmanager.com/gtag/js?id=%VITE_GA_MEASUREMENT_ID%";
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
         document.head.appendChild(s);
 
         window.dataLayer = window.dataLayer || [];
@@ -69,7 +68,8 @@
         window.gtag = gtag;
 
         gtag('js', new Date());
-        gtag('config', GA_ID, { send_page_view: true }); // 최초 1회
+        // 강화된 측정 ON 상태이므로 send_page_view는 초기 1회만
+        gtag('config', GA_ID, { send_page_view: true });
       })();
     </script>
   </head>
@@ -78,3 +78,4 @@
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
+
