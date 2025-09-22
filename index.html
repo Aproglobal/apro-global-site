@@ -51,29 +51,29 @@
     <meta name="twitter:image" content="/assets/hero.jpg" />
     <meta name="twitter:url" content="https://apro.kukjeint.com" />
 
-    <!-- Google Tag Manager (direct substitution style for build-time verification) -->
+    <!-- GA4 (gtag.js) — 운영 도메인에서만 로드 -->
     <script>
-      (function(w,d,s,l){
-        w[l]=w[l]||[];
-        w[l].push({'gtm.start': new Date().getTime(), event:'gtm.js'});
-        var f=d.getElementsByTagName(s)[0],
-            j=d.createElement(s),
-            dl=l!='dataLayer'?'&l='+l:'';
-        j.async=true;
-        j.src='https://www.googletagmanager.com/gtm.js?id=%VITE_GTM_ID%'+dl; /* ← build에서 GTM-XXXX로 치환 */
-        f.parentNode.insertBefore(j,f);
-      })(window,document,'script','dataLayer');
+      (function () {
+        if (location.hostname !== 'apro.kukjeint.com') return;
+
+        // Vite가 빌드 시 %VITE_GA_MEASUREMENT_ID% -> G-XXXX 로 치환
+        var GA_ID = "%VITE_GA_MEASUREMENT_ID%";
+
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = "https://www.googletagmanager.com/gtag/js?id=" + GA_ID;
+        document.head.appendChild(s);
+
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){ dataLayer.push(arguments); }
+        window.gtag = gtag;
+
+        gtag('js', new Date());
+        gtag('config', GA_ID, { send_page_view: true }); // 최초 1회
+      })();
     </script>
-    <!-- End Google Tag Manager -->
   </head>
   <body class="bg-black">
-    <!-- Google Tag Manager (noscript) -->
-    <noscript>
-      <iframe src="https://www.googletagmanager.com/ns.html?id=%VITE_GTM_ID%"
-              height="0" width="0" style="display:none;visibility:hidden"></iframe>
-    </noscript>
-    <!-- End Google Tag Manager (noscript) -->
-
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
