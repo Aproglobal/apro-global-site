@@ -23,7 +23,6 @@ jobs:
           cat << 'EOF' > .env
           VITE_SALES_EMAIL=${{ secrets.VITE_SALES_EMAIL }}
           VITE_GA_MEASUREMENT_ID=${{ secrets.VITE_GA_MEASUREMENT_ID }}
-          VITE_GTM_ID=${{ secrets.VITE_GTM_ID }}
           VITE_AB_DEFAULT=A
           EOF
           echo ".env file created (values hidden):"
@@ -43,19 +42,19 @@ jobs:
       - name: Build
         run: npm run build
 
-      # dist/index.html 안에 GTM ID가 치환되었는지 확인
-      - name: Verify GTM ID replaced
+      # dist/index.html 안에 GA ID가 치환되었는지 확인
+      - name: Verify GA ID replaced
         run: |
           if [ ! -f dist/index.html ]; then
             echo "❌ dist/index.html not found. Is Vite output directory 'dist'?" && exit 1
           fi
-          echo "Checking GTM ID in dist/index.html..."
-          if grep -q "googletagmanager.com/gtm.js?id=GTM-" dist/index.html; then
-            echo "✅ GTM ID found in dist/index.html"
+          echo "Checking GA ID in dist/index.html..."
+          if grep -q "googletagmanager.com/gtag/js?id=G-" dist/index.html; then
+            echo "✅ GA ID found in dist/index.html"
           else
-            echo "❌ GTM ID NOT found in dist/index.html (replacement failed)."
-            echo "Snippet around GTM:"
-            sed -n '/googletagmanager\.com\/gtm\.js/p' dist/index.html | head -n 5
+            echo "❌ GA ID NOT found in dist/index.html (replacement failed)."
+            echo "Snippet around GA:"
+            sed -n '/googletagmanager\.com\/gtag\/js/p' dist/index.html | head -n 5
             exit 1
           fi
 
