@@ -51,31 +51,22 @@
     <meta name="twitter:image" content="/assets/hero.jpg" />
     <meta name="twitter:url" content="https://apro.kukjeint.com" />
 
-    <!-- Google tag (gtag.js) for GA4 -->
+    <!-- Google Tag Manager -->
     <script>
-      (function() {
-        // 운영 도메인에서만 수집
-        var isProd = location.hostname === 'apro.kukjeint.com';
-        if (!isProd) return;
-
-        // ✅ Vite가 빌드시 %VITE_GA_MEASUREMENT_ID% 를 실제 값으로 치환
-        var GA_ID = "%VITE_GA_MEASUREMENT_ID%";
-
-        var s = document.createElement('script');
-        s.async = true;
-        s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
-        document.head.appendChild(s);
-
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){ dataLayer.push(arguments); }
-        window.gtag = gtag;
-
-        gtag('js', new Date());
-        gtag('config', GA_ID);
-      })();
+      (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+      new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+      'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+      })(window,document,'script','dataLayer','%VITE_GTM_ID%');
     </script>
+    <!-- End Google Tag Manager -->
   </head>
   <body class="bg-black">
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=%VITE_GTM_ID%"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
