@@ -26,28 +26,36 @@ jobs:
           VITE_GTM_ID=${{ secrets.VITE_GTM_ID }}
           VITE_AB_DEFAULT=A
           EOF
-          echo ".env file created:"
+          echo ".env file created (values hidden):"
           cat .env | sed 's/=\(.*\)/=[HIDDEN]/'
 
+      # lockfile이 있으면 npm ci, 없으면 npm install
       - name: Install deps
-        run: npm ci
+        run: |
+          if [ -f package-lock.json ]; then
+            echo "package-lock.json detected -> using npm ci"
+            npm ci
+          else
+            echo "No package-lock.json -> using npm install"
+            npm install
+          fi
 
       - name: Build
         run: npm run build
 
-      # dist/index.html 안에 GTM ID가 들어갔는지 확인
+      # dist/index.html 안에 GTM ID가 치환되었는지 확인
       - name: Verify GTM ID replaced
         run: |
           if [ ! -f dist/index.html ]; then
-            echo "❌ dist/index.html not found. Check Vite output directory." && exit 1
+            echo "❌ dist/index.html not found. Is Vite output directory 'dist'?" && exit 1
           fi
           echo "Checking GTM ID in dist/index.html..."
           if grep -q "googletagmanager.com/gtm.js?id=GTM-" dist/index.html; then
             echo "✅ GTM ID found in dist/index.html"
           else
             echo "❌ GTM ID NOT found in dist/index.html (replacement failed)."
-            echo "Preview snippet:"
-            sed -n '/googletagmanager.com/p' dist/index.html | head -n 5
+            echo "Snippet around GTM:"
+            sed -n '/googletagmanager\.com\/gtm\.js/p' dist/index.html | head -n 5
             exit 1
           fi
 
