@@ -8,21 +8,25 @@
     <meta property="og:description" content="Electronic guidance, flexible seating, dependable service." />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="/assets/hero.jpg" />
+    <meta property="og:url" content="https://apro.kukjeint.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="icon" href="/favicon.ico">
-      <title>APRO — Electric Golf Carts</title>
+    <title>APRO — Electric Golf Carts</title>
+
     <style>
       :root { --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; }
       html { font-family: var(--font-sans); }
     </style>
+
+    <!-- Structured Data -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "Organization",
       "name": "APRO",
-      "url": "https://your-domain.example",
+      "url": "https://apro.kukjeint.com",
       "logo": "/assets/hero.jpg",
       "sameAs": []
     }
@@ -32,20 +36,45 @@
       "@context": "https://schema.org",
       "@type": "WebSite",
       "name": "APRO",
-      "url": "https://your-domain.example",
+      "url": "https://apro.kukjeint.com",
       "potentialAction": {
         "@type": "SearchAction",
-        "target": "https://your-domain.example/?q={search_term_string}",
+        "target": "https://apro.kukjeint.com/?q={search_term_string}",
         "query-input": "required name=search_term_string"
       }
     }
     </script>
-  
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="APRO — Electric Golf Carts" />
-  <meta name="twitter:description" content="Electronic guidance, flexible seating, dependable service." />
-  <meta name="twitter:image" content="/assets/hero.jpg" />
-</head>
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="APRO — Electric Golf Carts" />
+    <meta name="twitter:description" content="Electronic guidance, flexible seating, dependable service." />
+    <meta name="twitter:image" content="/assets/hero.jpg" />
+    <meta name="twitter:url" content="https://apro.kukjeint.com" />
+
+    <!-- Google tag (gtag.js) for GA4 -->
+    <script>
+      (function() {
+        // 운영 도메인에서만 수집
+        var isProd = location.hostname === 'apro.kukjeint.com';
+        if (!isProd) return;
+
+        // ✅ Vite가 빌드시 %VITE_GA_MEASUREMENT_ID% 를 실제 값으로 치환
+        var GA_ID = "%VITE_GA_MEASUREMENT_ID%";
+
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+        document.head.appendChild(s);
+
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){ dataLayer.push(arguments); }
+        window.gtag = gtag;
+
+        gtag('js', new Date());
+        gtag('config', GA_ID);
+      })();
+    </script>
+  </head>
   <body class="bg-black">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
