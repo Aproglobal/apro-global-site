@@ -61,7 +61,7 @@
 
         var s = document.createElement('script');
         s.async = true;
-        // 🔑 CI가 체크할 수 있게 GA_ID 직접 삽입
+        // CI 검증을 위해 정적 문자열로 삽입
         s.src = 'https://www.googletagmanager.com/gtag/js?id=%VITE_GA_MEASUREMENT_ID%';
         document.head.appendChild(s);
 
