@@ -2,9 +2,11 @@ import React from "react";
 
 export default function FleetSection() {
   return (
-    <section style={{ padding: 24 }}>
-      <h2>Fleet</h2>
-      <p>Coming soon.</p>
+    <section id="fleet" className="py-20 bg-white text-black dark:bg-black dark:text-white">
+      <div className="max-w-6xl mx-auto px-5">
+        <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Fleet &amp; Leasing</h2>
+        <p className="mt-2 text-zinc-700 dark:text-zinc-300">Coming soon.</p>
+      </div>
     </section>
   );
 }
