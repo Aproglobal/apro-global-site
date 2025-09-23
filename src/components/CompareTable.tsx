@@ -8,14 +8,14 @@ export default function CompareTable() {
   }, []);
 
   return (
-    <section id="compare" className="py-16 bg-zinc-100 border-t text-black">
+    <section id="compare" className="py-16 bg-zinc-50 text-black border-t border-zinc-200 dark:bg-zinc-900 dark:text-white dark:border-zinc-800">
       <div className="max-w-6xl mx-auto px-5">
         <h3 className="text-2xl font-bold">Compare Models</h3>
 
         <div className="mt-6 overflow-x-auto">
           <table className="min-w-[720px] w-full text-sm">
             <thead>
-              <tr className="text-left text-zinc-600">
+              <tr className="text-left text-zinc-600 dark:text-zinc-300">
                 <th className="py-3 pr-4">Model</th>
                 <th className="py-3 pr-4">Guidance</th>
                 <th className="py-3 pr-4">Seats</th>
@@ -26,7 +26,7 @@ export default function CompareTable() {
             </thead>
             <tbody>
               {MODELS.map((m: (typeof MODELS)[number]) => (
-                <tr key={m.code} className="border-t">
+                <tr key={m.code} className="border-t border-zinc-200 dark:border-zinc-800">
                   <td className="py-3 pr-4 font-medium">{m.name}</td>
                   <td className="py-3 pr-4">{m.guidance}</td>
                   <td className="py-3 pr-4">{m.seats}</td>
@@ -39,11 +39,10 @@ export default function CompareTable() {
           </table>
         </div>
 
-        {/* 버튼을 밝은 배경에서 또렷하게 */}
         <div className="mt-6">
           <a
             href="#contact"
-            className="inline-block px-5 py-3 rounded-lg font-medium bg-black text-white hover:opacity-90"
+            className="inline-block px-5 py-3 rounded-lg font-medium bg-black text-white hover:opacity-90 dark:bg-white dark:text-black"
           >
             Download full brochure
           </a>
