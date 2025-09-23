@@ -116,4 +116,51 @@ export default function LeadModal() {
                 name="company"
                 placeholder="Company"
                 required
-                className="w-full rounded-xl border border-zinc-200 px-3.5 py-3 text-sm outline-none foc
+                className="w-full rounded-xl border border-zinc-200 px-3.5 py-3 text-sm outline-none focus:ring-2 focus:ring-black/10 dark:bg-zinc-900 dark:border-zinc-700 dark:placeholder-zinc-400 dark:focus:ring-white/10"
+              />
+              <input
+                name="email"
+                type="email"
+                placeholder="Work email"
+                required
+                className="w-full rounded-xl border border-zinc-200 px-3.5 py-3 text-sm outline-none focus:ring-2 focus:ring-black/10 dark:bg-zinc-900 dark:border-zinc-700 dark:placeholder-zinc-400 dark:focus:ring-white/10"
+              />
+              <input
+                name="phone"
+                placeholder="Phone (optional)"
+                className="w-full rounded-xl border border-zinc-200 px-3.5 py-3 text-sm outline-none focus:ring-2 focus:ring-black/10 dark:bg-zinc-900 dark:border-zinc-700 dark:placeholder-zinc-400 dark:focus:ring-white/10"
+              />
+              <textarea
+                name="message"
+                placeholder="Models, quantity, timeline, site location..."
+                className="min-h-[100px] w-full resize-y rounded-xl border border-zinc-200 px-3.5 py-3 text-sm outline-none focus:ring-2 focus:ring-black/10 dark:bg-zinc-900 dark:border-zinc-700 dark:placeholder-zinc-400 dark:focus:ring-white/10"
+              />
+
+              <input type="hidden" name="source" value={source || "Unknown"} />
+            </div>
+
+            <div className="mt-6 flex items-center gap-3">
+              <button
+                type="submit"
+                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
+              >
+                Continue in email
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="px-5 py-3 rounded-full border border-zinc-300 dark:border-zinc-700"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+              We respect your privacy. Your information will only be used to contact you regarding your inquiry.
+            </p>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
