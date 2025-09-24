@@ -1,3 +1,4 @@
+// src/components/Header.tsx
 import React from 'react';
 import { openLead } from './LeadModal';
 import { getThemeMode, setThemeMode, subscribeTheme } from '../utils/theme';
@@ -7,11 +8,12 @@ function ThemeToggle() {
 
   React.useEffect(() => {
     const unsub = subscribeTheme(() => setMode(getThemeMode()));
-    return unsub;
+    // cleanup은 반드시 void를 반환하도록 래핑 (TS OK)
+    return () => { unsub(); };
   }, []);
 
   const OPTIONS = ['system', 'light', 'dark'] as const;
-  const LABEL: Record<typeof OPTIONS[number], string> = {
+  const LABEL: Record<(typeof OPTIONS)[number], string> = {
     system: 'Auto',
     light: 'Light',
     dark: 'Dark',
@@ -55,11 +57,21 @@ export default function Header() {
         </a>
 
         <nav className="hidden md:flex items-center gap-7 text-sm">
-          <a href="#models" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Models</a>
-          <a href="#technology" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Technology</a>
-          <a href="#fleet" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Fleet &amp; Leasing</a>
-          <a href="#support" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Support</a>
-          <a href="#contact" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Contact</a>
+          <a href="#models" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">
+            Models
+          </a>
+          <a href="#technology" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">
+            Technology
+          </a>
+          <a href="#fleet" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">
+            Fleet &amp; Leasing
+          </a>
+          <a href="#support" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">
+            Support
+          </a>
+          <a href="#contact" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">
+            Contact
+          </a>
         </nav>
 
         <div className="flex items-center gap-3">
