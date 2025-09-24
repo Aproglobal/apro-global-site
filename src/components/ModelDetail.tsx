@@ -136,7 +136,7 @@ export default function ModelDetail() {
 
               <div className="mt-6 flex gap-3">
                 <button
-                  onClick={() => openLead(`Model Detail ${model.code}`)}
+                  onClick={() => openLead(`Model Detail ${model.code}`, { modelCode: model.code })}
                   className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
                 >
                   Talk to Sales
