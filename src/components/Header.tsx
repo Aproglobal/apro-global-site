@@ -3,21 +3,17 @@ import React from 'react';
 import { openLead } from './LeadModal';
 import { getThemeMode, setThemeMode, subscribeTheme } from '../utils/theme';
 
-function ThemeToggle() {
-  const [mode, setMode] = React.useState<'light' | 'dark' | 'system'>(() => getThemeMode());
+type Mode = 'light' | 'dark' | 'system';
 
+function ThemeToggle() {
+  const [mode, setMode] = React.useState<Mode>(() => getThemeMode());
   React.useEffect(() => {
     const unsub = subscribeTheme(() => setMode(getThemeMode()));
-    // cleanup은 반드시 void를 반환하도록 래핑 (TS OK)
-    return () => { unsub(); };
+    return () => { unsub(); }; // cleanup은 void로
   }, []);
 
   const OPTIONS = ['system', 'light', 'dark'] as const;
-  const LABEL: Record<(typeof OPTIONS)[number], string> = {
-    system: 'Auto',
-    light: 'Light',
-    dark: 'Dark',
-  };
+  const LABEL: Record<Mode, string> = { system: 'Auto', light: 'Light', dark: 'Dark' };
 
   return (
     <div
@@ -45,6 +41,37 @@ function ThemeToggle() {
   );
 }
 
+function ThemeCycleButton() {
+  const [mode, setMode] = React.useState<Mode>(() => getThemeMode());
+  React.useEffect(() => {
+    const unsub = subscribeTheme(() => setMode(getThemeMode()));
+    return () => { unsub(); };
+  }, []);
+
+  const order: Mode[] = ['system', 'light', 'dark'];
+  const next = () => {
+    const idx = order.indexOf(mode);
+    const to = order[(idx + 1) % order.length];
+    setThemeMode(to);
+  };
+
+  // 간단한 라벨/아이콘
+  const label = mode === 'system' ? 'Auto' : mode === 'light' ? 'Light' : 'Dark';
+  const icon = mode === 'system' ? 'A' : mode === 'light' ? '☀️' : '🌙';
+
+  return (
+    <button
+      onClick={next}
+      className="sm:hidden inline-flex items-center gap-1.5 h-9 px-3 rounded-full border border-black/20 dark:border-white/20 text-xs"
+      title="Theme"
+      aria-label={`Theme: ${label}`}
+    >
+      <span aria-hidden>{icon}</span>
+      <span>{label}</span>
+    </button>
+  );
+}
+
 export default function Header() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/70 dark:bg-black/70 backdrop-blur border-b border-zinc-200 dark:border-zinc-800">
@@ -57,25 +84,18 @@ export default function Header() {
         </a>
 
         <nav className="hidden md:flex items-center gap-7 text-sm">
-          <a href="#models" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">
-            Models
-          </a>
-          <a href="#technology" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">
-            Technology
-          </a>
-          <a href="#fleet" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">
-            Fleet &amp; Leasing
-          </a>
-          <a href="#support" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">
-            Support
-          </a>
-          <a href="#contact" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">
-            Contact
-          </a>
+          <a href="#models" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Models</a>
+          <a href="#technology" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Technology</a>
+          <a href="#fleet" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Fleet &amp; Leasing</a>
+          <a href="#support" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Support</a>
+          <a href="#contact" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Contact</a>
         </nav>
 
         <div className="flex items-center gap-3">
+          {/* 모바일: 순환 버튼 / 데스크톱: 3단 토글 */}
+          <ThemeCycleButton />
           <ThemeToggle />
+
           <button
             onClick={() => openLead('Header CTA')}
             className="ml-1 px-4 py-2 rounded-full bg-black text-white text-sm font-semibold hover:opacity-90 dark:bg-white dark:text-black transition"
