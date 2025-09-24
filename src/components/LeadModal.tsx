@@ -1,15 +1,36 @@
-import React, { useEffect, useState, useCallback } from "react";
+// src/components/LeadModal.tsx
+import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
+import { MODELS } from "../data/models";
 
-export function openLead(source?: string) {
-  window.dispatchEvent(new CustomEvent("lead:open", { detail: { source } }));
+/** 이벤트 payload 타입 */
+export type LeadOpenDetail = { source?: string; modelCode?: string };
+
+/** ---- Public API (오버로드 지원) ----
+ *  1) openLead(source?: string)
+ *  2) openLead(source?: string, payload?: { modelCode?: string })
+ */
+export function openLead(source?: string): void;
+export function openLead(source?: string, payload?: { modelCode?: string }): void;
+export function openLead(source?: string, payload?: { modelCode?: string }) {
+  const detail: LeadOpenDetail = { source, ...(payload || {}) };
+  window.dispatchEvent(new CustomEvent<LeadOpenDetail>("lead:open", { detail }));
 }
+
 export function closeLead() {
   window.dispatchEvent(new CustomEvent("lead:close"));
 }
 
+/** 싱글톤 모달: App.tsx에서 <LeadModal /> 한 번만 렌더 */
 export default function LeadModal() {
   const [open, setOpen] = useState(false);
   const [source, setSource] = useState<string>("");
+  const [modelCode, setModelCode] = useState<string>("");
+
+  const selectedModel = useMemo(
+    () => MODELS.find((m) => m.code === modelCode) || null,
+    [modelCode]
+  );
 
   const onEsc = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") setOpen(false);
@@ -17,8 +38,9 @@ export default function LeadModal() {
 
   useEffect(() => {
     const handleOpen = (e: Event) => {
-      const ce = e as CustomEvent<{ source?: string }>;
+      const ce = e as CustomEvent<LeadOpenDetail>;
       setSource(ce.detail?.source ?? "");
+      setModelCode(ce.detail?.modelCode ?? "");
       setOpen(true);
     };
     const handleClose = () => setOpen(false);
@@ -44,13 +66,15 @@ export default function LeadModal() {
 
   if (!open) return null;
 
-  return (
-    <div className="fixed inset-0 z-50">
+  const modal = (
+    <div className="fixed inset-0 z-[100]">
+      {/* Overlay */}
       <div
         className="absolute inset-0 bg-black/70"
         onClick={() => setOpen(false)}
         aria-hidden
       />
+      {/* Dialog wrapper */}
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div
           role="dialog"
@@ -73,7 +97,7 @@ export default function LeadModal() {
               onClick={() => setOpen(false)}
               aria-label="Close dialog"
               title="Close"
-              className="absolute right-3 top-3 inline-grid h-9 w-9 place-items-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className="absolute right-3 top-3 inline-grid h-9 w-9 place-items-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -92,11 +116,13 @@ export default function LeadModal() {
             className="p-6"
             onSubmit={(e) => {
               e.preventDefault();
-              // TODO: submit
+              // TODO: 제출 로직 연결 (이메일/백엔드).
+              // e.currentTarget.elements에서 source/modelCode/기타 필드 접근 가능.
               setOpen(false);
             }}
           >
             <div className="grid gap-3">
+              {/* 이름 */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <input
                   name="firstName"
@@ -112,6 +138,7 @@ export default function LeadModal() {
                 />
               </div>
 
+              {/* 회사/이메일/전화 */}
               <input
                 name="company"
                 placeholder="Company"
@@ -130,15 +157,40 @@ export default function LeadModal() {
                 placeholder="Phone (optional)"
                 className="w-full rounded-xl border border-zinc-200 px-3.5 py-3 text-sm outline-none focus:ring-2 focus:ring-black/10 dark:bg-zinc-900 dark:border-zinc-700 dark:placeholder-zinc-400 dark:focus:ring-white/10"
               />
+
+              {/* ✅ 문의 대상 모델 (자동 선택 가능) */}
+              <label className="text-xs font-medium text-zinc-600 dark:text-zinc-300 mt-1">
+                Inquiry about
+              </label>
+              <select
+                name="modelCode"
+                value={modelCode}
+                onChange={(e) => setModelCode(e.target.value)}
+                className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-black/10 dark:bg-zinc-900 dark:border-zinc-700 dark:focus:ring-white/10"
+              >
+                <option value="">General inquiry (no specific model)</option>
+                {MODELS.map((m) => (
+                  <option key={m.code} value={m.code}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+
               <textarea
                 name="message"
-                placeholder="Models, quantity, timeline, site location..."
+                placeholder={
+                  modelCode
+                    ? `Inquiry about ${selectedModel?.name || modelCode}: models, quantity, timeline, site location...`
+                    : "Models, quantity, timeline, site location..."
+                }
                 className="min-h-[100px] w-full resize-y rounded-xl border border-zinc-200 px-3.5 py-3 text-sm outline-none focus:ring-2 focus:ring-black/10 dark:bg-zinc-900 dark:border-zinc-700 dark:placeholder-zinc-400 dark:focus:ring-white/10"
               />
 
+              {/* 추적용 hidden field */}
               <input type="hidden" name="source" value={source || "Unknown"} />
             </div>
 
+            {/* Actions */}
             <div className="mt-6 flex items-center gap-3">
               <button
                 type="submit"
@@ -163,4 +215,7 @@ export default function LeadModal() {
       </div>
     </div>
   );
+
+  // ✅ 포털로 body 최상단에 렌더 → 다른 오버레이 위에 확실히 뜸
+  return createPortal(modal, document.body);
 }
