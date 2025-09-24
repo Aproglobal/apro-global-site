@@ -1,4 +1,4 @@
-name: Deploy to Firebase Hosting & Functions
+name: APRO — Build & Deploy (Hosting + Functions)
 
 on:
   push:
@@ -8,6 +8,9 @@ on:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-${{ github.ref }}
+      cancel-in-progress: true
 
     steps:
       - name: Checkout
@@ -18,7 +21,7 @@ jobs:
         with:
           node-version: '20'
 
-      # .env 파일을 빌드 시점에 생성 (시크릿에서 값 가져옴)
+      # Build-time env for Vite
       - name: Create .env for build
         run: |
           cat << 'EOF' > .env
@@ -29,37 +32,30 @@ jobs:
           echo ".env file created (values hidden):"
           cat .env | sed 's/=\(.*\)/=[HIDDEN]/'
 
-      # lockfile이 있으면 npm ci, 없으면 npm install
       - name: Install deps
         run: |
           if [ -f package-lock.json ]; then
-            echo "package-lock.json detected -> using npm ci"
             npm ci
           else
-            echo "No package-lock.json -> using npm install"
             npm install
           fi
 
       - name: Build
         run: npm run build
 
-      # dist/index.html 안에 GA ID가 치환되었는지 확인
       - name: Verify GA ID replaced
         run: |
           if [ ! -f dist/index.html ]; then
-            echo "❌ dist/index.html not found. Is Vite output directory 'dist'?" && exit 1
+            echo "❌ dist/index.html not found. Is Vite output 'dist'?" && exit 1
           fi
           echo "Checking GA ID in dist/index.html..."
           if grep -q "googletagmanager.com/gtag/js?id=G-" dist/index.html; then
             echo "✅ GA ID found in dist/index.html"
           else
-            echo "❌ GA ID NOT found in dist/index.html (replacement failed)."
-            echo "Snippet around GA:"
-            sed -n '/googletagmanager\.com\/gtag\/js/p' dist/index.html | head -n 5
-            exit 1
+            echo "❌ GA ID NOT found in dist/index.html"; exit 1
           fi
 
-      # ---- Functions 배포(시크릿 있을 때만) ----
+      # Functions: only when email secrets exist
       - name: Sync & Deploy Firebase Functions (only if email secrets exist)
         if: ${{ secrets.SENDGRID_API_KEY != '' && secrets.SALES_TO != '' && secrets.FROM != '' }}
         shell: bash
@@ -72,22 +68,15 @@ jobs:
           SALES_BCC: ${{ secrets.SALES_BCC }}
         run: |
           set -euo pipefail
-
-          # 1) 서비스 계정 JSON 파일 생성 → ADC 인증
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/gcp.json"
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$GOOGLE_APPLICATION_CREDENTIALS"
-
-          # 2) Firebase CLI 설치
           npm i -g firebase-tools@latest
-
-          # 3) GitHub Secrets → Firebase Secret Manager 로 동기화 (있을 때만)
           sync_secret () {
             local NAME="$1"
             local VAL="$(printenv "$NAME" || true)"
             if [ -n "$VAL" ]; then
               printf "%s" "$VAL" | firebase functions:secrets:set "$NAME" \
-                --project "$FIREBASE_PROJECT_ID" \
-                --force
+                --project "$FIREBASE_PROJECT_ID" --force
               echo "Synced secret: $NAME"
             else
               echo "Skip empty: $NAME"
@@ -98,16 +87,13 @@ jobs:
           sync_secret FROM
           sync_secret SALES_BCC
 
-          # 4) Functions 빌드 & 배포
           pushd functions
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
           npm run build
           popd
 
-          # firebase.json에 "functions" 섹션이 있어야 함 (아래 2) 참고)
           firebase deploy --only functions --project "$FIREBASE_PROJECT_ID"
 
-      # ---- Hosting 배포 ----
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
