@@ -3,19 +3,21 @@ import { openLead } from './LeadModal';
 
 export default function Header() {
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-black/70 backdrop-blur border-b border-zinc-800">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white/70 dark:bg-black/70 backdrop-blur border-b border-zinc-200 dark:border-zinc-800">
       <div className="max-w-6xl mx-auto px-5 py-3 flex items-center justify-between">
-        <a href="#home" className="text-white text-xl tracking-wide font-semibold">APRO</a>
-        <nav className="hidden md:flex items-center gap-7 text-sm text-zinc-200">
-          <a href="#models" className="hover:text-white">Models</a>
-          <a href="#technology" className="hover:text-white">Technology</a>
-          <a href="#fleet" className="hover:text-white">Fleet & Leasing</a>
-          <a href="#support" className="hover:text-white">Support</a>
-          <a href="#contact" className="hover:text-white">Contact</a>
+        <a href="#home" className="text-black dark:text-white text-xl tracking-wide font-semibold">APRO</a>
+
+        <nav className="hidden md:flex items-center gap-7 text-sm">
+          <a href="#models" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Models</a>
+          <a href="#technology" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Technology</a>
+          <a href="#fleet" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Fleet &amp; Leasing</a>
+          <a href="#support" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Support</a>
+          <a href="#contact" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Contact</a>
         </nav>
+
         <button
           onClick={() => openLead('Header CTA')}
-          className="ml-4 px-4 py-2 rounded-full bg-white text-black text-sm font-semibold hover:bg-zinc-200 transition"
+          className="ml-4 px-4 py-2 rounded-full bg-black text-white text-sm font-semibold hover:opacity-90 dark:bg-white dark:text-black transition"
           aria-label="Talk to Sales"
         >
           Talk to Sales
