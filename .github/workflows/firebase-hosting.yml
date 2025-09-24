@@ -1,8 +1,11 @@
-name: APRO — Build & Deploy (Hosting + Functions)
+name: Deploy to Firebase Hosting & Functions
+run-name: "Build & Deploy • ${{ github.ref_name }} • by ${{ github.actor }}"
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - 0924_01        # ← 테스트용 브랜치 추가 (원하는 브랜치로 바꿔도 됨)
   workflow_dispatch:
 
 jobs:
@@ -55,9 +58,8 @@ jobs:
             echo "❌ GA ID NOT found in dist/index.html"; exit 1
           fi
 
-      # Functions: only when email secrets exist
-      - name: Sync & Deploy Firebase Functions (only if email secrets exist)
-        if: ${{ secrets.SENDGRID_API_KEY != '' && secrets.SALES_TO != '' && secrets.FROM != '' }}
+      # ---- Functions: secrets 유무를 스크립트 내부에서 판단해 스킵/실행 ----
+      - name: Sync & Deploy Firebase Functions (skip if email secrets missing)
         shell: bash
         env:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
@@ -68,15 +70,32 @@ jobs:
           SALES_BCC: ${{ secrets.SALES_BCC }}
         run: |
           set -euo pipefail
+
+          # 0) 이메일 관련 시크릿이 없으면 스킵
+          missing=()
+          [ -z "${SENDGRID_API_KEY:-}" ] && missing+=("SENDGRID_API_KEY")
+          [ -z "${SALES_TO:-}" ]        && missing+=("SALES_TO")
+          [ -z "${FROM:-}" ]            && missing+=("FROM")
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "🟡 Skipping functions deploy. Missing secrets: ${missing[*]}"
+            exit 0
+          fi
+
+          # 1) 서비스 계정으로 인증
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/gcp.json"
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$GOOGLE_APPLICATION_CREDENTIALS"
+
+          # 2) Firebase CLI
           npm i -g firebase-tools@latest
+
+          # 3) GitHub Secrets → Firebase Secret Manager 동기화
           sync_secret () {
             local NAME="$1"
             local VAL="$(printenv "$NAME" || true)"
             if [ -n "$VAL" ]; then
               printf "%s" "$VAL" | firebase functions:secrets:set "$NAME" \
-                --project "$FIREBASE_PROJECT_ID" --force
+                --project "$FIREBASE_PROJECT_ID" \
+                --force
               echo "Synced secret: $NAME"
             else
               echo "Skip empty: $NAME"
@@ -87,6 +106,7 @@ jobs:
           sync_secret FROM
           sync_secret SALES_BCC
 
+          # 4) Functions 빌드 & 배포
           pushd functions
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
           npm run build
@@ -94,6 +114,7 @@ jobs:
 
           firebase deploy --only functions --project "$FIREBASE_PROJECT_ID"
 
+      # ---- Hosting 배포 ----
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
