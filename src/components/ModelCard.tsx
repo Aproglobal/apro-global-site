@@ -29,7 +29,7 @@ export default function ModelCard({ model }: { model: ModelSpec }) {
 
         <div className="mt-4 flex gap-3">
           <button
-            onClick={() => openLead(`Model ${model.code}`)}
+            onClick={() => openLead(`Model ${model.code}`, { modelCode: model.code })}
             className="px-4 py-2 rounded-full bg-black text-white text-sm font-semibold hover:opacity-90 dark:bg-white dark:text-black"
           >
             Talk to Sales
