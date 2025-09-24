@@ -17,7 +17,7 @@ jobs:
         with:
           node-version: '20'
 
-      # .env 파일을 빌드 시점에 생성 (시크릿에서 값 가져옴)
+      # .env 파일 생성 (Vite용)
       - name: Create .env for build
         run: |
           cat << 'EOF' > .env
@@ -28,7 +28,6 @@ jobs:
           echo ".env file created (values hidden):"
           cat .env | sed 's/=\(.*\)/=[HIDDEN]/'
 
-      # lockfile이 있으면 npm ci, 없으면 npm install
       - name: Install deps
         run: |
           if [ -f package-lock.json ]; then
@@ -58,6 +57,65 @@ jobs:
             exit 1
           fi
 
+      # === 🔐 GitHub Secrets → Firebase Secret Manager 동기화 ===
+      # Firebase CLI가 서비스 계정으로 인증되도록 ADC 파일을 만들고,
+      # functions:secrets:set 로 최신 버전을 등록(회전)합니다.
+      - name: Sync Firebase Secrets from GitHub
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          SALES_TO: ${{ secrets.SALES_TO }}
+          FROM: ${{ secrets.FROM }}
+          SALES_BCC: ${{ secrets.SALES_BCC }} # optional
+        run: |
+          set -euo pipefail
+
+          # 1) 서비스 계정 JSON을 파일로 저장 → ADC 인증 경로 지정
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/gcp.json"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$GOOGLE_APPLICATION_CREDENTIALS"
+
+          # 2) Firebase CLI 설치
+          npm i -g firebase-tools@latest
+
+          # 3) Helper: 값이 있으면 Secret Manager에 새 버전으로 세팅
+          sync_secret () {
+            local NAME="$1"
+            local VAL="${!NAME:-}"
+            if [ -n "$VAL" ]; then
+              printf "%s" "$VAL" | firebase functions:secrets:set "$NAME" \
+                --project "$FIREBASE_PROJECT_ID" \
+                --force
+              echo "Synced secret: $NAME"
+            else
+              echo "Skip empty: $NAME"
+            fi
+          }
+
+          sync_secret SENDGRID_API_KEY
+          sync_secret SALES_TO
+          sync_secret FROM
+          sync_secret SALES_BCC
+
+      # (선택) 클라우드 함수 배포: 시크릿이 변경되면 함수는 재배포 시 최신 버전을 바인딩합니다.
+      # functions 디렉토리가 없으면 자동으로 건너뜀
+      - name: Deploy Cloud Functions (if present)
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/gcp.json"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$GOOGLE_APPLICATION_CREDENTIALS"
+          if [ -d "functions" ]; then
+            echo "functions/ directory detected → deploying functions"
+            npm i -g firebase-tools@latest
+            firebase deploy --only functions --project "$FIREBASE_PROJECT_ID"
+          else
+            echo "No functions/ directory → skip functions deploy"
+          fi
+
+      # Firebase Hosting 배포 (기존 액션 유지)
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
