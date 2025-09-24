@@ -1,5 +1,5 @@
 // src/components/LeadModal.tsx
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { MODELS } from "../data/models";
 
@@ -32,6 +32,8 @@ export default function LeadModal() {
     [modelCode]
   );
 
+  const firstNameRef = useRef<HTMLInputElement | null>(null);
+
   const onEsc = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") setOpen(false);
   }, []);
@@ -58,9 +60,11 @@ export default function LeadModal() {
     document.addEventListener("keydown", onEsc);
     const orig = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    const t = setTimeout(() => firstNameRef.current?.focus(), 0);
     return () => {
       document.removeEventListener("keydown", onEsc);
       document.body.style.overflow = orig;
+      clearTimeout(t);
     };
   }, [open, onEsc]);
 
@@ -74,15 +78,17 @@ export default function LeadModal() {
         onClick={() => setOpen(false)}
         aria-hidden
       />
-      {/* Dialog wrapper */}
-      <div className="absolute inset-0 flex items-center justify-center p-4">
+      {/* 뷰포트 스크롤 컨테이너 */}
+      <div className="fixed inset-0 overflow-y-auto p-4 sm:p-6 overscroll-contain touch-pan-y">
+        {/* Dialog (헤더 고정, 본문 스크롤) */}
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="lead-modal-title"
-          className="w-full max-w-lg rounded-2xl bg-white text-black shadow-xl overflow-hidden dark:bg-zinc-900 dark:text-white"
+          className="mx-auto my-4 sm:my-8 w-full max-w-lg rounded-2xl bg-white text-black shadow-xl overflow-hidden dark:bg-zinc-900 dark:text-white flex flex-col max-h-[85vh]"
+          onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
+          {/* Header (고정) */}
           <div className="relative p-6 border-b border-zinc-200 dark:border-zinc-800">
             <h3 id="lead-modal-title" className="text-xl font-bold">
               Talk to Sales
@@ -111,13 +117,12 @@ export default function LeadModal() {
             </button>
           </div>
 
-          {/* Form */}
+          {/* Body (여기만 스크롤) */}
           <form
-            className="p-6"
+            className="flex-1 overflow-y-auto px-6 py-4"
             onSubmit={(e) => {
               e.preventDefault();
-              // TODO: 제출 로직 연결 (이메일/백엔드).
-              // e.currentTarget.elements에서 source/modelCode/기타 필드 접근 가능.
+              // TODO: 제출 로직 (modelCode, source 포함)
               setOpen(false);
             }}
           >
@@ -125,6 +130,7 @@ export default function LeadModal() {
               {/* 이름 */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <input
+                  ref={firstNameRef}
                   name="firstName"
                   placeholder="First name"
                   required
@@ -158,7 +164,7 @@ export default function LeadModal() {
                 className="w-full rounded-xl border border-zinc-200 px-3.5 py-3 text-sm outline-none focus:ring-2 focus:ring-black/10 dark:bg-zinc-900 dark:border-zinc-700 dark:placeholder-zinc-400 dark:focus:ring-white/10"
               />
 
-              {/* ✅ 문의 대상 모델 (자동 선택 가능) */}
+              {/* 문의 대상 모델 (자동 선택 가능) */}
               <label className="text-xs font-medium text-zinc-600 dark:text-zinc-300 mt-1">
                 Inquiry about
               </label>
@@ -188,28 +194,28 @@ export default function LeadModal() {
 
               {/* 추적용 hidden field */}
               <input type="hidden" name="source" value={source || "Unknown"} />
-            </div>
 
-            {/* Actions */}
-            <div className="mt-6 flex items-center gap-3">
-              <button
-                type="submit"
-                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
-              >
-                Continue in email
-              </button>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="px-5 py-3 rounded-full border border-zinc-300 dark:border-zinc-700"
-              >
-                Cancel
-              </button>
-            </div>
+              {/* Actions (본문 하단) */}
+              <div className="mt-6 flex items-center gap-3">
+                <button
+                  type="submit"
+                  className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
+                >
+                  Continue in email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="px-5 py-3 rounded-full border border-zinc-300 dark:border-zinc-700"
+                >
+                  Cancel
+                </button>
+              </div>
 
-            <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
-              We respect your privacy. Your information will only be used to contact you regarding your inquiry.
-            </p>
+              <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+                We respect your privacy. Your information will only be used to contact you regarding your inquiry.
+              </p>
+            </div>
           </form>
         </div>
       </div>
