@@ -4,8 +4,7 @@ run-name: "Build & Deploy • ${{ github.ref_name }} • by ${{ github.actor }}"
 on:
   push:
     branches:
-      - main
-      - 0924_01        # ← 테스트용 브랜치 추가 (원하는 브랜치로 바꿔도 됨)
+      - '**'           # 모든 브랜치
   workflow_dispatch:
 
 jobs:
@@ -51,15 +50,34 @@ jobs:
           if [ ! -f dist/index.html ]; then
             echo "❌ dist/index.html not found. Is Vite output 'dist'?" && exit 1
           fi
-          echo "Checking GA ID in dist/index.html..."
           if grep -q "googletagmanager.com/gtag/js?id=G-" dist/index.html; then
             echo "✅ GA ID found in dist/index.html"
           else
             echo "❌ GA ID NOT found in dist/index.html"; exit 1
           fi
 
-      # ---- Functions: secrets 유무를 스크립트 내부에서 판단해 스킵/실행 ----
-      - name: Sync & Deploy Firebase Functions (skip if email secrets missing)
+      # 브랜치 이름을 Firebase 채널 규칙에 맞게 정제 (main이면 live)
+      - name: Compute deploy channel
+        id: channel
+        shell: bash
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "channel=live" >> "$GITHUB_OUTPUT"
+          else
+            ref="${{ github.ref_name }}"
+            channel=$(echo "$ref" \
+              | tr '[:upper:]' '[:lower:]' \
+              | sed 's/[^a-z0-9-]/-/g; s/^-//; s/-$//; s/--*/-/g' \
+              | cut -c1-36)
+            # 최소 1글자 보장
+            if [ -z "$channel" ]; then channel="preview"; fi
+            echo "channel=$channel" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Deploy channel: $(cat $GITHUB_OUTPUT)"
+
+      # ---- Functions: main 에서만 실행 (스크립트 내부에서도 시크릿 없으면 스킵) ----
+      - name: Sync & Deploy Firebase Functions (main only)
+        if: ${{ github.ref == 'refs/heads/main' }}
         shell: bash
         env:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
@@ -71,7 +89,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          # 0) 이메일 관련 시크릿이 없으면 스킵
+          # 0) 이메일 관련 시크릿 없으면 스킵
           missing=()
           [ -z "${SENDGRID_API_KEY:-}" ] && missing+=("SENDGRID_API_KEY")
           [ -z "${SALES_TO:-}" ]        && missing+=("SALES_TO")
@@ -81,7 +99,7 @@ jobs:
             exit 0
           fi
 
-          # 1) 서비스 계정으로 인증
+          # 1) 서비스 계정 인증
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/gcp.json"
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$GOOGLE_APPLICATION_CREDENTIALS"
 
@@ -94,8 +112,7 @@ jobs:
             local VAL="$(printenv "$NAME" || true)"
             if [ -n "$VAL" ]; then
               printf "%s" "$VAL" | firebase functions:secrets:set "$NAME" \
-                --project "$FIREBASE_PROJECT_ID" \
-                --force
+                --project "$FIREBASE_PROJECT_ID" --force
               echo "Synced secret: $NAME"
             else
               echo "Skip empty: $NAME"
@@ -114,11 +131,12 @@ jobs:
 
           firebase deploy --only functions --project "$FIREBASE_PROJECT_ID"
 
-      # ---- Hosting 배포 ----
+      # ---- Hosting 배포: main=live, 그 외=브랜치 프리뷰 채널(7일 만료) ----
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          channelId: live
           projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+          channelId: ${{ steps.channel.outputs.channel }}
+          expires: 7d
