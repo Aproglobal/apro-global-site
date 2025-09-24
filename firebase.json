@@ -1,12 +1,9 @@
 {
   "hosting": {
     "public": "dist",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
+      { "source": "/api/lead", "function": "lead" },
       { "source": "**", "destination": "/index.html" }
     ],
     "headers": [
