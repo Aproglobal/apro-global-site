@@ -84,7 +84,7 @@ jobs:
           SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
           SALES_TO: ${{ secrets.SALES_TO }}
           SENDGRID_FROM: ${{ secrets.SENDGRID_FROM }}
-          SALES_BCC: ${{ secrets.SALES_BCC }}
+          SALES_BCC: ${{ secrets.SALES_BCC }}   # 비어있을 수 있음
         run: |
           set -euo pipefail
 
@@ -106,18 +106,22 @@ jobs:
           npm i -g firebase-tools@latest
 
           # 3) GitHub Secrets → Firebase Secret Manager 동기화
-          #    (빈 값이어도 비대화식으로 '그대로' 생성해서 프롬프트 방지)
+          #    SALES_BCC가 비어있으면 Secret Manager가 400을 내므로 placeholder로 채움
           sync_secret () {
             local NAME="$1"
             local VAL="$(printenv "$NAME" || true)"
-            printf "%s" "${VAL}" | firebase functions:secrets:set "$NAME" \
-              --project "$FIREBASE_PROJECT_ID" --force
+            if [ -z "$VAL" ]; then
+              VAL="__NONE__"
+              echo "[$NAME] not provided — using placeholder '__NONE__'"
+            fi
+            printf "%s" "$VAL" | firebase functions:secrets:set "$NAME" \
+              --project "$FIREBASE_PROJECT_ID" --force --non-interactive
             echo "Synced secret: $NAME"
           }
           sync_secret SENDGRID_API_KEY
           sync_secret SALES_TO
           sync_secret SENDGRID_FROM
-          sync_secret SALES_BCC   # <= 비어있어도 생성해서 배포 중 입력 요구 방지
+          sync_secret SALES_BCC   # <= 비어있어도 placeholder로 생성
 
           # 4) Functions 빌드 & 배포
           pushd functions
