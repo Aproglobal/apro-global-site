@@ -88,7 +88,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          # 0) 메일 시크릿 없으면 스킵
+          # 0) 필수 메일 시크릿 없으면 Functions 배포 스킵
           missing=()
           [ -z "${SENDGRID_API_KEY:-}" ] && missing+=("SENDGRID_API_KEY")
           [ -z "${SALES_TO:-}" ]        && missing+=("SALES_TO")
@@ -106,21 +106,18 @@ jobs:
           npm i -g firebase-tools@latest
 
           # 3) GitHub Secrets → Firebase Secret Manager 동기화
+          #    (빈 값이어도 비대화식으로 '그대로' 생성해서 프롬프트 방지)
           sync_secret () {
             local NAME="$1"
             local VAL="$(printenv "$NAME" || true)"
-            if [ -n "$VAL" ]; then
-              printf "%s" "$VAL" | firebase functions:secrets:set "$NAME" \
-                --project "$FIREBASE_PROJECT_ID" --force
-              echo "Synced secret: $NAME"
-            else
-              echo "Skip empty: $NAME"
-            fi
+            printf "%s" "${VAL}" | firebase functions:secrets:set "$NAME" \
+              --project "$FIREBASE_PROJECT_ID" --force
+            echo "Synced secret: $NAME"
           }
           sync_secret SENDGRID_API_KEY
           sync_secret SALES_TO
           sync_secret SENDGRID_FROM
-          sync_secret SALES_BCC
+          sync_secret SALES_BCC   # <= 비어있어도 생성해서 배포 중 입력 요구 방지
 
           # 4) Functions 빌드 & 배포
           pushd functions
@@ -128,7 +125,8 @@ jobs:
           npm run build
           popd
 
-          firebase deploy --only functions --project "$FIREBASE_PROJECT_ID"
+          # 비대화식 모드로 프롬프트 차단
+          firebase deploy --only functions --project "$FIREBASE_PROJECT_ID" --non-interactive
 
       # ---- Hosting 배포: main=live, 그 외=프리뷰(7일) ----
       - name: Deploy to Firebase Hosting
