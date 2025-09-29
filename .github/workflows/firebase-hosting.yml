@@ -129,8 +129,8 @@ jobs:
           npm run build
           popd
 
-          # 비대화식 모드로 프롬프트 차단
-          firebase deploy --only functions --project "$FIREBASE_PROJECT_ID" --non-interactive
+          # 비대화식 모드로 프롬프트 차단 + 아티팩트 정리 정책 자동 설정
+          firebase deploy --only functions --project "$FIREBASE_PROJECT_ID" --non-interactive --force
 
       # ---- Hosting 배포: main=live, 그 외=프리뷰(7일) ----
       - name: Deploy to Firebase Hosting
