@@ -1,3 +1,4 @@
+# .github/workflows/firebase-hosting.yml
 name: Deploy to Firebase Hosting & Functions
 run-name: "Build & Deploy • ${{ github.ref_name }} • by ${{ github.actor }}"
 
@@ -74,16 +75,15 @@ jobs:
           fi
           echo "Deploy channel: $(cat $GITHUB_OUTPUT)"
 
-      # ---- Functions: main에서만 실행 ----
-      - name: Sync & Deploy Firebase Functions (main only)
-        if: ${{ github.ref == 'refs/heads/main' }}
+      # ---- Functions: 모든 브랜치에서 실행 ----
+      - name: Sync & Deploy Firebase Functions
         shell: bash
         env:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
           SALES_TO: ${{ secrets.SALES_TO }}
-          SENDGRID_FROM: ${{ secrets.SENDGRID_FROM }}   # << 바뀐 부분
+          SENDGRID_FROM: ${{ secrets.SENDGRID_FROM }}
           SALES_BCC: ${{ secrets.SALES_BCC }}
         run: |
           set -euo pipefail
@@ -119,7 +119,7 @@ jobs:
           }
           sync_secret SENDGRID_API_KEY
           sync_secret SALES_TO
-          sync_secret SENDGRID_FROM   # << 바뀐 부분
+          sync_secret SENDGRID_FROM
           sync_secret SALES_BCC
 
           # 4) Functions 빌드 & 배포
