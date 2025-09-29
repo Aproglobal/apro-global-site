@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: '20'
 
-      # Build-time env for Vite
+      # --- Build-time env for Vite (프론트 공개 변수) ---
       - name: Create .env for build
         run: |
           cat << 'EOF' > .env
@@ -69,13 +69,12 @@ jobs:
               | tr '[:upper:]' '[:lower:]' \
               | sed 's/[^a-z0-9-]/-/g; s/^-//; s/-$//; s/--*/-/g' \
               | cut -c1-36)
-            # 최소 1글자 보장
             if [ -z "$channel" ]; then channel="preview"; fi
             echo "channel=$channel" >> "$GITHUB_OUTPUT"
           fi
           echo "Deploy channel: $(cat $GITHUB_OUTPUT)"
 
-      # ---- Functions: main 에서만 실행 (스크립트 내부에서도 시크릿 없으면 스킵) ----
+      # ---- Functions: main에서만 실행 ----
       - name: Sync & Deploy Firebase Functions (main only)
         if: ${{ github.ref == 'refs/heads/main' }}
         shell: bash
@@ -84,22 +83,22 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
           SALES_TO: ${{ secrets.SALES_TO }}
-          FROM: ${{ secrets.FROM }}
+          SENDGRID_FROM: ${{ secrets.SENDGRID_FROM }}   # << 바뀐 부분
           SALES_BCC: ${{ secrets.SALES_BCC }}
         run: |
           set -euo pipefail
 
-          # 0) 이메일 관련 시크릿 없으면 스킵
+          # 0) 메일 시크릿 없으면 스킵
           missing=()
           [ -z "${SENDGRID_API_KEY:-}" ] && missing+=("SENDGRID_API_KEY")
           [ -z "${SALES_TO:-}" ]        && missing+=("SALES_TO")
-          [ -z "${FROM:-}" ]            && missing+=("FROM")
+          [ -z "${SENDGRID_FROM:-}" ]   && missing+=("SENDGRID_FROM")
           if [ ${#missing[@]} -gt 0 ]; then
             echo "🟡 Skipping functions deploy. Missing secrets: ${missing[*]}"
             exit 0
           fi
 
-          # 1) 서비스 계정 인증
+          # 1) 서비스 계정 인증(ADC)
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/gcp.json"
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$GOOGLE_APPLICATION_CREDENTIALS"
 
@@ -120,7 +119,7 @@ jobs:
           }
           sync_secret SENDGRID_API_KEY
           sync_secret SALES_TO
-          sync_secret FROM
+          sync_secret SENDGRID_FROM   # << 바뀐 부분
           sync_secret SALES_BCC
 
           # 4) Functions 빌드 & 배포
@@ -131,7 +130,7 @@ jobs:
 
           firebase deploy --only functions --project "$FIREBASE_PROJECT_ID"
 
-      # ---- Hosting 배포: main=live, 그 외=브랜치 프리뷰 채널(7일 만료) ----
+      # ---- Hosting 배포: main=live, 그 외=프리뷰(7일) ----
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
