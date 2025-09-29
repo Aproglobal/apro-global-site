@@ -3,14 +3,17 @@ import { defineSecret } from "firebase-functions/params";
 import sgMail from "@sendgrid/mail";
 
 const SENDGRID_API_KEY = defineSecret("SENDGRID_API_KEY");
-const SALES_TO         = defineSecret("SALES_TO");        // 세일즈 수신 메일
-const SENDGRID_FROM    = defineSecret("SENDGRID_FROM");   // 송신(인증된) 주소
-const SALES_BCC        = defineSecret("SALES_BCC");       // 선택
+const SALES_TO         = defineSecret("SALES_TO");
+const SENDGRID_FROM    = defineSecret("SENDGRID_FROM");
+const SALES_BCC        = defineSecret("SALES_BCC");
 
 export const lead = onRequest(
   { cors: true, secrets: [SENDGRID_API_KEY, SALES_TO, SENDGRID_FROM, SALES_BCC] },
-  async (req, res) => {
-    if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
+  async (req, res): Promise<void> => {
+    if (req.method !== "POST") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
 
     const {
       firstName, lastName, company, email, phone, message,
@@ -18,7 +21,8 @@ export const lead = onRequest(
     } = req.body || {};
 
     if (!firstName || !lastName || !company || !email) {
-      return res.status(400).json({ ok: false, error: "Missing required fields" });
+      res.status(400).json({ ok: false, error: "Missing required fields" });
+      return;
     }
 
     sgMail.setApiKey(SENDGRID_API_KEY.value());
@@ -69,10 +73,12 @@ If urgent, reply to this email or call us at +82-XX-XXXX-XXXX.
 — APRO Sales Team`,
       });
 
-      return res.json({ ok: true });
+      res.json({ ok: true });
+      return;
     } catch (err: any) {
       console.error(err?.response?.body || err);
-      return res.status(500).json({ ok: false, error: "Email send failed" });
+      res.status(500).json({ ok: false, error: "Email send failed" });
+      return;
     }
   }
 );
