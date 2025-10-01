@@ -27,7 +27,7 @@ function DebugRecaptcha() {
   return (
     <button
       onClick={handleClick}
-      className="fixed bottom-6 left-6 px-5 py-3 rounded-full bg-blue-600 text-white font-semibold shadow-lg z-[200]"
+      className="fixed bottom-6 left-6 px-5 py-3 rounded-full bg-blue-600 text-white font-semibold shadow-lg z-[9999]"
     >
       🔑 Test reCAPTCHA
     </button>
