@@ -8,8 +8,10 @@ export type LeadPayload = Record<string, any>;
 export async function submitLead(payloadBase: LeadPayload) {
   // reCAPTCHA 토큰 얻기 (v3)
   const token = await getRecaptchaToken('lead');
+  console.log("✅ [DEBUG] reCAPTCHA token:", token); // 👈 토큰 확인 로그
 
   const payload = { ...payloadBase, recaptchaToken: token };
+  console.log("✅ [DEBUG] Payload to submit:", payload); // 👈 전체 payload 확인
 
   const res = await fetch(FUNCTION_URL, {
     method: 'POST',
@@ -25,9 +27,13 @@ export async function submitLead(payloadBase: LeadPayload) {
   try {
     const json = JSON.parse(text);
     if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+    console.log("✅ [DEBUG] Server response:", json); // 👈 서버 응답 로그
     return json;
   } catch (e) {
-    if (!res.ok) throw new Error(text || `HTTP ${res.status}`);
+    if (!res.ok) {
+      console.error("❌ [DEBUG] Server error response:", text);
+      throw new Error(text || `HTTP ${res.status}`);
+    }
     return text;
   }
 }
