@@ -1,3 +1,4 @@
+// src/pages/App.tsx
 import React, { useEffect } from 'react';
 import Header from '../components/Header';
 import ModelGrid from '../components/ModelGrid';
@@ -8,21 +9,43 @@ import LeadModal, { openLead } from '../components/LeadModal';
 import ModelDetail from '../components/ModelDetail';
 import { getVariant } from '../utils/ab';
 import { setupScrollDepth, trackEvent } from '../services/analytics';
-import { initThemeWatcher } from '../utils/theme'; // ★ 추가
+import { initThemeWatcher } from '../utils/theme';
+import { getRecaptchaToken } from '../lib/recaptcha';   // ★ 추가
+
+// 🔹 디버그 버튼 컴포넌트
+function DebugRecaptcha() {
+  async function handleClick() {
+    try {
+      const token = await getRecaptchaToken("lead");
+      console.log("reCAPTCHA token:", token);
+      alert("토큰 앞부분: " + token.substring(0, 40) + "...");
+    } catch (e) {
+      console.error("Recaptcha failed", e);
+      alert("Recaptcha 실패: " + (e as Error).message);
+    }
+  }
+  return (
+    <button
+      onClick={handleClick}
+      className="fixed bottom-6 left-6 px-5 py-3 rounded-full bg-blue-600 text-white font-semibold shadow-lg z-[200]"
+    >
+      🔑 Test reCAPTCHA
+    </button>
+  );
+}
 
 export default function App() {
   const variant = getVariant();
 
   useEffect(() => {
     setupScrollDepth();
-    initThemeWatcher(); // ★ OS 테마 자동 추종
+    initThemeWatcher();
   }, []);
 
   const primaryCta = 'Talk to Sales';
   const secondaryCta = variant === 'A' ? 'Explore models' : 'Download brochure';
 
   return (
-    // ★ 라이트/다크 공통 래퍼로 변경
     <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
       <Header />
       <main className="pt-16">
@@ -34,7 +57,6 @@ export default function App() {
               className="absolute inset-0 w-full h-full object-cover"
               alt="APRO Golf Carts"
             />
-            {/* ★ 라이트/다크 모두 읽기 쉬운 그라데이션 */}
             <div className="absolute inset-0 bg-gradient-to-t from-white via-white/30 to-transparent dark:from-black dark:via-black/30 dark:to-transparent" />
             <div className="relative z-10 max-w-6xl mx-auto px-5 h-full flex flex-col justify-end pb-14">
               <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
@@ -178,6 +200,9 @@ export default function App() {
 
       <LeadModal />
       <ModelDetail />
+
+      {/* 🔹 디버깅 버튼 */}
+      <DebugRecaptcha />
     </div>
   );
 }
