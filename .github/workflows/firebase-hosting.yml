@@ -5,7 +5,7 @@ run-name: "Build & Deploy • ${{ github.ref_name }} • by ${{ github.actor }}"
 on:
   push:
     branches:
-      - '**'           # 모든 브랜치
+      - '**'
   workflow_dispatch:
 
 jobs:
@@ -31,6 +31,7 @@ jobs:
           VITE_SALES_EMAIL=${{ secrets.VITE_SALES_EMAIL }}
           VITE_GA_MEASUREMENT_ID=${{ secrets.VITE_GA_MEASUREMENT_ID }}
           VITE_AB_DEFAULT=A
+          VITE_RECAPTCHA_SITE_KEY=${{ secrets.VITE_RECAPTCHA_SITE_KEY }}   # ✅ 추가
           EOF
           echo ".env file created (values hidden):"
           cat .env | sed 's/=\(.*\)/=[HIDDEN]/'
@@ -57,7 +58,6 @@ jobs:
             echo "❌ GA ID NOT found in dist/index.html"; exit 1
           fi
 
-      # 브랜치 이름을 Firebase 채널 규칙에 맞게 정제 (main이면 live)
       - name: Compute deploy channel
         id: channel
         shell: bash
@@ -84,15 +84,17 @@ jobs:
           SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
           SALES_TO: ${{ secrets.SALES_TO }}
           SENDGRID_FROM: ${{ secrets.SENDGRID_FROM }}
-          SALES_BCC: ${{ secrets.SALES_BCC }}   # 비어있을 수 있음
+          SALES_BCC: ${{ secrets.SALES_BCC }}                # 비어있을 수 있음
+          RECAPTCHA_SECRET: ${{ secrets.RECAPTCHA_SECRET }}  # ✅ 추가
         run: |
           set -euo pipefail
 
-          # 0) 필수 메일 시크릿 없으면 Functions 배포 스킵
+          # 0) 필수 시크릿 없으면 Functions 배포 스킵 (안전)
           missing=()
-          [ -z "${SENDGRID_API_KEY:-}" ] && missing+=("SENDGRID_API_KEY")
-          [ -z "${SALES_TO:-}" ]        && missing+=("SALES_TO")
-          [ -z "${SENDGRID_FROM:-}" ]   && missing+=("SENDGRID_FROM")
+          [ -z "${SENDGRID_API_KEY:-}" ]  && missing+=("SENDGRID_API_KEY")
+          [ -z "${SALES_TO:-}" ]         && missing+=("SALES_TO")
+          [ -z "${SENDGRID_FROM:-}" ]    && missing+=("SENDGRID_FROM")
+          [ -z "${RECAPTCHA_SECRET:-}" ] && missing+=("RECAPTCHA_SECRET")   # ✅ 추가
           if [ ${#missing[@]} -gt 0 ]; then
             echo "🟡 Skipping functions deploy. Missing secrets: ${missing[*]}"
             exit 0
@@ -121,7 +123,8 @@ jobs:
           sync_secret SENDGRID_API_KEY
           sync_secret SALES_TO
           sync_secret SENDGRID_FROM
-          sync_secret SALES_BCC   # <= 비어있어도 placeholder로 생성
+          sync_secret SALES_BCC          # <= 비어있어도 placeholder로 생성
+          sync_secret RECAPTCHA_SECRET   # ✅ 추가 (이번 실패 원인)
 
           # 4) Functions 빌드 & 배포
           pushd functions
@@ -129,10 +132,8 @@ jobs:
           npm run build
           popd
 
-          # 비대화식 모드로 프롬프트 차단 + 아티팩트 정리 정책 자동 설정
           firebase deploy --only functions --project "$FIREBASE_PROJECT_ID" --non-interactive --force
 
-      # ---- Hosting 배포: main=live, 그 외=프리뷰(7일) ----
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
