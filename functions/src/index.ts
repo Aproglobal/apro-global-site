@@ -8,7 +8,7 @@ const SENDGRID_API_KEY = defineSecret("SENDGRID_API_KEY");
 const SALES_TO         = defineSecret("SALES_TO");
 const SENDGRID_FROM    = defineSecret("SENDGRID_FROM");
 const SALES_BCC        = defineSecret("SALES_BCC");
-const RECAPTCHA_SECRET = defineSecret("RECAPTCHA_SECRET"); // ⬅️ 추가
+const RECAPTCHA_SECRET = defineSecret("RECAPTCHA_SECRET");
 
 /** 이름 분해 도우미: name만 온 경우 first/last로 분리 */
 function splitName(full?: string): { firstName?: string; lastName?: string } {
@@ -68,17 +68,22 @@ export const lead = onRequest(
       b.lastName  = b.lastName  ?? lastName;
     }
 
-    // 필수값 정의 (기존 규칙 유지)
+    // 필수값 정의 (기존 규칙 유지) + recaptchaToken
     const required = ["firstName", "lastName", "company", "email", "recaptchaToken"];
     const miss = missingFields(b, required);
-
     if (miss.length) {
       res.status(400).json({ ok: false, error: "missing_fields", fields: miss });
       return;
     }
 
-    // reCAPTCHA 검증 (score 0.5 미만 or 실패 시 400)
+    // reCAPTCHA Secret 구성 확인
     const secret = RECAPTCHA_SECRET.value();
+    if (!secret || secret === "__NONE__") {
+      res.status(500).json({ ok: false, error: "recaptcha_secret_not_configured" });
+      return;
+    }
+
+    // reCAPTCHA 검증 (score 0.5 미만 or 실패 시 400)
     try {
       const verify = await verifyRecaptchaV3(b.recaptchaToken, secret, req.ip);
       if (!verify.success || (typeof verify.score === "number" && verify.score < 0.5)) {
@@ -91,16 +96,19 @@ export const lead = onRequest(
       return;
     }
 
-    // 메일 전송
+    // 메일 전송 준비
     sgMail.setApiKey(SENDGRID_API_KEY.value());
     const fullName = `${b.firstName} ${b.lastName}`.trim();
     const subject = `[Lead] ${fullName} — ${b.company}${b.modelCode ? ` — ${b.modelCode}` : ""}`;
 
+    // --- 1) 세일즈팀 메일(필수) ---
     try {
-      // 1) 세일즈팀 수신
       await sgMail.send({
         to: SALES_TO.value(),
-        bcc: SALES_BCC.value() ? [SALES_BCC.value()] : undefined,
+        bcc:
+          SALES_BCC.value() && SALES_BCC.value() !== "__NONE__"
+            ? [SALES_BCC.value()]
+            : undefined,
         from: SENDGRID_FROM.value(),
         replyTo: b.email,
         subject,
@@ -122,9 +130,17 @@ UA: ${b.ua || "-"}
 UTM: source=${b.utm_source || "-"}, medium=${b.utm_medium || "-"}, campaign=${b.utm_campaign || "-"}, term=${b.utm_term || "-"}, content=${b.utm_content || "-"}
 GCLID: ${b.gclid || "-"}
 `,
+        // 테스트 시 실발송 방지하려면 GitHub/Firebase에 SENDGRID_SANDBOX=true 설정 후 아래 주석 해제
+        // mailSettings: { sandboxMode: { enable: process.env.SENDGRID_SANDBOX === "true" } },
       });
+    } catch (err: any) {
+      console.error("[SENDGRID:sales] error:", err?.response?.body || err);
+      res.status(500).json({ ok: false, error: "email_send_failed_sales" });
+      return;
+    }
 
-      // 2) 고객 자동 회신
+    // --- 2) 고객 자동 회신(선택: 실패해도 성공 반환) ---
+    try {
       await sgMail.send({
         to: b.email,
         from: SENDGRID_FROM.value(),
@@ -138,15 +154,13 @@ We received your request${b.modelCode ? ` about model ${b.modelCode}` : ""} and 
 If urgent, reply to this email or call us at +82-XX-XXXX-XXXX.
 
 — APRO Sales Team`,
+        // mailSettings: { sandboxMode: { enable: process.env.SENDGRID_SANDBOX === "true" } },
       });
-
-      res.json({ ok: true });
-      return;
     } catch (err: any) {
-      // SendGrid 에러 객체는 response.body 안에 상세가 있음
-      console.error("[SENDGRID] error:", err?.response?.body || err);
-      res.status(500).json({ ok: false, error: "email_send_failed" });
-      return;
+      console.warn("[SENDGRID:auto-reply] error (ignored):", err?.response?.body || err);
+      // 실패해도 성공 응답 유지
     }
+
+    res.json({ ok: true });
   }
 );
