@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { MODELS } from "../data/models";
+import { submitLead } from "../services/lead";
 
 /** 이벤트 payload 타입 */
 export type LeadOpenDetail = { source?: string; modelCode?: string };
@@ -26,6 +27,9 @@ export default function LeadModal() {
   const [open, setOpen] = useState(false);
   const [source, setSource] = useState<string>("");
   const [modelCode, setModelCode] = useState<string>("");
+
+  const [loading, setLoading] = useState(false);
+  const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
   const selectedModel = useMemo(
     () => MODELS.find((m) => m.code === modelCode) || null,
@@ -66,6 +70,51 @@ export default function LeadModal() {
 
   if (!open) return null;
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    const basePayload = {
+      name:
+        (formData.get("firstName") as string) +
+        " " +
+        (formData.get("lastName") as string),
+      email: formData.get("email"),
+      phone: formData.get("phone"),
+      company: formData.get("company"),
+      message: formData.get("message"),
+      modelCode: formData.get("modelCode"),
+      source: formData.get("source") || "Unknown",
+      type: "lead",
+      site: location.hostname,
+      country: "KR",
+      privacyAgree: true,
+      referrer: document.referrer,
+      url: location.href,
+      pathname: location.pathname,
+      origin: location.origin,
+      userAgent: navigator.userAgent,
+      locale: navigator.language,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    };
+
+    try {
+      setLoading(true);
+      setStatusMsg(null);
+      const resp = await submitLead(basePayload);
+      console.log("✅ Lead submitted", resp);
+      setStatusMsg("제출이 완료되었습니다. 감사합니다.");
+      form.reset();
+      setOpen(false);
+    } catch (err: any) {
+      console.error("❌ Lead submit failed", err);
+      setStatusMsg(err?.message || "제출 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const modal = (
     <div className="fixed inset-0 z-[100]">
       {/* Overlay */}
@@ -74,7 +123,7 @@ export default function LeadModal() {
         onClick={() => setOpen(false)}
         aria-hidden
       />
-      {/* Dialog wrapper (작은 화면에서 스크롤 허용) */}
+      {/* Dialog wrapper */}
       <div className="absolute inset-0 flex items-center justify-center p-4 overflow-y-auto">
         <div
           role="dialog"
@@ -112,15 +161,7 @@ export default function LeadModal() {
           </div>
 
           {/* Form */}
-          <form
-            className="p-6"
-            onSubmit={(e) => {
-              e.preventDefault();
-              // TODO: 제출 로직 연결 (이메일/백엔드).
-              // e.currentTarget.elements에서 source/modelCode 등 접근 가능.
-              setOpen(false);
-            }}
-          >
+          <form className="p-6" onSubmit={handleSubmit}>
             <div className="grid gap-3">
               {/* 이름 */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -158,7 +199,7 @@ export default function LeadModal() {
                 className="w-full rounded-xl border border-zinc-200 px-3.5 py-3 text-sm outline-none focus:ring-2 focus:ring-black/10 dark:bg-zinc-900 dark:border-zinc-700 dark:placeholder-zinc-400 dark:focus:ring-white/10"
               />
 
-              {/* 문의 대상 모델 (자동 선택) */}
+              {/* 문의 대상 모델 */}
               <label className="text-xs font-medium text-zinc-600 dark:text-zinc-300 mt-1">
                 Inquiry about
               </label>
@@ -186,7 +227,7 @@ export default function LeadModal() {
                 className="min-h-[100px] w-full resize-y rounded-xl border border-zinc-200 px-3.5 py-3 text-sm outline-none focus:ring-2 focus:ring-black/10 dark:bg-zinc-900 dark:border-zinc-700 dark:placeholder-zinc-400 dark:focus:ring-white/10"
               />
 
-              {/* 추적용 hidden field */}
+              {/* 추적용 hidden */}
               <input type="hidden" name="source" value={source || "Unknown"} />
             </div>
 
@@ -194,9 +235,10 @@ export default function LeadModal() {
             <div className="mt-6 flex items-center gap-3">
               <button
                 type="submit"
+                disabled={loading}
                 className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
               >
-                Continue in email
+                {loading ? "Submitting..." : "Continue in email"}
               </button>
               <button
                 type="button"
@@ -207,15 +249,16 @@ export default function LeadModal() {
               </button>
             </div>
 
-            <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
-              We respect your privacy. Your information will only be used to contact you regarding your inquiry.
-            </p>
+            {statusMsg && (
+              <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+                {statusMsg}
+              </p>
+            )}
           </form>
         </div>
       </div>
     </div>
   );
 
-  // 포털로 body 최상단에 렌더 → 다른 오버레이 위에 확실히 뜸
   return createPortal(modal, document.body);
 }

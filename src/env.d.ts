@@ -2,7 +2,8 @@
 
 interface ImportMetaEnv {
   readonly VITE_SALES_EMAIL?: string;
-  // 필요하면 여기에 VITE_ 로 시작하는 키를 더 추가
+  readonly VITE_GA_MEASUREMENT_ID?: string;
+  readonly VITE_RECAPTCHA_SITE_KEY?: string; // ⬅️ 추가
 }
 
 interface ImportMeta {
