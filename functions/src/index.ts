@@ -6,9 +6,25 @@ import sgMail from "@sendgrid/mail";
 /** --- Secrets (Firebase Functions v2: 콘솔 or CLI로 설정) --- */
 const SENDGRID_API_KEY = defineSecret("SENDGRID_API_KEY");
 const SALES_TO         = defineSecret("SALES_TO");
-const SENDGRID_FROM    = defineSecret("SENDGRID_FROM");
-const SALES_BCC        = defineSecret("SALES_BCC");
+const SENDGRID_FROM    = defineSecret("SENDGRID_FROM"); // ✅ Single Sender 주소(aproglobal@kukjeint.com)
+const SALES_BCC        = defineSecret("SALES_BCC");     // 없으면 "__NONE__"가 들어옴
 const RECAPTCHA_SECRET = defineSecret("RECAPTCHA_SECRET");
+
+/** 간단 이메일 형식 검사 (RFC 완벽 X, 실무용 최소) */
+function isEmail(v?: string): boolean {
+  if (!v) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v).trim());
+}
+
+/** 콤마/세미콜론 구분 수신자 파서 */
+function toAddressList(v?: string): string[] | undefined {
+  if (!v) return undefined;
+  const arr = String(v)
+    .split(/[;,]/)
+    .map(s => s.trim())
+    .filter(Boolean);
+  return arr.length ? arr : undefined;
+}
 
 /** 이름 분해 도우미: name만 온 경우 first/last로 분리 */
 function splitName(full?: string): { firstName?: string; lastName?: string } {
@@ -96,21 +112,48 @@ export const lead = onRequest(
       return;
     }
 
-    // 메일 전송 준비
-    sgMail.setApiKey(SENDGRID_API_KEY.value());
+    // --- 메일 전송 준비 ---
+    const API_KEY = SENDGRID_API_KEY.value();
+    const FROM_EMAIL = SENDGRID_FROM.value();                // ✅ Single Sender 고정
+    const FROM_NAME = "APRO Sales Team";                     // 표시명 (원하면 변경)
+    if (!API_KEY || API_KEY === "__NONE__") {
+      res.status(500).json({ ok: false, error: "sendgrid_key_not_configured" });
+      return;
+    }
+    if (!isEmail(FROM_EMAIL) || FROM_EMAIL === "__NONE__") {
+      // ✅ Single Sender만 쓸 때 가장 흔한 실수 방지
+      res.status(500).json({ ok: false, error: "sendgrid_from_not_configured_or_invalid" });
+      return;
+    }
+
+    sgMail.setApiKey(API_KEY);
+
     const fullName = `${b.firstName} ${b.lastName}`.trim();
     const subject = `[Lead] ${fullName} — ${b.company}${b.modelCode ? ` — ${b.modelCode}` : ""}`;
+
+    // 수신자 목록 파싱 (콤마/세미콜론 모두 허용)
+    const toList  = toAddressList(SALES_TO.value());
+    const bccList = ((): string[] | undefined => {
+      const raw = SALES_BCC.value();
+      if (!raw || raw === "__NONE__") return undefined;
+      return toAddressList(raw);
+    })();
+
+    if (!toList || toList.length === 0 || !toList.every(isEmail)) {
+      res.status(500).json({ ok: false, error: "sales_to_not_configured_or_invalid" });
+      return;
+    }
+
+    // replyTo 최소 검증 (형식 불량이면 폴백 없음: 제거)
+    const replyTo = isEmail(b.email) ? b.email : undefined;
 
     // --- 1) 세일즈팀 메일(필수) ---
     try {
       await sgMail.send({
-        to: SALES_TO.value(),
-        bcc:
-          SALES_BCC.value() && SALES_BCC.value() !== "__NONE__"
-            ? [SALES_BCC.value()]
-            : undefined,
-        from: SENDGRID_FROM.value(),
-        replyTo: b.email,
+        to: toList,
+        bcc: bccList,
+        from: { email: FROM_EMAIL, name: FROM_NAME },        // ✅ 표시명 분리
+        replyTo,
         subject,
         text:
 `Source: ${b.source || "-"}
@@ -143,7 +186,7 @@ GCLID: ${b.gclid || "-"}
     try {
       await sgMail.send({
         to: b.email,
-        from: SENDGRID_FROM.value(),
+        from: { email: FROM_EMAIL, name: FROM_NAME },
         subject: "APRO — Thanks for your inquiry",
         text:
 `Hi ${b.firstName},
