@@ -12,32 +12,11 @@ import { setupScrollDepth, trackEvent, initAnalytics } from '../services/analyti
 import { initThemeWatcher } from '../utils/theme';
 import { loadRecaptcha } from '../lib/recaptcha';
 
-// ⬇️ 좌하단 작은 CTA 배지(디버그 버튼 대체)
-function LeftCtaBadge() {
-  return (
-    <button
-      onClick={() => {
-        openLead('Left Badge');
-        trackEvent('cta_click', { where: 'left_badge', label: 'Talk to Sales' });
-      }}
-      className="fixed bottom-6 left-6 z-[900] rounded-full px-4 py-2 text-sm font-semibold shadow-lg
-                 bg-black text-white dark:bg-white dark:text-black
-                 hover:opacity-90 focus:outline-none focus-visible:ring-2
-                 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
-      aria-label="Talk to Sales"
-    >
-      Talk to Sales
-    </button>
-  );
-}
-
 export default function App() {
   const variant = getVariant();
 
   useEffect(() => {
-    // GA 초기화
     initAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
-    // 공통 초기화
     setupScrollDepth();
     initThemeWatcher();
     // reCAPTCHA 프리로드(첫 클릭 실패 방지)
@@ -174,13 +153,13 @@ export default function App() {
         </section>
       </main>
 
-      {/* Sticky CTA (우하단) — 배지와 겹치지 않게 살짝 위로 */}
+      {/* Sticky CTA — 우하단 유지 */}
       <button
         onClick={() => {
           openLead('Sticky CTA');
           trackEvent('cta_click', { where: 'sticky', label: 'Talk to Sales' });
         }}
-        className="fixed bottom-[88px] right-6 px-5 py-3 rounded-full bg-black text-white font-semibold shadow-lg dark:bg-white dark:text-black"
+        className="fixed bottom-6 right-6 px-5 py-3 rounded-full bg-black text-white font-semibold shadow-lg dark:bg-white dark:text-black"
       >
         Talk to Sales
       </button>
@@ -201,12 +180,8 @@ export default function App() {
         </div>
       </footer>
 
-      {/* 모달/디테일 */}
       <LeadModal />
       <ModelDetail />
-
-      {/* 좌하단 작은 CTA 배지 */}
-      <LeftCtaBadge />
     </div>
   );
 }
