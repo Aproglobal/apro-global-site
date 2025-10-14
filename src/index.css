@@ -1,3 +1,4 @@
+/* src/index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,10 +9,10 @@ html, body, #root { height: 100%; }
 /* ✅ reCAPTCHA v3 배지: 좌하단으로 이동 */
 .grecaptcha-badge {
   position: fixed !important;
-  left: 16px !important;      /* ← 왼쪽 아래로 */
+  left: 16px !important;
   right: auto !important;
   bottom: 16px !important;
-  z-index: 2147483647 !important; /* 최상위 */
+  z-index: 2147483647 !important;
   transform: translateZ(0);
 }
 
@@ -21,6 +22,3 @@ html, body, #root { height: 100%; }
     bottom: 12px !important;
   }
 }
-
-/* 필요 시 우하단 요소와 겹침 방지용 유틸(현재는 미사용) */
-.safe-bottom-right { margin-bottom: 88px; }
