@@ -8,12 +8,12 @@ import FleetSection from '../components/FleetSection';
 import LeadModal, { openLead } from '../components/LeadModal';
 import ModelDetail from '../components/ModelDetail';
 import { getVariant } from '../utils/ab';
-import { setupScrollDepth, trackEvent } from '../services/analytics';
+import { setupScrollDepth, trackEvent, initAnalytics } from '../services/analytics';
 import { initThemeWatcher } from '../utils/theme';
-import { loadRecaptcha, getRecaptchaToken } from '../lib/recaptcha'; // ✅ 사전 로드 + (옵션) 디버그
+import { loadRecaptcha, getRecaptchaToken } from '../lib/recaptcha';
 
-// 🔹 디버그 버튼은 환경변수로 토글 (.env / GitHub Secrets)
-//    VITE_SHOW_RECAPTCHA_DEBUG=false  (프로덕션 기본 숨김)
+// 🔹 디버그 버튼은 환경변수로 토글
+//    .env / GitHub Secrets: VITE_SHOW_RECAPTCHA_DEBUG=false
 const SHOW_RECAPTCHA_DEBUG = import.meta.env.VITE_SHOW_RECAPTCHA_DEBUG === 'true';
 
 function DebugRecaptcha() {
@@ -41,6 +41,9 @@ export default function App() {
   const variant = getVariant();
 
   useEffect(() => {
+    // GA 초기화: VITE_GA_MEASUREMENT_ID를 우선 사용
+    initAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
+
     setupScrollDepth();
     initThemeWatcher();
 
