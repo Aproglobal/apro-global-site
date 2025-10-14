@@ -1,5 +1,32 @@
+/* src/index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* 전체 높이 유지 */
 html, body, #root { height: 100%; }
+
+/* ✅ reCAPTCHA v3 배지: 좌하단으로 이동 (디버그 버튼 자리) */
+.grecaptcha-badge {
+  position: fixed !important;
+  left: 16px !important;    /* ← 왼쪽 아래 */
+  right: auto !important;
+  bottom: 16px !important;
+  z-index: 2147483647 !important; /* 항상 맨 위 */
+  transform: translateZ(0); /* 일부 브라우저 렌더링 이슈 방지 */
+}
+
+/* 작은 화면에서 살짝 안쪽으로 */
+@media (max-width: 480px) {
+  .grecaptcha-badge {
+    left: 12px !important;
+    bottom: 12px !important;
+  }
+}
+
+/* (선택) 우하단 CTA가 배지와 겹치지 않도록 안전 여백 가이드
+   - 우하단 CTA는 기존처럼 bottom-6(right-6) 사용 중이므로 추가 작업은 필요 없습니다.
+   - 만약 우하단 요소가 추가로 생기면 아래 유틸을 클래스에 붙여 여백을 확보하세요. */
+.safe-bottom-right {
+  margin-bottom: 88px; /* reCAPTCHA를 오른쪽으로 둘 때 대비용, 현재는 좌하단이라 영향 없음 */
+}
