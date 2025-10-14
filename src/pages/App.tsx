@@ -8,7 +8,7 @@ import FleetSection from '../components/FleetSection';
 import LeadModal, { openLead } from '../components/LeadModal';
 import ModelDetail from '../components/ModelDetail';
 import { getVariant } from '../utils/ab';
-import { initAnalytics, setupScrollDepth, trackEvent } from '../services/analytics';
+import { setupScrollDepth, trackEvent, initAnalytics } from '../services/analytics';
 import { initThemeWatcher } from '../utils/theme';
 import { loadRecaptcha } from '../lib/recaptcha';
 
@@ -16,13 +16,11 @@ export default function App() {
   const variant = getVariant();
 
   useEffect(() => {
-    // GA (index.html 스니펫이 없는 환경까지 커버)
     initAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
     setupScrollDepth();
     initThemeWatcher();
-
-    // reCAPTCHA 프리로드: 첫 클릭에서 execute 미준비 문제 방지
-    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
+    // ✅ v3 스크립트 사전 로드(첫 클릭 실패 방지)
+    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
     if (siteKey) loadRecaptcha(siteKey);
   }, []);
 
@@ -155,13 +153,23 @@ export default function App() {
         </section>
       </main>
 
-      {/* Sticky CTA — 우하단 고정 (배지는 좌하단으로 이동시켰음) */}
+      {/* ✅ Sticky CTA — 좌하단 reCAPTCHA 배지와 조화: 배지(좌하단) 위로 88px 띄워 배치 */}
       <button
         onClick={() => {
           openLead('Sticky CTA');
           trackEvent('cta_click', { where: 'sticky', label: 'Talk to Sales' });
         }}
-        className="fixed bottom-6 right-6 px-5 py-3 rounded-full bg-black text-white font-semibold shadow-lg dark:bg-white dark:text-black"
+        aria-label="Talk to Sales"
+        className="
+          fixed
+          bottom-[88px]   /* 배지 높이(약 60px)+여백 */
+          left-4          /* 좌측 정렬: 배지와 시각적 균형 */
+          right-auto
+          px-5 py-3 rounded-full
+          bg-black text-white font-semibold shadow-lg
+          dark:bg-white dark:text-black
+          z-40            /* 배지(z-index 매우 큼)와 겹치지 않도록 적당히 */
+        "
       >
         Talk to Sales
       </button>
