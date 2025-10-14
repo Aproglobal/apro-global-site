@@ -10,18 +10,20 @@ import ModelDetail from '../components/ModelDetail';
 import { getVariant } from '../utils/ab';
 import { setupScrollDepth, trackEvent } from '../services/analytics';
 import { initThemeWatcher } from '../utils/theme';
-import { loadRecaptcha, getRecaptchaToken } from '../lib/recaptcha'; // preload만 실사용
+import { loadRecaptcha, getRecaptchaToken } from '../lib/recaptcha'; // ✅ 사전 로드 + (옵션) 디버그
 
-// 🔹 디버그 버튼은 환경변수로 토글 (기본 숨김)
-//    .env / GitHub Secrets: VITE_SHOW_RECAPTCHA_DEBUG=false
+// 🔹 디버그 버튼은 환경변수로 토글 (.env / GitHub Secrets)
+//    VITE_SHOW_RECAPTCHA_DEBUG=false  (프로덕션 기본 숨김)
 const SHOW_RECAPTCHA_DEBUG = import.meta.env.VITE_SHOW_RECAPTCHA_DEBUG === 'true';
 
 function DebugRecaptcha() {
   async function handleClick() {
     try {
       const token = await getRecaptchaToken('debug');
+      console.log('[reCAPTCHA] token:', token);
       alert('token head: ' + token.slice(0, 40) + '...');
     } catch (e) {
+      console.error('Recaptcha failed', e);
       alert('Recaptcha 실패: ' + (e as Error).message);
     }
   }
@@ -42,7 +44,7 @@ export default function App() {
     setupScrollDepth();
     initThemeWatcher();
 
-    // ✅ 페이지 진입 시 reCAPTCHA 스크립트 미리 로드(첫 제출 지연/실패 방지)
+    // ✅ 페이지 진입 시 reCAPTCHA 스크립트 미리 로드(첫 클릭 실패 방지)
     const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
     if (siteKey) loadRecaptcha(siteKey);
     else console.warn('[reCAPTCHA] VITE_RECAPTCHA_SITE_KEY is missing');
@@ -63,7 +65,7 @@ export default function App() {
               className="absolute inset-0 w-full h-full object-cover"
               alt="APRO Golf Carts"
             />
-          <div className="absolute inset-0 bg-gradient-to-t from-white via-white/30 to-transparent dark:from-black dark:via-black/30 dark:to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/30 to-transparent dark:from-black dark:via-black/30 dark:to-transparent" />
             <div className="relative z-10 max-w-6xl mx-auto px-5 h-full flex flex-col justify-end pb-14">
               <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
                 Electric Carts for Modern Courses
@@ -159,7 +161,7 @@ export default function App() {
                   openLead('Contact CTA');
                   trackEvent('cta_click', { where: 'contact', label: 'Talk to Sales' });
                 }}
-                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg:white dark:text-black"
+                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
               >
                 Talk to Sales
               </button>
