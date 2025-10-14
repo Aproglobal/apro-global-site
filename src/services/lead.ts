@@ -1,11 +1,11 @@
+// src/services/lead.ts
 import { getRecaptchaToken, loadRecaptcha } from '../lib/recaptcha';
 
 export type LeadPayload = Record<string, any>;
 
-// ✅ Hosting rewrite를 타게 하려면 상대 경로 고정
+// 동일 오리진 호출 (Firebase Hosting rewrite 사용)
 const API_PATH = '/api/lead';
 
-// 간단 타임아웃 유틸 (기본 20초)
 async function fetchWithTimeout(input: RequestInfo, init: RequestInit = {}, ms = 20000) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), ms);
@@ -25,7 +25,7 @@ async function parseJsonSafe(resp: Response) {
 }
 
 export async function submitLead(payloadBase: LeadPayload) {
-  // 첫 클릭 안정화를 위한 스크립트 로드 보장
+  // 혹시 모를 경합 대비: 스크립트 로드 보장
   const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
   if (siteKey) await loadRecaptcha(siteKey);
 
@@ -40,11 +40,10 @@ export async function submitLead(payloadBase: LeadPayload) {
   });
 
   const data = await parseJsonSafe(res);
-
   if (!res.ok) {
     let msg = typeof data === 'object' && data && 'error' in data ? (data as any).error : '';
     if (!msg) msg = `HTTP ${res.status} ${res.statusText || ''}`.trim();
     throw new Error(msg);
   }
-  return data; // { ok:true }
+  return data; // { ok: true }
 }
