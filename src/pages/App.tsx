@@ -8,7 +8,7 @@ import FleetSection from '../components/FleetSection';
 import LeadModal, { openLead } from '../components/LeadModal';
 import ModelDetail from '../components/ModelDetail';
 import { getVariant } from '../utils/ab';
-import { setupScrollDepth, trackEvent } from '../services/analytics'; // ✅ 이 줄 필수!
+import { setupScrollDepth, trackEvent, initAnalytics } from '../services/analytics';
 import { initThemeWatcher } from '../utils/theme';
 import { loadRecaptcha } from '../lib/recaptcha';
 
@@ -16,12 +16,13 @@ export default function App() {
   const variant = getVariant();
 
   useEffect(() => {
-    setupScrollDepth();         // ✅ 스크롤 트래킹은 App에서만 호출
+    // GA 초기화 + 스크롤 트래킹
+    initAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
+    setupScrollDepth();
     initThemeWatcher();
-
     // reCAPTCHA 프리로드(첫 클릭 실패 방지)
-    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
-    if (siteKey) loadRecaptcha(siteKey);
+    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
+    if (siteKey) loadRecaptcha(siteKey).catch(() => {});
   }, []);
 
   const primaryCta = 'Talk to Sales';
@@ -135,7 +136,7 @@ export default function App() {
                   openLead('Contact CTA');
                   trackEvent('cta_click', { where: 'contact', label: 'Talk to Sales' });
                 }}
-                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg:white dark:text-black"
+                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
               >
                 Talk to Sales
               </button>
