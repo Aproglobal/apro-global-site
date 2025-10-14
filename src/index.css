@@ -1,24 +1,15 @@
-/* src/index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* 전체 높이 유지 */
 html, body, #root { height: 100%; }
 
-/* ✅ reCAPTCHA v3 배지: 좌하단으로 이동 */
+/* ✅ reCAPTCHA v3 기본: 우하단 표시 (Google 기본 권장) */
 .grecaptcha-badge {
   position: fixed !important;
-  left: 16px !important;
-  right: auto !important;
+  right: 16px !important;
   bottom: 16px !important;
+  left: auto !important;
   z-index: 2147483647 !important;
   transform: translateZ(0);
-}
-
-@media (max-width: 480px) {
-  .grecaptcha-badge {
-    left: 12px !important;
-    bottom: 12px !important;
-  }
 }
