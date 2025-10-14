@@ -1,27 +1,29 @@
 // src/lib/recaptcha.ts
-// Vite + React 용 reCAPTCHA v3 helper (ready 보장 + 1회 로드 + 짧은 재시도)
+// ready 보장 + enterprise 호환 + execute 대기(폴링) + 1회 재시도
 
 let readyPromise: Promise<void> | null = null;
+
+function getGre() {
+  const w: any = window as any;
+  // enterprise 우선, 없으면 표준
+  return w.grecaptcha?.enterprise || w.grecaptcha;
+}
 
 function ensureReady(siteKey: string) {
   if (!readyPromise) {
     readyPromise = new Promise<void>((resolve, reject) => {
-      const g: any = (window as any).grecaptcha;
-
-      // 1) 이미 로드된 경우: 반드시 ready()로 준비 완료 보장
-      if (g?.ready) {
-        g.ready(resolve);
+      const gre = getGre();
+      if (gre?.ready) {
+        gre.ready(resolve);
         return;
       }
-
-      // 2) 아직 미로드: 스크립트 1회 주입
       const s = document.createElement("script");
       s.src = `https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(siteKey)}`;
       s.async = true;
       s.defer = true;
       s.onload = () => {
-        const gx: any = (window as any).grecaptcha;
-        if (gx?.ready) gx.ready(resolve);
+        const g2 = getGre();
+        if (g2?.ready) g2.ready(resolve);
         else reject(new Error("grecaptcha loaded but ready() missing"));
       };
       s.onerror = () => reject(new Error("reCAPTCHA script failed to load"));
@@ -31,23 +33,34 @@ function ensureReady(siteKey: string) {
   return readyPromise;
 }
 
+async function waitForExecute(maxMs = 1500) {
+  const start = Date.now();
+  while (Date.now() - start < maxMs) {
+    const gre = getGre();
+    if (gre?.execute) return gre;
+    await new Promise((r) => setTimeout(r, 50)); // 20회(약 1초) 체크
+  }
+  throw new Error("grecaptcha.execute not ready");
+}
+
 export function loadRecaptcha(siteKey: string) {
-  // 기존 API 유지: 호출 시 내부적으로 ready 보장 Promise 반환
   return ensureReady(siteKey);
 }
 
-export async function getRecaptchaToken(action = "lead") {
+export async function getRecaptchaToken(action = "lead_submit") {
   const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
   if (!siteKey) throw new Error("Missing VITE_RECAPTCHA_SITE_KEY");
 
   await ensureReady(siteKey);
+  let gre = await waitForExecute().catch(() => null);
 
-  const g: any = (window as any).grecaptcha;
   try {
-    return await g.execute(siteKey, { action });
-  } catch (e) {
-    // 아주 짧은 재시도 1회 (초기화 경합 대비)
+    gre = gre || getGre(); // 혹시 바로 준비됐으면 사용
+    return await gre.execute(siteKey, { action });
+  } catch {
+    // 아주 짧은 재시도 1회
     await new Promise((r) => setTimeout(r, 300));
-    return await g.execute(siteKey, { action });
+    gre = await waitForExecute().catch(() => getGre());
+    return await gre.execute(siteKey, { action });
   }
 }
