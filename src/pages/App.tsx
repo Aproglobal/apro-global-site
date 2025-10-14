@@ -10,29 +10,23 @@ import ModelDetail from '../components/ModelDetail';
 import { getVariant } from '../utils/ab';
 import { setupScrollDepth, trackEvent, initAnalytics } from '../services/analytics';
 import { initThemeWatcher } from '../utils/theme';
-import { loadRecaptcha, getRecaptchaToken } from '../lib/recaptcha';
+import { loadRecaptcha } from '../lib/recaptcha';
 
-// 🔹 디버그 버튼은 환경변수로 토글
-//    .env / GitHub Secrets: VITE_SHOW_RECAPTCHA_DEBUG=false
-const SHOW_RECAPTCHA_DEBUG = import.meta.env.VITE_SHOW_RECAPTCHA_DEBUG === 'true';
-
-function DebugRecaptcha() {
-  async function handleClick() {
-    try {
-      const token = await getRecaptchaToken('debug');
-      console.log('[reCAPTCHA] token:', token);
-      alert('token head: ' + token.slice(0, 40) + '...');
-    } catch (e) {
-      console.error('Recaptcha failed', e);
-      alert('Recaptcha 실패: ' + (e as Error).message);
-    }
-  }
+// ⬇️ 좌하단 작은 CTA 배지(디버그 버튼 대체)
+function LeftCtaBadge() {
   return (
     <button
-      onClick={handleClick}
-      className="fixed bottom-6 left-6 px-5 py-3 rounded-full bg-blue-600 text-white font-semibold shadow-lg z-[9999]"
+      onClick={() => {
+        openLead('Left Badge');
+        trackEvent('cta_click', { where: 'left_badge', label: 'Talk to Sales' });
+      }}
+      className="fixed bottom-6 left-6 z-[900] rounded-full px-4 py-2 text-sm font-semibold shadow-lg
+                 bg-black text-white dark:bg-white dark:text-black
+                 hover:opacity-90 focus:outline-none focus-visible:ring-2
+                 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
+      aria-label="Talk to Sales"
     >
-      🔑 Test reCAPTCHA
+      Talk to Sales
     </button>
   );
 }
@@ -41,16 +35,14 @@ export default function App() {
   const variant = getVariant();
 
   useEffect(() => {
-    // GA 초기화: VITE_GA_MEASUREMENT_ID를 우선 사용
+    // GA 초기화
     initAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
-
+    // 공통 초기화
     setupScrollDepth();
     initThemeWatcher();
-
-    // ✅ 페이지 진입 시 reCAPTCHA 스크립트 미리 로드(첫 클릭 실패 방지)
+    // reCAPTCHA 프리로드(첫 클릭 실패 방지)
     const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
     if (siteKey) loadRecaptcha(siteKey);
-    else console.warn('[reCAPTCHA] VITE_RECAPTCHA_SITE_KEY is missing');
   }, []);
 
   const primaryCta = 'Talk to Sales';
@@ -182,13 +174,13 @@ export default function App() {
         </section>
       </main>
 
-      {/* Sticky CTA */}
+      {/* Sticky CTA (우하단) — 배지와 겹치지 않게 살짝 위로 */}
       <button
         onClick={() => {
           openLead('Sticky CTA');
           trackEvent('cta_click', { where: 'sticky', label: 'Talk to Sales' });
         }}
-        className="fixed bottom-6 right-6 px-5 py-3 rounded-full bg-black text-white font-semibold shadow-lg dark:bg-white dark:text-black"
+        className="fixed bottom-[88px] right-6 px-5 py-3 rounded-full bg-black text-white font-semibold shadow-lg dark:bg-white dark:text-black"
       >
         Talk to Sales
       </button>
@@ -209,11 +201,12 @@ export default function App() {
         </div>
       </footer>
 
+      {/* 모달/디테일 */}
       <LeadModal />
       <ModelDetail />
 
-      {/* 🔹 디버그 버튼(기본 숨김) */}
-      {SHOW_RECAPTCHA_DEBUG ? <DebugRecaptcha /> : null}
+      {/* 좌하단 작은 CTA 배지 */}
+      <LeftCtaBadge />
     </div>
   );
 }
