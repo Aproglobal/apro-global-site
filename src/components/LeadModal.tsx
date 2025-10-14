@@ -3,6 +3,7 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { MODELS } from "../data/models";
 import { submitLead } from "../services/lead";
+import { loadRecaptcha } from "../lib/recaptcha"; // ✅ 추가: 제출 직전 ready 보장
 
 /** 이벤트 payload 타입 */
 export type LeadOpenDetail = { source?: string; modelCode?: string };
@@ -72,6 +73,16 @@ export default function LeadModal() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (loading) return; // 중복 제출 방지
+
+    // ✅ 제출 직전: reCAPTCHA 스크립트 로드 & ready 보장 (첫 클릭 실패 차단)
+    const key = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
+    if (key) await loadRecaptcha(key);
+    const gre: any = (window as any).grecaptcha?.enterprise || (window as any).grecaptcha;
+    if (!gre?.execute) {
+      await new Promise((r) => (gre?.ready ? gre.ready(r) : setTimeout(r, 120)));
+    }
+
     const form = e.currentTarget;
     const formData = new FormData(form);
 
