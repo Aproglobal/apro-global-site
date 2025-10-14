@@ -1,4 +1,5 @@
-// ready 보장 + enterprise 호환 + execute 대기(폴링) + 짧은 재시도
+// src/lib/recaptcha.ts
+// reCAPTCHA v3 loader (enterprise 우선), ready 보장 + execute 대기 + 1회 재시도
 
 let readyPromise: Promise<void> | null = null;
 
@@ -31,12 +32,12 @@ function ensureReady(siteKey: string) {
   return readyPromise;
 }
 
-async function waitForExecute(maxMs = 2000) {
+async function waitForExecute(maxMs = 1500) {
   const start = Date.now();
   while (Date.now() - start < maxMs) {
     const gre = getGre();
-    if (typeof gre?.execute === "function") return gre;
-    await new Promise((r) => setTimeout(r, 100));
+    if (gre?.execute) return gre;
+    await new Promise((r) => setTimeout(r, 50));
   }
   throw new Error("grecaptcha.execute not ready");
 }
@@ -50,13 +51,14 @@ export async function getRecaptchaToken(action = "lead_submit") {
   if (!siteKey) throw new Error("Missing VITE_RECAPTCHA_SITE_KEY");
 
   await ensureReady(siteKey);
-  let gre = await waitForExecute().catch(() => null);
+  let gre: any = await waitForExecute().catch(() => null);
 
-  if (!gre) {
-    // 아주 짧은 재시도 1회
-    await new Promise((r) => setTimeout(r, 500));
+  try {
+    gre = gre || getGre();
+    return await gre.execute(siteKey, { action });
+  } catch {
+    await new Promise((r) => setTimeout(r, 300));
     gre = await waitForExecute().catch(() => getGre());
+    return await gre.execute(siteKey, { action });
   }
-
-  return await gre.execute(siteKey, { action });
 }
