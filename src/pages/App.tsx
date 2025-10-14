@@ -8,7 +8,7 @@ import FleetSection from '../components/FleetSection';
 import LeadModal, { openLead } from '../components/LeadModal';
 import ModelDetail from '../components/ModelDetail';
 import { getVariant } from '../utils/ab';
-import { setupScrollDepth, trackEvent, initAnalytics } from '../services/analytics';
+import { initAnalytics, setupScrollDepth, trackEvent } from '../services/analytics';
 import { initThemeWatcher } from '../utils/theme';
 import { loadRecaptcha } from '../lib/recaptcha';
 
@@ -16,13 +16,14 @@ export default function App() {
   const variant = getVariant();
 
   useEffect(() => {
-    // GA 초기화 + 스크롤 트래킹
+    // GA (index.html 스니펫이 없는 환경까지 커버)
     initAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
     setupScrollDepth();
     initThemeWatcher();
-    // reCAPTCHA 프리로드(첫 클릭 실패 방지)
-    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
-    if (siteKey) loadRecaptcha(siteKey).catch(() => {});
+
+    // reCAPTCHA 프리로드: 첫 클릭에서 execute 미준비 문제 방지
+    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
+    if (siteKey) loadRecaptcha(siteKey);
   }, []);
 
   const primaryCta = 'Talk to Sales';
@@ -154,7 +155,7 @@ export default function App() {
         </section>
       </main>
 
-      {/* Sticky CTA — 우하단 유지 */}
+      {/* Sticky CTA — 우하단 고정 (배지는 좌하단으로 이동시켰음) */}
       <button
         onClick={() => {
           openLead('Sticky CTA');
