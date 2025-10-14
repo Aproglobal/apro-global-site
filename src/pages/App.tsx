@@ -10,18 +10,19 @@ import ModelDetail from '../components/ModelDetail';
 import { getVariant } from '../utils/ab';
 import { setupScrollDepth, trackEvent } from '../services/analytics';
 import { initThemeWatcher } from '../utils/theme';
-import { getRecaptchaToken } from '../lib/recaptcha';   // ★ 추가
+import { loadRecaptcha, getRecaptchaToken } from '../lib/recaptcha'; // preload만 실사용
 
-// 🔹 디버그 버튼 컴포넌트
+// 🔹 디버그 버튼은 환경변수로 토글 (기본 숨김)
+//    .env / GitHub Secrets: VITE_SHOW_RECAPTCHA_DEBUG=false
+const SHOW_RECAPTCHA_DEBUG = import.meta.env.VITE_SHOW_RECAPTCHA_DEBUG === 'true';
+
 function DebugRecaptcha() {
   async function handleClick() {
     try {
-      const token = await getRecaptchaToken("lead");
-      console.log("reCAPTCHA token:", token);
-      alert("토큰 앞부분: " + token.substring(0, 40) + "...");
+      const token = await getRecaptchaToken('debug');
+      alert('token head: ' + token.slice(0, 40) + '...');
     } catch (e) {
-      console.error("Recaptcha failed", e);
-      alert("Recaptcha 실패: " + (e as Error).message);
+      alert('Recaptcha 실패: ' + (e as Error).message);
     }
   }
   return (
@@ -40,6 +41,11 @@ export default function App() {
   useEffect(() => {
     setupScrollDepth();
     initThemeWatcher();
+
+    // ✅ 페이지 진입 시 reCAPTCHA 스크립트 미리 로드(첫 제출 지연/실패 방지)
+    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
+    if (siteKey) loadRecaptcha(siteKey);
+    else console.warn('[reCAPTCHA] VITE_RECAPTCHA_SITE_KEY is missing');
   }, []);
 
   const primaryCta = 'Talk to Sales';
@@ -57,7 +63,7 @@ export default function App() {
               className="absolute inset-0 w-full h-full object-cover"
               alt="APRO Golf Carts"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/30 to-transparent dark:from-black dark:via-black/30 dark:to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-white via-white/30 to-transparent dark:from-black dark:via-black/30 dark:to-transparent" />
             <div className="relative z-10 max-w-6xl mx-auto px-5 h-full flex flex-col justify-end pb-14">
               <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
                 Electric Carts for Modern Courses
@@ -153,7 +159,7 @@ export default function App() {
                   openLead('Contact CTA');
                   trackEvent('cta_click', { where: 'contact', label: 'Talk to Sales' });
                 }}
-                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
+                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg:white dark:text-black"
               >
                 Talk to Sales
               </button>
@@ -201,8 +207,8 @@ export default function App() {
       <LeadModal />
       <ModelDetail />
 
-      {/* 🔹 디버깅 버튼 */}
-      <DebugRecaptcha />
+      {/* 🔹 디버그 버튼(기본 숨김) */}
+      {SHOW_RECAPTCHA_DEBUG ? <DebugRecaptcha /> : null}
     </div>
   );
 }
