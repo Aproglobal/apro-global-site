@@ -8,7 +8,6 @@ import FleetSection from '../components/FleetSection';
 import LeadModal, { openLead } from '../components/LeadModal';
 import ModelDetail from '../components/ModelDetail';
 import { getVariant } from '../utils/ab';
-import { setupScrollDepth, trackEvent, initAnalytics } from '../services/analytics';
 import { initThemeWatcher } from '../utils/theme';
 import { loadRecaptcha } from '../lib/recaptcha';
 
@@ -16,7 +15,6 @@ export default function App() {
   const variant = getVariant();
 
   useEffect(() => {
-    initAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
     setupScrollDepth();
     initThemeWatcher();
     // reCAPTCHA 프리로드(첫 클릭 실패 방지)
