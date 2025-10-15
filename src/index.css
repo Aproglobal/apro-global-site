@@ -3,3 +3,13 @@
 @tailwind utilities;
 
 html, body, #root { height: 100%; }
+
+/* ✅ reCAPTCHA v3 기본: 우하단 표시 (Google 기본 권장) */
+.grecaptcha-badge {
+  position: fixed !important;
+  right: 16px !important;
+  bottom: 16px !important;
+  left: auto !important;
+  z-index: 2147483647 !important;
+  transform: translateZ(0);
+}

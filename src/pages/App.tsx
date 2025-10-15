@@ -8,38 +8,21 @@ import FleetSection from '../components/FleetSection';
 import LeadModal, { openLead } from '../components/LeadModal';
 import ModelDetail from '../components/ModelDetail';
 import { getVariant } from '../utils/ab';
-import { setupScrollDepth, trackEvent } from '../services/analytics';
+import { setupScrollDepth, trackEvent, initAnalytics } from '../services/analytics';
 import { initThemeWatcher } from '../utils/theme';
-import { getRecaptchaToken } from '../lib/recaptcha';   // ★ 추가
-
-// 🔹 디버그 버튼 컴포넌트
-function DebugRecaptcha() {
-  async function handleClick() {
-    try {
-      const token = await getRecaptchaToken("lead");
-      console.log("reCAPTCHA token:", token);
-      alert("토큰 앞부분: " + token.substring(0, 40) + "...");
-    } catch (e) {
-      console.error("Recaptcha failed", e);
-      alert("Recaptcha 실패: " + (e as Error).message);
-    }
-  }
-  return (
-    <button
-      onClick={handleClick}
-      className="fixed bottom-6 left-6 px-5 py-3 rounded-full bg-blue-600 text-white font-semibold shadow-lg z-[9999]"
-    >
-      🔑 Test reCAPTCHA
-    </button>
-  );
-}
+import { loadRecaptcha } from '../lib/recaptcha';
 
 export default function App() {
   const variant = getVariant();
 
   useEffect(() => {
+    initAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
     setupScrollDepth();
     initThemeWatcher();
+
+    // ✅ v3 reCAPTCHA 미리 로드 (첫 클릭 실패 방지)
+    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
+    if (siteKey) loadRecaptcha(siteKey);
   }, []);
 
   const primaryCta = 'Talk to Sales';
@@ -48,6 +31,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
       <Header />
+
       <main className="pt-16">
         {/* HERO */}
         <section id="home" className="relative">
@@ -65,6 +49,7 @@ export default function App() {
               <p className="mt-3 max-w-2xl text-zinc-700 dark:text-zinc-200">
                 Premium guidance, flexible seating, and dependable service across APAC.
               </p>
+
               <div className="mt-6 flex gap-3">
                 <button
                   onClick={() => {
@@ -75,6 +60,7 @@ export default function App() {
                 >
                   {primaryCta}
                 </button>
+
                 {secondaryCta === 'Explore models' ? (
                   <a
                     href="#models"
@@ -147,6 +133,7 @@ export default function App() {
               </a>{' '}
               or open the form above.
             </p>
+
             <div className="mt-6 flex gap-3">
               <button
                 onClick={() => {
@@ -157,6 +144,7 @@ export default function App() {
               >
                 Talk to Sales
               </button>
+
               <a
                 href="/brochure.pdf"
                 onClick={() =>
@@ -171,13 +159,22 @@ export default function App() {
         </section>
       </main>
 
-      {/* Sticky CTA */}
+      {/* ✅ Sticky CTA - reCAPTCHA 배지(우하단) 위로 올리기 */}
       <button
         onClick={() => {
           openLead('Sticky CTA');
           trackEvent('cta_click', { where: 'sticky', label: 'Talk to Sales' });
         }}
-        className="fixed bottom-6 right-6 px-5 py-3 rounded-full bg-black text-white font-semibold shadow-lg dark:bg-white dark:text-black"
+        aria-label="Talk to Sales"
+        className="
+          fixed
+          bottom-[96px]   /* 배지와 겹치지 않게 96px 띄움 */
+          right-6          /* 기본 우측 정렬 */
+          px-5 py-3 rounded-full
+          bg-black text-white font-semibold shadow-lg
+          dark:bg-white dark:text-black
+          z-40
+        "
       >
         Talk to Sales
       </button>
@@ -191,8 +188,8 @@ export default function App() {
             </h3>
             <p className="mt-1">KUKJE INTERTRADE Co., Ltd.</p>
             <p className="mt-1">
-              Address: Floor 12, 124, Sagimakgol-ro, Jungwon-gu, Seongnam-si,
-              Gyeonggi-do, Republic of Korea
+              Address: Floor 12, 124, Sagimakgol-ro, Jungwon-gu,
+              Seongnam-si, Gyeonggi-do, Republic of Korea
             </p>
           </div>
         </div>
@@ -200,9 +197,6 @@ export default function App() {
 
       <LeadModal />
       <ModelDetail />
-
-      {/* 🔹 디버깅 버튼 */}
-      <DebugRecaptcha />
     </div>
   );
 }

@@ -1,39 +1,49 @@
 // src/services/lead.ts
-import { getRecaptchaToken } from '../lib/recaptcha';
-
-const FUNCTION_URL = 'https://lead-a7jbvsgtiq-uc.a.run.app'; // 기존 원격 함수 URL
+import { getRecaptchaToken, loadRecaptcha } from '../lib/recaptcha';
 
 export type LeadPayload = Record<string, any>;
 
+// 동일 오리진 호출 (Firebase Hosting rewrite 사용)
+const API_PATH = '/api/lead';
+
+async function fetchWithTimeout(input: RequestInfo, init: RequestInit = {}, ms = 20000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
+
+async function parseJsonSafe(resp: Response) {
+  try {
+    return await resp.json();
+  } catch {
+    return await resp.text();
+  }
+}
+
 export async function submitLead(payloadBase: LeadPayload) {
-  // reCAPTCHA 토큰 얻기 (v3)
-  const token = await getRecaptchaToken('lead');
-  console.log("✅ [DEBUG] reCAPTCHA token:", token); // 👈 토큰 확인 로그
+  // 혹시 모를 경합 대비: 스크립트 로드 보장
+  const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
+  if (siteKey) await loadRecaptcha(siteKey);
 
+  // v3 토큰 확보
+  const token = await getRecaptchaToken('lead_submit');
   const payload = { ...payloadBase, recaptchaToken: token };
-  console.log("✅ [DEBUG] Payload to submit:", payload); // 👈 전체 payload 확인
 
-  const res = await fetch(FUNCTION_URL, {
+  const res = await fetchWithTimeout(API_PATH, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest',
-    },
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify(payload),
   });
 
-  const text = await res.text();
-  try {
-    const json = JSON.parse(text);
-    if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
-    console.log("✅ [DEBUG] Server response:", json); // 👈 서버 응답 로그
-    return json;
-  } catch (e) {
-    if (!res.ok) {
-      console.error("❌ [DEBUG] Server error response:", text);
-      throw new Error(text || `HTTP ${res.status}`);
-    }
-    return text;
+  const data = await parseJsonSafe(res);
+  if (!res.ok) {
+    let msg = typeof data === 'object' && data && 'error' in data ? (data as any).error : '';
+    if (!msg) msg = `HTTP ${res.status} ${res.statusText || ''}`.trim();
+    throw new Error(msg);
   }
+  return data; // { ok: true }
 }

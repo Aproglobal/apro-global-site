@@ -1,16 +1,12 @@
 // src/components/LeadModal.tsx
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { MODELS } from "../data/models";
 import { submitLead } from "../services/lead";
+import { loadRecaptcha } from "../lib/recaptcha";
 
-/** 이벤트 payload 타입 */
 export type LeadOpenDetail = { source?: string; modelCode?: string };
 
-/** ---- Public API (오버로드 지원) ----
- *  1) openLead(source?: string)
- *  2) openLead(source?: string, payload?: { modelCode?: string })
- */
 export function openLead(source?: string): void;
 export function openLead(source?: string, payload?: { modelCode?: string }): void;
 export function openLead(source?: string, payload?: { modelCode?: string }) {
@@ -22,7 +18,6 @@ export function closeLead() {
   window.dispatchEvent(new CustomEvent("lead:close"));
 }
 
-/** 싱글톤 모달: App.tsx에서 <LeadModal /> 한 번만 렌더 */
 export default function LeadModal() {
   const [open, setOpen] = useState(false);
   const [source, setSource] = useState<string>("");
@@ -30,6 +25,8 @@ export default function LeadModal() {
 
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
+
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   const selectedModel = useMemo(
     () => MODELS.find((m) => m.code === modelCode) || null,
@@ -39,6 +36,25 @@ export default function LeadModal() {
   const onEsc = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") setOpen(false);
   }, []);
+
+  // 모달 열릴 때 reCAPTCHA 선로드(+ ready 보장) → 첫 클릭 딜레이 제거
+  useEffect(() => {
+    if (!open) return;
+    const key = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
+    (async () => {
+      if (!key) return;
+      try {
+        await loadRecaptcha(key);
+        const gre: any =
+          (window as any).grecaptcha?.enterprise || (window as any).grecaptcha;
+        if (gre?.ready) {
+          await new Promise<void>((r) => gre.ready(r));
+        }
+      } catch {
+        /* no-op: 캡차 미사용 환경에서도 동작 */
+      }
+    })();
+  }, [open]);
 
   useEffect(() => {
     const handleOpen = (e: Event) => {
@@ -70,22 +86,61 @@ export default function LeadModal() {
 
   if (!open) return null;
 
+  const getRecaptchaToken = async (action: string) => {
+    const key = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
+    if (!key) return "";
+    try {
+      await loadRecaptcha(key);
+      const gre: any =
+        (window as any).grecaptcha?.enterprise || (window as any).grecaptcha;
+      if (!gre?.ready) return "";
+      await new Promise<void>((r) => gre.ready(r));
+      if (typeof gre.execute === "function") {
+        const token = await gre.execute(key, { action });
+        return typeof token === "string" ? token : "";
+      }
+      return "";
+    } catch {
+      return "";
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const form = e.currentTarget;
-    const formData = new FormData(form);
+    if (loading) return;
 
-    const basePayload = {
-      name:
-        (formData.get("firstName") as string) +
-        " " +
-        (formData.get("lastName") as string),
-      email: formData.get("email"),
-      phone: formData.get("phone"),
-      company: formData.get("company"),
-      message: formData.get("message"),
-      modelCode: formData.get("modelCode"),
-      source: formData.get("source") || "Unknown",
+    setStatusMsg(null);
+
+    // 항상 실제 form 엘리먼트에서 FormData 생성
+    const formEl = formRef.current ?? e.currentTarget;
+    const fd = new FormData(formEl);
+
+    // 값 안전 처리
+    const firstName = String(fd.get("firstName") || "").trim();
+    const lastName = String(fd.get("lastName") || "").trim();
+    const email = String(fd.get("email") || "").trim();
+    const phone = String((fd.get("phone") ?? "") as string).trim();
+    const company = String(fd.get("company") || "").trim();
+    const message = String(fd.get("message") || "").trim();
+    const selModelCode = String(fd.get("modelCode") || "");
+    const src = String(fd.get("source") || source || "Unknown");
+
+    if (!firstName || !lastName || !email || !company) {
+      setStatusMsg("필수 항목을 확인해주세요.");
+      return;
+    }
+
+    // 제출 직전 토큰 발급 (첫 클릭 실패 방지)
+    const token = await getRecaptchaToken("lead_email");
+
+    const payload = {
+      name: [firstName, lastName].filter(Boolean).join(" "),
+      email,
+      phone,
+      company,
+      message,
+      modelCode: selModelCode,
+      source: src,
       type: "lead",
       site: location.hostname,
       country: "KR",
@@ -97,19 +152,22 @@ export default function LeadModal() {
       userAgent: navigator.userAgent,
       locale: navigator.language,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      recaptchaToken: token,
     };
 
     try {
       setLoading(true);
-      setStatusMsg(null);
-      const resp = await submitLead(basePayload);
-      console.log("✅ Lead submitted", resp);
+      await submitLead(payload);
       setStatusMsg("제출이 완료되었습니다. 감사합니다.");
-      form.reset();
+      formEl.reset();
       setOpen(false);
     } catch (err: any) {
       console.error("❌ Lead submit failed", err);
-      setStatusMsg(err?.message || "제출 중 오류가 발생했습니다.");
+      const msg =
+        err?.body?.data?.message ||
+        err?.message ||
+        "제출 중 오류가 발생했습니다.";
+      setStatusMsg(msg);
     } finally {
       setLoading(false);
     }
@@ -161,7 +219,7 @@ export default function LeadModal() {
           </div>
 
           {/* Form */}
-          <form className="p-6" onSubmit={handleSubmit}>
+          <form ref={formRef} className="p-6" onSubmit={handleSubmit}>
             <div className="grid gap-3">
               {/* 이름 */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -236,13 +294,14 @@ export default function LeadModal() {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
+                className="px-5 py-3 rounded-full bg-black text-white font-semibold disabled:opacity-60 dark:bg-white dark:text-black"
               >
                 {loading ? "Submitting..." : "Continue in email"}
               </button>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
+                disabled={loading}
                 className="px-5 py-3 rounded-full border border-zinc-300 dark:border-zinc-700"
               >
                 Cancel

@@ -12,7 +12,8 @@ jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
     concurrency:
-      group: deploy-${{ github.ref }}
+      # 라이브로 항상 배포하므로 브랜치 상관없이 단일 파이프라인만 실행되게 고정
+      group: deploy-live
       cancel-in-progress: true
 
     steps:
@@ -31,7 +32,7 @@ jobs:
           VITE_SALES_EMAIL=${{ secrets.VITE_SALES_EMAIL }}
           VITE_GA_MEASUREMENT_ID=${{ secrets.VITE_GA_MEASUREMENT_ID }}
           VITE_AB_DEFAULT=A
-          VITE_RECAPTCHA_SITE_KEY=${{ secrets.VITE_RECAPTCHA_SITE_KEY }}   # ✅ 추가
+          VITE_RECAPTCHA_SITE_KEY=${{ secrets.VITE_RECAPTCHA_SITE_KEY }}
           EOF
           echo ".env file created (values hidden):"
           cat .env | sed 's/=\(.*\)/=[HIDDEN]/'
@@ -58,23 +59,6 @@ jobs:
             echo "❌ GA ID NOT found in dist/index.html"; exit 1
           fi
 
-      - name: Compute deploy channel
-        id: channel
-        shell: bash
-        run: |
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            echo "channel=live" >> "$GITHUB_OUTPUT"
-          else
-            ref="${{ github.ref_name }}"
-            channel=$(echo "$ref" \
-              | tr '[:upper:]' '[:lower:]' \
-              | sed 's/[^a-z0-9-]/-/g; s/^-//; s/-$//; s/--*/-/g' \
-              | cut -c1-36)
-            if [ -z "$channel" ]; then channel="preview"; fi
-            echo "channel=$channel" >> "$GITHUB_OUTPUT"
-          fi
-          echo "Deploy channel: $(cat $GITHUB_OUTPUT)"
-
       # ---- Functions: 모든 브랜치에서 실행 ----
       - name: Sync & Deploy Firebase Functions
         shell: bash
@@ -84,8 +68,8 @@ jobs:
           SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
           SALES_TO: ${{ secrets.SALES_TO }}
           SENDGRID_FROM: ${{ secrets.SENDGRID_FROM }}
-          SALES_BCC: ${{ secrets.SALES_BCC }}                # 비어있을 수 있음
-          RECAPTCHA_SECRET: ${{ secrets.RECAPTCHA_SECRET }}  # ✅ 추가
+          SALES_BCC: ${{ secrets.SALES_BCC }}
+          RECAPTCHA_SECRET: ${{ secrets.RECAPTCHA_SECRET }}
         run: |
           set -euo pipefail
 
@@ -94,7 +78,7 @@ jobs:
           [ -z "${SENDGRID_API_KEY:-}" ]  && missing+=("SENDGRID_API_KEY")
           [ -z "${SALES_TO:-}" ]         && missing+=("SALES_TO")
           [ -z "${SENDGRID_FROM:-}" ]    && missing+=("SENDGRID_FROM")
-          [ -z "${RECAPTCHA_SECRET:-}" ] && missing+=("RECAPTCHA_SECRET")   # ✅ 추가
+          [ -z "${RECAPTCHA_SECRET:-}" ] && missing+=("RECAPTCHA_SECRET")
           if [ ${#missing[@]} -gt 0 ]; then
             echo "🟡 Skipping functions deploy. Missing secrets: ${missing[*]}"
             exit 0
@@ -123,8 +107,8 @@ jobs:
           sync_secret SENDGRID_API_KEY
           sync_secret SALES_TO
           sync_secret SENDGRID_FROM
-          sync_secret SALES_BCC          # <= 비어있어도 placeholder로 생성
-          sync_secret RECAPTCHA_SECRET   # ✅ 추가 (이번 실패 원인)
+          sync_secret SALES_BCC
+          sync_secret RECAPTCHA_SECRET
 
           # 4) Functions 빌드 & 배포
           pushd functions
@@ -132,13 +116,15 @@ jobs:
           npm run build
           popd
 
-          firebase deploy --only functions --project "$FIREBASE_PROJECT_ID" --non-interactive --force
+          firebase deploy --only functions \
+            --project "$FIREBASE_PROJECT_ID" \
+            --non-interactive --force
 
-      - name: Deploy to Firebase Hosting
+      # ---- Hosting: 항상 live로 배포 ----
+      - name: Deploy to Firebase Hosting (LIVE)
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
-          channelId: ${{ steps.channel.outputs.channel }}
-          expires: 7d
+          channelId: live
