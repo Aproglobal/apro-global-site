@@ -1,22 +1,12 @@
 // src/components/TechSection.tsx
 import React from "react";
 import { TECH_SECTIONS } from "../data/tech";
-import { openLead } from "./LeadModal";
 
 export default function TechSection() {
   return (
     <section id="technology" className="py-20 bg-white text-black dark:bg-black dark:text-white">
       <div className="max-w-6xl mx-auto px-5">
-        <div className="flex items-end justify-between gap-4">
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Technology</h2>
-          <button
-            onClick={() => openLead('Technology CTA')}
-            className="hidden md:inline-flex px-4 py-2 rounded-full bg-black text-white dark:bg-white dark:text-black"
-          >
-            Talk to Sales
-          </button>
-        </div>
-
+        <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Technology</h2>
         <p className="mt-2 text-zinc-700 dark:text-zinc-300 max-w-3xl">
           A practical stack for real courses: consistent routing, predictable operations, and maintainable hardware.
           Details vary by model and site plan—ask us for a tailored blueprint.
@@ -51,15 +41,6 @@ export default function TechSection() {
               </div>
             </article>
           ))}
-        </div>
-
-        <div className="mt-8 md:hidden">
-          <button
-            onClick={() => openLead('Technology CTA (mobile)')}
-            className="w-full px-5 py-3 rounded-full bg-black text-white dark:bg-white dark:text-black"
-          >
-            Talk to Sales
-          </button>
         </div>
       </div>
     </section>
