@@ -2,42 +2,56 @@
 
 type EventParams = Record<string, any>;
 
-function ga() {
-  return typeof window !== "undefined" ? window.gtag : undefined;
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void;
+    __GA_ID__?: string; // 런타임 폴백
+  }
 }
 
-/** GA4 초기화 – VITE_GA_MEASUREMENT_ID만 사용 */
+const getGtag = () => (typeof window !== "undefined" ? window.gtag : undefined);
+const isAllowedHost = () => {
+  if (typeof window === "undefined") return false;
+  const h = window.location.hostname;
+  return (
+    h === "apro.kukjeint.com" ||
+    h.endsWith(".web.app") ||
+    h.endsWith(".firebaseapp.com") ||
+    h === "localhost"
+  );
+};
+const getGaId = () =>
+  (import.meta as any)?.env?.VITE_GA_MEASUREMENT_ID ||
+  (typeof window !== "undefined" ? window.__GA_ID__ : undefined);
+
+/** GA4 초기화 */
 export function initAnalytics(measurementId?: string): Promise<void> {
   if (typeof window === "undefined") return Promise.resolve();
+  if (!isAllowedHost()) return Promise.resolve(); // 허용 외 호스트는 조용히 패스
 
-  const id = measurementId ?? (import.meta as any)?.env?.VITE_GA_MEASUREMENT_ID;
+  const id = measurementId ?? getGaId();
   if (!id) {
     console.warn("[analytics] Missing VITE_GA_MEASUREMENT_ID.");
     return Promise.resolve();
   }
-
-  // 전역 선언 충돌 방지: 존재할 때만 호출
-  ga()?.("js", new Date() as any);
-  ga()?.("config", id);
-
+  const g = getGtag();
+  g?.("js", new Date() as any);
+  g?.("config", id);
   return Promise.resolve();
 }
 
 /** 공통 이벤트 */
 export function trackEvent(eventName: string, params?: EventParams) {
-  ga()?.("event", eventName, params ?? {});
+  getGtag()?.("event", eventName, params ?? {});
 }
 
 /** 페이지뷰 */
 export function trackPageView(path?: string) {
-  const g = ga();
+  const g = getGtag();
   if (!g) return;
-
   const href = typeof window !== "undefined" ? window.location.href : path;
   const pagePath =
-    path ??
-    (typeof window !== "undefined" ? window.location.pathname : undefined);
-
+    path ?? (typeof window !== "undefined" ? window.location.pathname : undefined);
   g("event", "page_view", {
     page_location: href,
     page_path: pagePath,
@@ -45,7 +59,7 @@ export function trackPageView(path?: string) {
   });
 }
 
-/** SPA 페이지뷰 */
+/** SPA 페이지뷰(옵션) */
 export function setupSpaPageviews(routerOrGetter?: any) {
   if (typeof window === "undefined") return;
 
@@ -83,7 +97,7 @@ export function setupSpaPageviews(routerOrGetter?: any) {
   window.addEventListener("popstate", () => send());
 }
 
-/** 스크롤 깊이 */
+/** 스크롤 깊이(옵션) */
 export function setupScrollDepth(
   breakpoints: number[] = [25, 50, 75, 100],
   eventName = "scroll_depth"
