@@ -72,10 +72,10 @@ export default function ModelDetail() {
 
   return (
     <div className="fixed inset-0 z-50">
-      {/* Overlay (클릭 시 닫힘) */}
+      {/* Overlay */}
       <div className="absolute inset-0 bg-black/70" onClick={() => setOpen(false)} aria-hidden />
 
-      {/* Content (스크롤 가능) */}
+      {/* Content */}
       <div className="fixed inset-0 overflow-y-auto p-4 sm:p-6">
         <div
           className="mx-auto my-4 sm:my-8 w-full max-w-5xl rounded-2xl bg-white text-black shadow-xl dark:bg-zinc-900 dark:text-white"
@@ -83,7 +83,7 @@ export default function ModelDetail() {
           aria-modal="true"
           aria-labelledby="model-detail-title"
         >
-          {/* Sticky Header: 모바일에서 X 버튼 항상 보이도록 */}
+          {/* Sticky Header */}
           <div className="sticky top-0 z-10 flex items-center gap-3 p-3 sm:p-4 bg-white/80 dark:bg-zinc-900/80 backdrop-blur border-b border-zinc-200 dark:border-zinc-800">
             <h3 id="model-detail-title" className="flex-1 text-base sm:text-lg font-bold">
               {model.name}
@@ -109,18 +109,19 @@ export default function ModelDetail() {
 
           {/* Body */}
           <div className="grid md:grid-cols-2">
-            {/* 이미지 영역: 모바일은 object-contain + 16:9, 데스크톱은 object-cover */}
+            {/* 이미지: 항상 object-contain + 고정 16:9 비율(데스크탑도 동일) */}
             <div className="relative bg-black">
-              <div className="w-full aspect-[16/9] md:aspect-auto md:h-full">
+              <div className="w-full aspect-[16/9]">
                 <img
                   src={imgs[imgIdx]}
                   alt={model.name}
-                  className="w-full h-full object-contain md:object-cover"
+                  className="w-full h-full object-contain select-none"
+                  draggable={false}
                 />
               </div>
 
-              {/* 인디케이터: 모바일은 이미지 아래에, 데스크톱은 오버레이로 */}
-              <div className="flex justify-center gap-2 py-2 md:py-0 md:absolute md:bottom-3 md:left-1/2 md:-translate-x-1/2">
+              {/* 인디케이터 */}
+              <div className="flex justify-center gap-2 py-2 md:absolute md:bottom-3 md:left-1/2 md:-translate-x-1/2">
                 {imgs.map((_, i) => (
                   <button
                     key={i}
@@ -138,7 +139,6 @@ export default function ModelDetail() {
 
             {/* 스펙/CTA */}
             <div className="p-4 sm:p-6">
-              {/* 제목은 헤더에 있으므로 본문에선 보조 정보만 */}
               <p className="text-sm text-zinc-600 dark:text-zinc-300">
                 {model.guidance} • {model.seats} seats {model.deck ? `• ${model.deck} deck` : ''}{' '}
                 {model.variant ? `• ${model.variant}` : ''} {model.reverse ? '• Reverse Seating' : ''}
