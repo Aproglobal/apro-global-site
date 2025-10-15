@@ -1,14 +1,12 @@
-// src/services/lead.ts
+/* src/services/lead.ts */
 export type LeadPayload = Record<string, any>;
 
-// 동일 오리진 호출 (Firebase Hosting rewrite 사용)
-const API_PATH = "/api/lead";
+const API_PATH =
+  (import.meta as any)?.env?.VITE_FUNCTION_BASE
+    ? `${(import.meta as any).env.VITE_FUNCTION_BASE}/lead`
+    : "/api/lead";
 
-async function fetchWithTimeout(
-  input: RequestInfo,
-  init: RequestInit = {},
-  ms = 20000
-) {
+async function fetchWithTimeout(input: RequestInfo, init: RequestInit = {}, ms = 20000) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), ms);
   try {
@@ -18,38 +16,40 @@ async function fetchWithTimeout(
   }
 }
 
-async function parseJsonSafe(resp: Response) {
+async function readBodySafe(resp: Response) {
+  const copy = resp.clone(); // ✅ 복제본에서만 읽기 (body stream 에러 방지)
   try {
-    return await resp.json();
+    return await copy.json();
   } catch {
-    return await resp.text();
+    try {
+      return await copy.text();
+    } catch {
+      return null;
+    }
   }
 }
 
-/**
- * 서버에 Lead 데이터 전송 (이미 reCAPTCHA 토큰/필드 포함)
- * - LeadModal에서 recaptchaToken 생성 후 넘겨줌
- * - 여기서는 네트워크 전송만 담당
- */
-export async function submitLead(payloadBase: LeadPayload) {
+export async function submitLead(payload: LeadPayload) {
   const res = await fetchWithTimeout(API_PATH, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(payloadBase),
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(payload),
   });
 
-  const data = await parseJsonSafe(res);
+  const data = await readBodySafe(res);
 
   if (!res.ok) {
-    let msg =
-      typeof data === "object" && data && "error" in (data as any)
-        ? (data as any).error
-        : "";
-    if (!msg) msg = `HTTP ${res.status} ${res.statusText || ""}`.trim();
-    throw new Error(msg);
+    const statusMsg = `HTTP ${res.status}${res.statusText ? " " + res.statusText : ""}`;
+    const serverMsg =
+      (data && typeof data === "object" && (data as any).error) ||
+      (data && typeof data === "object" && (data as any).message) ||
+      (typeof data === "string" ? data.slice(0, 300) : "") ||
+      "";
+    const msg = serverMsg || statusMsg;
+    const err: any = new Error(msg);
+    err.status = res.status;
+    err.body = data;
+    throw err;
   }
 
   return data; // { ok: true }
