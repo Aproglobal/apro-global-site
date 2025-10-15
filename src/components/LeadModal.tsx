@@ -5,6 +5,12 @@ import { MODELS } from "../data/models";
 import { submitLead } from "../services/lead";
 import { loadRecaptcha, getRecaptchaToken } from "../lib/recaptcha";
 
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void;
+  }
+}
+
 export type LeadOpenDetail = { source?: string; modelCode?: string };
 
 export function openLead(source?: string): void;
@@ -37,7 +43,7 @@ export default function LeadModal() {
     if (e.key === "Escape") setOpen(false);
   }, []);
 
-  // 모달 열릴 때 reCAPTCHA 선로드(+ ready) → 첫 클릭 딜레이 제거
+  // 모달 열릴 때 reCAPTCHA 선로드(+ ready 보장) → 첫 클릭 딜레이 제거
   useEffect(() => {
     if (!open) return;
     const key = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
@@ -45,16 +51,21 @@ export default function LeadModal() {
       if (!key) return;
       try {
         await loadRecaptcha(key);
-        const gre: any =
-          (window as any).grecaptcha?.enterprise || (window as any).grecaptcha;
-        if (gre?.ready) {
-          await new Promise<void>((r) => gre.ready(r));
-        }
       } catch {
-        /* 미사용 환경에서도 동작 */
+        /* 캡차 미사용 환경에서도 동작 */
       }
     })();
   }, [open]);
+
+  // 모달 오픈 이벤트 (GA4)
+  useEffect(() => {
+    if (!open) return;
+    window.gtag?.("event", "lead_open", {
+      event_category: "lead",
+      source: source || "(unknown)",
+      model_code: modelCode || "(none)",
+    });
+  }, [open, source, modelCode]);
 
   useEffect(() => {
     const handleOpen = (e: Event) => {
@@ -105,7 +116,7 @@ export default function LeadModal() {
     const message = String(fd.get("message") || "").trim();
     const selModelCode = String(fd.get("modelCode") || "");
     const src = String(fd.get("source") || source || "Unknown");
-    const website = String(fd.get("website") || ""); // 허니팟
+    const website = String(fd.get("website") || ""); // 허니팟(있으면 서버에서 400)
 
     // 프론트 1차 유효성
     if (!firstName || !lastName || !email || !company) {
@@ -118,11 +129,11 @@ export default function LeadModal() {
     try {
       recaptchaToken = await getRecaptchaToken("lead_email");
     } catch {
-      // no-op (서버에서 토큰 누락 시 400 처리)
+      // no-op — 서버에서 누락 시 400
     }
 
     const payload = {
-      // ✅ 서버 필수: firstName, lastName, email, company, recaptchaToken
+      // 서버 필수
       firstName,
       lastName,
       name: [firstName, lastName].filter(Boolean).join(" "),
@@ -132,7 +143,7 @@ export default function LeadModal() {
       message,
       modelCode: selModelCode,
       source: src,
-      website, // 허니팟(값 있으면 서버에서 400)
+      website, // 허니팟
       type: "lead",
       site: location.hostname,
       country: "KR",
@@ -145,12 +156,20 @@ export default function LeadModal() {
       locale: navigator.language,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       recaptchaToken,
-      requestId: crypto.randomUUID(), // (선택) 서버서 중복 방지용
+      requestId: crypto.randomUUID(), // (서버 중복 방지)
     };
 
     try {
       setLoading(true);
       await submitLead(payload);
+
+      // GA4 성공 이벤트
+      window.gtag?.("event", "lead_submit_success", {
+        event_category: "lead",
+        source: payload.source || "(unknown)",
+        model_code: payload.modelCode || "(none)",
+      });
+
       setStatusMsg("제출이 완료되었습니다. 감사합니다.");
       formEl.reset();
       setOpen(false);
@@ -161,6 +180,14 @@ export default function LeadModal() {
         err?.message ||
         "제출 중 오류가 발생했습니다.";
       setStatusMsg(msg);
+
+      // GA4 에러 이벤트
+      window.gtag?.("event", "lead_submit_error", {
+        event_category: "lead",
+        source: src || "(unknown)",
+        model_code: selModelCode || "(none)",
+        reason: msg || "(unknown)",
+      });
     } finally {
       setLoading(false);
     }
@@ -281,7 +308,7 @@ export default function LeadModal() {
                 className="min-h-[100px] w-full resize-y rounded-xl border border-zinc-200 px-3.5 py-3 text-sm outline-none focus:ring-2 focus:ring-black/10 dark:bg-zinc-900 dark:border-zinc-700 dark:placeholder-zinc-400 dark:focus:ring-white/10"
               />
 
-              {/* 허니팟(봇 차단용) — 서버에서 값 있으면 400 처리 추천 */}
+              {/* 허니팟(봇 차단용) — 서버에서 값 있으면 400 처리 */}
               <input name="website" className="hidden" tabIndex={-1} autoComplete="off" />
 
               {/* 추적용 hidden */}
