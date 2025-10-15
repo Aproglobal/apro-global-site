@@ -1,0 +1,21 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "lead_requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "email", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "lead_requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ip", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
