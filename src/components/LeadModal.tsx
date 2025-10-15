@@ -163,7 +163,14 @@ export default function LeadModal() {
       setLoading(true);
       await submitLead(payload);
 
-      // GA4 성공 이벤트
+      // ✅ GA4 전환용 이벤트 (권장 스키마)
+      window.gtag?.("event", "generate_lead", {
+        event_category: "lead",
+        source: payload.source || "(unknown)",
+        model_code: payload.modelCode || "(none)",
+      });
+
+      // 보조 성공 이벤트(분석용)
       window.gtag?.("event", "lead_submit_success", {
         event_category: "lead",
         source: payload.source || "(unknown)",
