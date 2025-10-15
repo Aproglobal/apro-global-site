@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { createPortal } from "react-dom";
 import { MODELS } from "../data/models";
 import { submitLead } from "../services/lead";
-import { loadRecaptcha } from "../lib/recaptcha";
+import { loadRecaptcha, getRecaptchaToken } from "../lib/recaptcha";
 
 export type LeadOpenDetail = { source?: string; modelCode?: string };
 
@@ -37,7 +37,7 @@ export default function LeadModal() {
     if (e.key === "Escape") setOpen(false);
   }, []);
 
-  // 모달 열릴 때 reCAPTCHA 선로드(+ ready 보장) → 첫 클릭 딜레이 제거
+  // 모달 열릴 때 reCAPTCHA 선로드(+ ready) → 첫 클릭 딜레이 제거
   useEffect(() => {
     if (!open) return;
     const key = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
@@ -51,7 +51,7 @@ export default function LeadModal() {
           await new Promise<void>((r) => gre.ready(r));
         }
       } catch {
-        /* no-op: 캡차 미사용 환경에서도 동작 */
+        /* 미사용 환경에서도 동작 */
       }
     })();
   }, [open]);
@@ -86,25 +86,6 @@ export default function LeadModal() {
 
   if (!open) return null;
 
-  const getRecaptchaToken = async (action: string) => {
-    const key = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
-    if (!key) return "";
-    try {
-      await loadRecaptcha(key);
-      const gre: any =
-        (window as any).grecaptcha?.enterprise || (window as any).grecaptcha;
-      if (!gre?.ready) return "";
-      await new Promise<void>((r) => gre.ready(r));
-      if (typeof gre.execute === "function") {
-        const token = await gre.execute(key, { action });
-        return typeof token === "string" ? token : "";
-      }
-      return "";
-    } catch {
-      return "";
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (loading) return;
@@ -124,16 +105,26 @@ export default function LeadModal() {
     const message = String(fd.get("message") || "").trim();
     const selModelCode = String(fd.get("modelCode") || "");
     const src = String(fd.get("source") || source || "Unknown");
+    const website = String(fd.get("website") || ""); // 허니팟
 
+    // 프론트 1차 유효성
     if (!firstName || !lastName || !email || !company) {
       setStatusMsg("필수 항목을 확인해주세요.");
       return;
     }
 
-    // 제출 직전 토큰 발급 (첫 클릭 실패 방지)
-    const token = await getRecaptchaToken("lead_email");
+    // 제출 직전 reCAPTCHA 토큰 (lib/recaptcha가 로드/ready/재시도까지 케어)
+    let recaptchaToken = "";
+    try {
+      recaptchaToken = await getRecaptchaToken("lead_email");
+    } catch {
+      // no-op (서버에서 토큰 누락 시 400 처리)
+    }
 
     const payload = {
+      // ✅ 서버 필수: firstName, lastName, email, company, recaptchaToken
+      firstName,
+      lastName,
       name: [firstName, lastName].filter(Boolean).join(" "),
       email,
       phone,
@@ -141,6 +132,7 @@ export default function LeadModal() {
       message,
       modelCode: selModelCode,
       source: src,
+      website, // 허니팟(값 있으면 서버에서 400)
       type: "lead",
       site: location.hostname,
       country: "KR",
@@ -152,7 +144,8 @@ export default function LeadModal() {
       userAgent: navigator.userAgent,
       locale: navigator.language,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      recaptchaToken: token,
+      recaptchaToken,
+      requestId: crypto.randomUUID(), // (선택) 서버서 중복 방지용
     };
 
     try {
@@ -227,6 +220,7 @@ export default function LeadModal() {
                   name="firstName"
                   placeholder="First name"
                   required
+                  autoFocus
                   className="w-full rounded-xl border border-zinc-200 px-3.5 py-3 text-sm outline-none focus:ring-2 focus:ring-black/10 dark:bg-zinc-900 dark:border-zinc-700 dark:placeholder-zinc-400 dark:focus:ring-white/10"
                 />
                 <input
@@ -247,12 +241,14 @@ export default function LeadModal() {
               <input
                 name="email"
                 type="email"
+                inputMode="email"
                 placeholder="Work email"
                 required
                 className="w-full rounded-xl border border-zinc-200 px-3.5 py-3 text-sm outline-none focus:ring-2 focus:ring-black/10 dark:bg-zinc-900 dark:border-zinc-700 dark:placeholder-zinc-400 dark:focus:ring-white/10"
               />
               <input
                 name="phone"
+                inputMode="tel"
                 placeholder="Phone (optional)"
                 className="w-full rounded-xl border border-zinc-200 px-3.5 py-3 text-sm outline-none focus:ring-2 focus:ring-black/10 dark:bg-zinc-900 dark:border-zinc-700 dark:placeholder-zinc-400 dark:focus:ring-white/10"
               />
@@ -284,6 +280,9 @@ export default function LeadModal() {
                 }
                 className="min-h-[100px] w-full resize-y rounded-xl border border-zinc-200 px-3.5 py-3 text-sm outline-none focus:ring-2 focus:ring-black/10 dark:bg-zinc-900 dark:border-zinc-700 dark:placeholder-zinc-400 dark:focus:ring-white/10"
               />
+
+              {/* 허니팟(봇 차단용) — 서버에서 값 있으면 400 처리 추천 */}
+              <input name="website" className="hidden" tabIndex={-1} autoComplete="off" />
 
               {/* 추적용 hidden */}
               <input type="hidden" name="source" value={source || "Unknown"} />
