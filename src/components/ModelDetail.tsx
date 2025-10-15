@@ -107,10 +107,12 @@ export default function ModelDetail() {
           </div>
 
           {/* Body */}
-          <div className="grid md:grid-cols-2">
-            {/* 이미지: 항상 가운데 정렬 */}
+          {/* ✅ 핵심: md 이상에서 그리드 아이템(좌/우 컬럼)을 세로 가운데 정렬 */}
+          <div className="grid md:grid-cols-2 md:items-center">
+            {/* 이미지 컬럼 */}
             <div className="relative bg-black">
-              <div className="w-full aspect-[16/9] grid place-items-center">
+              {/* 이미지 박스: 안에서 정확히 중앙 정렬 */}
+              <div className="w-full aspect-[16/9] flex items-center justify-center">
                 <img
                   src={imgs[imgIdx]}
                   alt={model.name}
