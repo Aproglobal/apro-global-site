@@ -54,7 +54,6 @@ export default function ModelDetail() {
     };
   }, []);
 
-  // ESC 닫기
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -109,13 +108,13 @@ export default function ModelDetail() {
 
           {/* Body */}
           <div className="grid md:grid-cols-2">
-            {/* 이미지: 항상 object-contain + 고정 16:9 비율(데스크탑도 동일) */}
+            {/* 이미지: 항상 가운데 정렬 */}
             <div className="relative bg-black">
-              <div className="w-full aspect-[16/9]">
+              <div className="w-full aspect-[16/9] grid place-items-center">
                 <img
                   src={imgs[imgIdx]}
                   alt={model.name}
-                  className="w-full h-full object-contain select-none"
+                  className="max-h-full max-w-full object-contain object-center select-none"
                   draggable={false}
                 />
               </div>
