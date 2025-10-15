@@ -18,11 +18,10 @@
     <style>
       :root { --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; }
       html { font-family: var(--font-sans); }
-      /* 브라우저 폼/스크롤바 등도 라이트/다크에 맞춰주기 */
       :root { color-scheme: light dark; }
     </style>
 
-    <!-- (1) 테마 초기 적용: 저장값(없으면 system) + OS 자동 추종 -->
+    <!-- (1) 테마 초기 적용 -->
     <script>
       (function () {
         try {
@@ -65,12 +64,21 @@
     <meta name="twitter:image" content="/assets/hero.jpg" />
     <meta name="twitter:url" content="https://apro.kukjeint.com" />
 
-    <!-- (2) GA4 (운영 도메인에서만) -->
+    <!-- (2) GA4 (운영/프리뷰/로컬 허용) -->
     <script>
       (function () {
-        if (location.hostname !== 'apro.kukjeint.com') return;
+        var host = location.hostname;
+        var allowed =
+          host === 'apro.kukjeint.com' ||
+          host.endsWith('.web.app') ||
+          host.endsWith('.firebaseapp.com') ||
+          host === 'localhost';
 
-        var GA_ID = '%VITE_GA_MEASUREMENT_ID%'; // Vite가 치환
+        if (!allowed) return;
+
+        // 런타임 폴백 ID (앱 코드가 참조)
+        window.__GA_ID__ = '%VITE_GA_MEASUREMENT_ID%';
+
         var s = document.createElement('script');
         s.async = true;
         s.src = 'https://www.googletagmanager.com/gtag/js?id=%VITE_GA_MEASUREMENT_ID%';
@@ -81,11 +89,10 @@
         window.gtag = gtag;
 
         gtag('js', new Date());
-        gtag('config', GA_ID, { send_page_view: true });
+        gtag('config', window.__GA_ID__, { send_page_view: true });
       })();
     </script>
   </head>
-  <!-- App에서 라이트/다크를 처리하므로 body에는 배경 고정 클래스 제거 -->
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
