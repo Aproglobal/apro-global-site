@@ -1,11 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MODELS, type ModelSpec } from '../data/models';
 import { trackEvent } from '../services/analytics';
 import { openLead } from './LeadModal';
 import { SPECS, SPEC_LABELS, type DetailedSpecs } from '../data/specs';
 
 let openRef: (code: string) => void = () => {};
-
 export function openModel(code: string) {
   openRef(code);
 }
@@ -43,6 +42,9 @@ export default function ModelDetail() {
   const [model, setModel] = useState<ModelSpec | null>(null);
   const [imgIdx, setImgIdx] = useState(0);
 
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+
   useEffect(() => {
     openRef = (code: string) => {
       const m = MODELS.find((x) => x.code === code) || null;
@@ -53,21 +55,77 @@ export default function ModelDetail() {
     };
   }, []);
 
-  // ESC 닫기
+  // ESC 닫기 + 키보드 네비 + 포커스 트랩
   useEffect(() => {
     if (!open) return;
+
+    // 첫 포커스 이동
+    const t = setTimeout(() => closeBtnRef.current?.focus(), 0);
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (!dialogRef.current) return;
+
+      // ESC 닫기
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setOpen(false);
+        return;
+      }
+
+      // 이미지 좌우 네비
+      if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
+        e.preventDefault();
+        setImgIdx((prev) => {
+          const imgs = imagesFor(model!.code);
+          let next = prev;
+          if (e.key === 'ArrowLeft') next = (prev - 1 + imgs.length) % imgs.length;
+          if (e.key === 'ArrowRight') next = (prev + 1) % imgs.length;
+          if (e.key === 'Home') next = 0;
+          if (e.key === 'End') next = imgs.length - 1;
+          if (next !== prev) trackEvent('model_image_nav', { code: model!.code, index: next, via: 'keyboard' });
+          return next;
+        });
+        return;
+      }
+
+      // 포커스 트랩 (Tab 순환)
+      if (e.key === 'Tab') {
+        const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])'
+        );
+        if (!focusables.length) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          (last as HTMLElement).focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          (first as HTMLElement).focus();
+        }
+      }
     };
+
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [open]);
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open, model]);
 
   const spec = useMemo(() => (model ? SPECS[model.code] || {} : {}), [model]);
   if (!open || !model) return null;
 
   const imgs = imagesFor(model.code);
   const specHref = `/specs/${model.code}.pdf`;
+
+  const go = (dir: 'prev' | 'next') => {
+    setImgIdx((prev) => {
+      const next = dir === 'prev' ? (prev - 1 + imgs.length) % imgs.length : (prev + 1) % imgs.length;
+      trackEvent('model_image_nav', { code: model.code, index: next, via: 'button' });
+      return next;
+    });
+  };
 
   return (
     <div className="fixed inset-0 z-50">
@@ -77,7 +135,8 @@ export default function ModelDetail() {
       {/* Content (스크롤 가능) */}
       <div className="fixed inset-0 overflow-y-auto p-4 sm:p-6">
         <div
-          className="mx-auto my-4 sm:my-8 w-full max-w-5xl rounded-2xl bg-white text-black shadow-xl dark:bg-zinc-900 dark:text-white"
+          ref={dialogRef}
+          className="mx-auto my-4 sm:my-8 w-full max-w-5xl rounded-2xl bg-white text-black shadow-xl dark:bg-zinc-900 dark:text-white outline-none"
           role="dialog"
           aria-modal="true"
           aria-labelledby="model-detail-title"
@@ -88,6 +147,7 @@ export default function ModelDetail() {
               {model.name}
             </h3>
             <button
+              ref={closeBtnRef}
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close dialog"
@@ -108,25 +168,49 @@ export default function ModelDetail() {
 
           {/* Body */}
           <div className="grid md:grid-cols-2">
-            {/* 이미지 영역: 가운데 정렬 + contain + 적절한 최대 높이 */}
+            {/* 이미지: 가운데 정렬 + contain + 최대 높이 */}
             <div className="relative bg-black grid place-items-center p-2 md:p-3">
-              {/* 가운데 정렬용 래퍼: 가로폭에 맞춰 16:9, 뷰포트 기준 최대 높이 제한 */}
-              <div className="w-full aspect-[16/9] max-w-full">
+              <div className="relative w-full aspect-[16/9] max-w-full">
                 <img
                   src={imgs[imgIdx]}
                   alt={model.name}
                   className="w-full h-full object-contain md:max-h-[70vh]"
+                  decoding="async"
+                  fetchPriority="high"
                 />
               </div>
 
-              {/* 인디케이터 (오버레이 하단) */}
+              {/* Prev/Next 버튼 (접근성) */}
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-2">
+                <button
+                  type="button"
+                  onClick={() => go('prev')}
+                  aria-label="Previous image"
+                  className="pointer-events-auto inline-grid place-items-center h-9 w-9 rounded-full bg-white/80 text-black hover:bg-white shadow"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  onClick={() => go('next')}
+                  aria-label="Next image"
+                  className="pointer-events-auto inline-grid place-items-center h-9 w-9 rounded-full bg-white/80 text-black hover:bg-white shadow"
+                >
+                  ›
+                </button>
+              </div>
+
+              {/* 인디케이터 */}
               <div className="flex justify-center gap-2 py-2 md:py-0 md:absolute md:bottom-3 md:left-1/2 md:-translate-x-1/2">
                 {imgs.map((_, i) => (
                   <button
                     key={i}
                     aria-label={'thumb ' + (i + 1)}
                     aria-current={i === imgIdx}
-                    onClick={() => setImgIdx(i)}
+                    onClick={() => {
+                      setImgIdx(i);
+                      trackEvent('model_image_nav', { code: model.code, index: i, via: 'dot' });
+                    }}
                     className={[
                       'w-2.5 h-2.5 rounded-full transition',
                       i === imgIdx ? 'bg-white' : 'bg-white/50 hover:bg-white/70',
@@ -145,6 +229,9 @@ export default function ModelDetail() {
 
               <div className="mt-4">
                 <table className="w-full text-sm">
+                  <thead className="sr-only">
+                    <tr><th>Label</th><th>Value</th></tr>
+                  </thead>
                   <tbody>
                     {ORDER.map((key) => {
                       const label = SPEC_LABELS[key];
