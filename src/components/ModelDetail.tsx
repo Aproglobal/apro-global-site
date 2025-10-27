@@ -1,3 +1,4 @@
+// src/components/ModelDetail.tsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MODELS, type ModelSpec } from '../data/models';
 import { trackEvent } from '../services/analytics';
@@ -18,20 +19,21 @@ const ORDER: (keyof DetailedSpecs)[] = [
   'seating',
   'deck',
   'reverseSeating',
+  'modelNo',        // ✅ 모델 번호 노출
   'dimensions',
   'wheelbase',
   'curbWeight',
   'battery',
   'motor',
-  'suspension',    // ✅ 추가
-  'steering',      // ✅ 추가
-  'brakes',        // ✅ 추가
-  'parkingBrake',  // ✅ 추가
+  'suspension',
+  'steering',
+  'brakes',
+  'parkingBrake',
   'maxSpeed',
   'gradeability',
   'range',
   'payload',
-  'cargoBed',      // ✅ 추가
+  'cargoBed',
   'charging',
   'options',
 ];
@@ -169,7 +171,7 @@ export default function ModelDetail() {
           {/* Body */}
           <div className="grid md:grid-cols-2">
             {/* Image */}
-            <div className="relative bg-black grid place-items-center p-2 md:p-3">
+            <div className="relative bg-white dark:bg-zinc-900 grid place-items-center p-2 md:p-3">
               <div className="relative w-full aspect-[16/9] max-w-full">
                 <img
                   src={imgs[imgIdx]}
@@ -240,7 +242,7 @@ export default function ModelDetail() {
                         spec?.[key] ?? (key === 'reverseSeating' ? (model.reverse ? 'Yes' : 'No') : undefined);
                       if (value === undefined) return null;
                       return (
-                        <tr key={key} className="border-top border-zinc-200 dark:border-zinc-800">
+                        <tr key={key} className="border-t border-zinc-200 dark:border-zinc-800">
                           <td className="py-2 pr-3 text-zinc-500 dark:text-zinc-400 w-44">{label}</td>
                           <td className="py-2">{renderValue(value)}</td>
                         </tr>
