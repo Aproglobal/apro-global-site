@@ -1,3 +1,4 @@
+// src/data/models.ts
 export interface ModelSpec {
   code: string;
   name: string;
