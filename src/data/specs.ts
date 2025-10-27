@@ -2,29 +2,31 @@
 export type SpecValue = string | string[] | undefined;
 
 export interface DetailedSpecs {
-  dimensions?: string;
+  modelNo?: string;         // ✅ Model number (e.g., G312AA)
+  dimensions?: string;      // L×W×H
   wheelbase?: string;
   curbWeight?: string;
-  battery?: string;          // "51V 110Ah (Lithium)" or "Drive 51V 160Ah (Li); Aux 51V 110Ah (Li)"
-  motor?: string;            // "AC 48V 4.6 kW"
-  maxSpeed?: string;         // "Manual 19 km/h; Auto 8 km/h"
-  gradeability?: string;     // "25°"
+  battery?: string;         // "51V 110Ah (Lithium)" etc.
+  motor?: string;           // "AC 48V 4.6 kW"
+  maxSpeed?: string;        // "Manual 19 km/h; Auto 8 km/h"
+  gradeability?: string;    // "25°"
   range?: string;
-  payload?: string;          // "300 kg"
-  cargoBed?: string;         // "L×W×H mm"
-  charging?: string;         // "Typical 4–5 h"
-  guidance?: string;         // "Manual" | "Electronic"
-  seating?: string;          // "5"
-  deck?: string;             // "Short" | "Long" | "—"
-  reverseSeating?: string;   // "Yes" | "No"
-  suspension?: string;       // "4-wheel independent"
-  steering?: string;         // "Rack & Pinion (R&P)"
-  brakes?: string;           // "Hydraulic disc + motor control"
-  parkingBrake?: string;     // "EM brake"
+  payload?: string;         // "300 kg"
+  cargoBed?: string;        // "L×W×H mm"
+  charging?: string;        // "Typical 4–5 h"
+  guidance?: string;        // "Manual" | "Electronic"
+  seating?: string;         // "5"
+  deck?: string;            // "Short" | "Long" | "—"
+  reverseSeating?: string;  // "Yes" | "No"
+  suspension?: string;      // "4-wheel independent"
+  steering?: string;        // "Rack & Pinion (R&P)"
+  brakes?: string;          // "Hydraulic disc + motor control"
+  parkingBrake?: string;    // "EM brake"
   options?: string[];
 }
 
 export const SPEC_LABELS: Record<keyof DetailedSpecs, string> = {
+  modelNo: 'Model No.',
   dimensions: 'Dimensions (L×W×H)',
   wheelbase: 'Wheelbase',
   curbWeight: 'Curb weight',
@@ -55,6 +57,7 @@ export const SPECS: Record<string, DetailedSpecs> = {
     guidance: 'Electronic',
     seating: '5',
     reverseSeating: 'No',
+    modelNo: 'G312AA',
     battery: '51V 110Ah (Lithium)',
     motor: 'AC 48V 4.6 kW',
     dimensions: '3,295 × 1,365 × 1,855 mm',
@@ -88,6 +91,7 @@ export const SPECS: Record<string, DetailedSpecs> = {
     seating: '2',
     deck: 'Long',
     reverseSeating: 'No',
+    modelNo: 'B312M',
     battery: '51V 110Ah (Lithium)',
     motor: 'AC 48V 4.6 kW',
     dimensions: '3,325 × 1,365 × 1,855 mm',
@@ -121,6 +125,7 @@ export const SPECS: Record<string, DetailedSpecs> = {
     guidance: 'Electronic',
     seating: '6',
     reverseSeating: 'No',
+    modelNo: 'V213AA',
     battery: '51V 160Ah (Lithium)',
     motor: 'AC 48V 4.6 kW',
     dimensions: '4,250 × 1,355 × 2,050 mm',
@@ -152,6 +157,7 @@ export const SPECS: Record<string, DetailedSpecs> = {
     guidance: 'Electronic',
     seating: '6',
     reverseSeating: 'No',
+    modelNo: 'V213AA',
     battery: 'Drive 51V 160Ah (Lithium); Aux 51V 110Ah (Lithium)',
     motor: 'AC 48V 4.6 kW',
     dimensions: '4,250 × 1,355 × 1,850 mm',
@@ -184,6 +190,7 @@ export const SPECS: Record<string, DetailedSpecs> = {
     guidance: 'Electronic',
     seating: '4',
     reverseSeating: 'No',
+    modelNo: 'V212AA',
     battery: 'Flooded lead-acid 8V × 6 = 240Ah',
     motor: 'AC 48V 4.6 kW',
     dimensions: '3,350 × 1,355 × 2,050 mm',
@@ -213,6 +220,7 @@ export const SPECS: Record<string, DetailedSpecs> = {
     guidance: 'Electronic',
     seating: '8',
     reverseSeating: 'No',
+    modelNo: 'G213AT',
     battery: '51V 160Ah (Lithium)',
     motor: 'AC 48V 4.6 kW',
     dimensions: '4,250 × 1,355 × 1,850 mm',
@@ -315,11 +323,12 @@ export const SPECS: Record<string, DetailedSpecs> = {
     reverseSeating: 'No',
   },
 
-  // ✅ G2 Manual 5-seat (reverse) — 새 데이터 반영
+  // ✅ G2 Manual 5-seat (reverse)
   'g2-man-5-rev': {
     guidance: 'Manual',
     seating: '5',
     reverseSeating: 'Yes',
+    modelNo: 'G212MT',
     battery: '51V 110Ah (Lithium)',
     motor: 'AC 48V 4.6 kW',
     dimensions: '3,650 × 1,355 × 1,850 mm',
@@ -344,12 +353,13 @@ export const SPECS: Record<string, DetailedSpecs> = {
     ],
   },
 
-  // ✅ G2 Short deck 5-seat — 새 데이터 반영
+  // ✅ G2 Short deck 5-seat
   'g2-short-5': {
     guidance: 'Manual',
     seating: '5',
     deck: 'Short',
     reverseSeating: 'No',
+    modelNo: 'U212MS',
     battery: '51V 110Ah (Lithium)',
     motor: 'AC 48V 4.6 kW',
     dimensions: '3,550 × 1,355 × 1,850 mm',
@@ -374,12 +384,13 @@ export const SPECS: Record<string, DetailedSpecs> = {
     ],
   },
 
-  // ✅ G2 Long deck 2-seat — 새 데이터 반영
+  // ✅ G2 Long deck 2-seat
   'g2-long-2': {
     guidance: 'Manual',
     seating: '2',
     deck: 'Long',
     reverseSeating: 'No',
+    modelNo: 'B212MA',
     battery: '51V 110Ah (Lithium)',
     motor: 'AC 48V 4.6 kW',
     dimensions: '3,550 × 1,355 × 1,850 mm',
