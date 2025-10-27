@@ -2,7 +2,7 @@
 export type SpecValue = string | string[] | undefined;
 
 export interface DetailedSpecs {
-  modelNo?: string;         // ✅ Model number (e.g., G312AA)
+  modelNo?: string;         // Model number (e.g., G312AA)
   dimensions?: string;      // L×W×H
   wheelbase?: string;
   curbWeight?: string;
@@ -249,7 +249,7 @@ export const SPECS: Record<string, DetailedSpecs> = {
     ],
   },
 
-  // (기존 채움) G2 Electronic 5-seat
+  // G2 Electronic 5-seat
   'g2-eg-5': {
     guidance: 'Electronic (FM remote ~100 m)',
     seating: '5',
@@ -280,7 +280,7 @@ export const SPECS: Record<string, DetailedSpecs> = {
     ],
   },
 
-  // (기존 채움) G2 Manual 5-seat
+  // G2 Manual 5-seat
   'g2-man-5': {
     guidance: 'Manual',
     seating: '5',
@@ -290,7 +290,7 @@ export const SPECS: Record<string, DetailedSpecs> = {
     dimensions: '3,350 × 1,355 × 1,850 mm',
     wheelbase: '2,150 mm',
     curbWeight: '490 kg (Lithium)',
-    maxSpeed: '0–19 km/h',
+    maxSpeed: '19 km/h',
     gradeability: '25°',
     charging: 'Typical 4–5 h',
     suspension: '4-wheel independent',
@@ -311,19 +311,74 @@ export const SPECS: Record<string, DetailedSpecs> = {
     ],
   },
 
+  // ✅ G2 Manual 11-Seater (신규 반영)
   'g2-man-11': {
     guidance: 'Manual',
     seating: '11',
     reverseSeating: 'No',
+    modelNo: 'G213MT',
+    battery: '51V 160Ah (Lithium)',
+    motor: 'AC 48V 4.6 kW',
+    dimensions: '5,175 × 1,355 × 1,850 mm',
+    maxSpeed: '19 km/h',
+    gradeability: '25°',
+    suspension: '4-wheel independent',
+    steering: 'Rack & Pinion (R&P)',
+    brakes: 'Hydraulic disc + motor control',
+    parkingBrake: 'EM brake',
+    charging: 'Typical 4–5 h',
+    options: [
+      'Weather curtain',
+      'Winter seat',
+      'Summer seat',
+      'Bag rain cover',
+      'Water bottle',
+      'Sand bottle',
+      'Grab handle cover',
+      'Auxiliary handle',
+      'Room mirror',
+      'Roof net',
+      'Rear seat net',
+      'Wiper',
+      'Embedded lights',
+    ],
   },
 
+  // ✅ G2 Manual 8-Seater (신규 반영)
   'g2-man-8': {
     guidance: 'Manual',
     seating: '8',
     reverseSeating: 'No',
+    modelNo: 'G213MT',
+    battery: '51V 160Ah (Lithium)',
+    motor: 'AC 48V 4.6 kW',
+    dimensions: '4,250 × 1,355 × 1,850 mm',
+    maxSpeed: '19 km/h',
+    gradeability: '25°',
+    suspension: '4-wheel independent',
+    steering: 'Rack & Pinion (R&P)',
+    brakes: 'Hydraulic disc + motor control',
+    parkingBrake: 'EM brake',
+    charging: 'Typical 4–5 h',
+    options: [
+      'Weather curtain',
+      'Winter seat',
+      'Summer seat',
+      'Water bottle',
+      'Sand bottle',
+      'Grab handle cover',
+      'Auxiliary handle',
+      'Room mirror',
+      'Roof net',
+      'Rear seat net',
+      'Steering wheel cover',
+      'USB-C phone charger',
+      'Wiper',
+      'Embedded lights',
+    ],
   },
 
-  // ✅ G2 Manual 5-seat (reverse)
+  // Manual 5 (reverse) — already filled above
   'g2-man-5-rev': {
     guidance: 'Manual',
     seating: '5',
@@ -353,7 +408,7 @@ export const SPECS: Record<string, DetailedSpecs> = {
     ],
   },
 
-  // ✅ G2 Short deck 5-seat
+  // Short deck 5
   'g2-short-5': {
     guidance: 'Manual',
     seating: '5',
@@ -384,7 +439,7 @@ export const SPECS: Record<string, DetailedSpecs> = {
     ],
   },
 
-  // ✅ G2 Long deck 2-seat
+  // Long deck 2
   'g2-long-2': {
     guidance: 'Manual',
     seating: '2',
