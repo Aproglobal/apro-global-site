@@ -1,3 +1,4 @@
+// src/components/SupportSection.tsx
 import React, { useEffect, useRef } from "react";
 import { openLead } from "./LeadModal";
 import { trackEvent } from "../services/analytics";
@@ -65,7 +66,7 @@ export default function SupportSection() {
         {items.map((li, i) => (
           <li key={i} className="pl-4 relative">
             <span
-              className="absolute left-0 top-0 h-1.5 w-1.5 rounded-full bg-zinc-400
+              className="absolute left-0 top-2 h-1.5 w-1.5 rounded-full bg-zinc-400
                          transition-colors group-hover:bg-black dark:group-hover:bg-white"
             />
             <span className="block translate-x-1 group-hover:translate-x-0 transition-transform">
@@ -100,7 +101,7 @@ export default function SupportSection() {
 
           <a
             href="/brochure.pdf"
-            onClick={() => trackEvent("brochure_download", { file: "/brochure.pdf", where: "support" })}
+            onClick={() => trackEvent("brochure_download", { file: "/brochure.pdf', where: 'support" })}
             className="px-5 py-3 rounded-full border border-black/30 dark:border-white/40"
           >
             Download brochure (PDF)
