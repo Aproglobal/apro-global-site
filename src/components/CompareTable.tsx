@@ -1,11 +1,17 @@
 import React, { useEffect } from 'react';
 import { MODELS } from '../data/models';
 import { trackEvent } from '../services/analytics';
+import { openModel } from './ModelDetail';
 
 export default function CompareTable() {
   useEffect(() => {
     trackEvent('compare_view');
   }, []);
+
+  const onRowActivate = (code: string, name: string) => {
+    openModel(code);
+    trackEvent('compare_row_click', { code, name });
+  };
 
   return (
     <section
@@ -16,20 +22,37 @@ export default function CompareTable() {
         <h3 className="text-2xl font-bold">Compare Models</h3>
 
         <div className="mt-6 overflow-x-auto">
-          <table className="min-w-[720px] w-full text-sm">
+          <table className="min-w-[720px] w-full text-sm border-collapse">
             <thead>
-              <tr className="text-left text-zinc-600 dark:text-zinc-300">
-                <th className="py-3 pr-4">Model</th>
-                <th className="py-3 pr-4">Guidance</th>
-                <th className="py-3 pr-4">Seats</th>
-                <th className="py-3 pr-4">Variant</th>
-                <th className="py-3 pr-4">Deck</th>
-                <th className="py-3 pr-4">Reverse</th>
+              <tr>
+                {['Model', 'Guidance', 'Seats', 'Variant', 'Deck', 'Reverse'].map((h) => (
+                  <th
+                    key={h}
+                    className="py-3 pr-4 text-left text-zinc-600 dark:text-zinc-300 sticky top-0 bg-zinc-50 dark:bg-zinc-900 z-10"
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {MODELS.map((m: (typeof MODELS)[number]) => (
-                <tr key={m.code} className="border-t border-zinc-200 dark:border-zinc-800">
+              {MODELS.map((m: (typeof MODELS)[number], idx) => (
+                <tr
+                  key={m.code}
+                  className={`border-t border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer ${
+                    idx % 2 ? 'bg-white/50 dark:bg-transparent' : ''
+                  }`}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Open ${m.name} details`}
+                  onClick={() => onRowActivate(m.code, m.name)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onRowActivate(m.code, m.name);
+                    }
+                  }}
+                >
                   <td className="py-3 pr-4 font-medium">{m.name}</td>
                   <td className="py-3 pr-4">{m.guidance}</td>
                   <td className="py-3 pr-4">{m.seats}</td>
