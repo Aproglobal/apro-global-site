@@ -1,128 +1,76 @@
-export type TechBlock = {
-  id: string;        // stable key for merging/anchors
-  title: string;
-  body?: string;
-  bullets?: string[];
-};
-
+// src/data/technology.ts
 export type TechCopy = {
-  headline: string;
-  intro?: string;
-  blocks: TechBlock[];
+  highlights: string[];
+  sections: Array<{
+    id: string;
+    title: string;
+    bullets: string[];
+  }>;
+  footnote?: string;
 };
 
-/** ---------- Common (default) ---------- */
-const COMMON: TechCopy = {
-  headline: "Technology",
-  intro:
-    "Core systems engineered for steep terrain, safer fleet operations, and lower total cost of ownership.",
-  blocks: [
-    {
-      id: "drivetrain",
-      title: "Drivetrain (AC 48V 4.6 kW)",
-      body:
-        "AC drive offers a broader high-efficiency band versus typical DC, no brushes/commutators to service, quieter operation, and smoother control—ideal for steep climbs and controlled descents.",
-      bullets: [
-        "High-efficiency band (~20–30% advantage vs comparable DC)",
-        "Reduced maintenance; longer service life",
-        "Refined low-speed control suited for guidance modes",
-      ],
-    },
-    {
-      id: "battery",
-      title: "Battery System (SK Mobile Energy)",
-      bullets: [
-        "51V 110Ah standard; 160Ah optional",
-        "BMS / PACK / CELL produced in-house for quality and service continuity",
-        "Typical charge time: 4–5 hours",
-        "Stable output in cold weather; low maintenance; lighter mass",
-        "Rated life ≈2,000 cycles @ 80% DoD",
-      ],
-    },
-    {
-      id: "guidance",
-      title: "Guidance & Brake Control",
-      bullets: [
-        "Electronic guidance with FM remote (≈100 m)",
-        "Speed profiles for guidance: 8 / 5 / 3.5 km/h",
-        "Hydraulic disc brakes plus motor-control braking",
-        "Patent (KR 10-1860936): EV braking control system",
-      ],
-    },
-    {
-      id: "safety",
-      title: "Safety Sensors",
-      bullets: [
-        "Ultrasonic obstacle stop: detects ≈4.5 m; gentle decel; stops at ≈1.8–2.0 m",
-        "Impact-sensing bumper triggers safe stop upon collision",
-        "Cart-guard spacing (≥1.2 m) helps prevent pile-ups",
-      ],
-    },
-    {
-      id: "suspension",
-      title: "Suspension & Chassis",
-      bullets: [
-        "MacPherson-type front with four-wheel independent suspension",
-        "Consistent contact patch for comfort and cornering stability",
-        "Tunings suited to mountainous course topography",
-      ],
-    },
-    {
-      id: "body",
-      title: "Body & Windshield",
-      bullets: [
-        "ABS+ASA four-piece body enables quick, economical panel replacement",
-        "Two-piece lower-vent windshield; scratch-resistant coating",
-        "Easy cleaning; stable in winter temperatures",
-      ],
-    },
-  ],
-};
-
-/** ---------- Per-model overrides (optional) ----------
- * 키: MODELS[].code 와 동일해야 합니다.
- * 규칙: 같은 id의 블록이 있으면 그 블록을 '대체(replace)'합니다.
- */
-const OVERRIDES: Record<string, Partial<TechCopy>> = {
-  // 예) 수동 모델에서 guidance 문구 제거/대체
-  'g2-man-5': {
-    blocks: [
+// 사용자 제공 원문(모터/배터리/현가, 안전/센서, 분할 바디, 수납, 제동제어 특허, A/S)에서 핵심만 영문화
+export function getTechCopy(): TechCopy {
+  return {
+    highlights: [
+      "AC 48V 4.6 kW motor tuned for mountainous terrain",
+      "SK Mobile Energy lithium pack with in-house BMS / PACK / CELL",
+      "4-wheel independent suspension, MacPherson-type ride comfort",
+    ],
+    sections: [
       {
-        id: 'guidance',
-        title: 'Brake Control',
+        id: "powertrain",
+        title: "Powertrain & Battery",
         bullets: [
-          'Hydraulic disc brakes plus motor-control braking',
-          'Consistent low-speed modulation for crowded areas',
+          "AC 48V 4.6 kW (LSIS/Hyosung) motor, stable hill climbing & reduced rollback/judder.",
+          "High efficiency vs. DC motors (+20–30% in comparable capacity); no brushes/commutators, low maintenance.",
+          "51V 110Ah / 160Ah lithium options; typical 4–5 h charge; wide temperature operating range.",
+          "SK Mobile Energy: in-house BMS, PACK, CELL for quality control and service consistency.",
+        ],
+      },
+      {
+        id: "suspension",
+        title: "Suspension & Chassis",
+        bullets: [
+          "Ultra-light MacPherson-type suspension for sedan-class ride quality.",
+          "4-wheel independent suspension maintains ground contact and improves cornering stability.",
+          "ABS+ASA body panels in 4-piece layout for easier service and cost-effective replacement.",
+        ],
+      },
+      {
+        id: "safety",
+        title: "Safety & Sensing",
+        bullets: [
+          "Hydraulic disc brakes with motor control; EM parking brake.",
+          "Ultrasonic obstacle detection up to 4.5 m with staged deceleration and auto stop.",
+          "Cart guard sensor maintains safe spacing (~1.2 m) between carts; impact-sensing bumper.",
+          "Low-/high-temperature validation for AGV, guidance, and magnet sensors (-40 °C to +85 °C).",
+        ],
+      },
+      {
+        id: "storage",
+        title: "Body & Storage",
+        bullets: [
+          "Front: larger, organized storage with dedicated phone bay.",
+          "Rear: concealed, sealed locker keeps belongings secure; simplified open/close.",
+        ],
+      },
+      {
+        id: "control",
+        title: "Motor Control System",
+        bullets: [
+          "Patent No. 10-1860936 — Electric vehicle brake control system to replace hydraulic braking.",
+        ],
+      },
+      {
+        id: "service",
+        title: "Service & Updates",
+        bullets: [
+          "Centralized C/S response; field team dispatch by case.",
+          "Ongoing software campaigns & updates for carts and lithium batteries.",
         ],
       },
     ],
-  },
-};
-
-/** ---------- Merge helper ---------- */
-function mergeCopy(base: TechCopy, over?: Partial<TechCopy>): TechCopy {
-  if (!over) return base;
-
-  const headline = over.headline ?? base.headline;
-  const intro = over.intro ?? base.intro;
-
-  const baseMap = new Map(base.blocks.map(b => [b.id, b]));
-  const overMap = new Map((over.blocks ?? []).map(b => [b.id, b]));
-
-  const mergedBlocks: TechBlock[] = [];
-  for (const b of base.blocks) {
-    mergedBlocks.push(overMap.get(b.id) ?? b);
-  }
-  // append any new blocks present only in override
-  for (const [id, b] of overMap.entries()) {
-    if (!baseMap.has(id)) mergedBlocks.push(b);
-  }
-
-  return { headline, intro, blocks: mergedBlocks };
-}
-
-/** ---------- Public API ---------- */
-export function getTechCopy(modelCode?: string): TechCopy {
-  const over = modelCode ? OVERRIDES[modelCode] : undefined;
-  return mergeCopy(COMMON, over);
+    footnote: "Specifications and features may vary by model and market.",
+  };
 }
