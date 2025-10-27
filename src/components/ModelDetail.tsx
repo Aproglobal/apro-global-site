@@ -9,7 +9,19 @@ export function openModel(code: string) {
   openRef(code);
 }
 
+function imagesFor(code: string) {import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { MODELS, type ModelSpec } from '../data/models';
+import { trackEvent } from '../services/analytics';
+import { openLead } from './LeadModal';
+import { SPECS, SPEC_LABELS, type DetailedSpecs } from '../data/specs';
+
+let openRef: (code: string) => void = () => {};
+export function openModel(code: string) {
+  openRef(code);
+}
+
 function imagesFor(code: string) {
+  // 필요 시 이미지 개수 늘려도 자동 반영됩니다 (썸네일 스트립/도트/버튼 모두 연동)
   return [`/models/${code}_1.jpg`, `/models/${code}_2.jpg`];
 }
 
@@ -113,6 +125,16 @@ export default function ModelDetail() {
     };
   }, [open, model]);
 
+  // ✅ 모달 오픈 시 바디 스크롤락
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
   const spec = useMemo(() => (model ? SPECS[model.code] || {} : {}), [model]);
   if (!open || !model) return null;
 
@@ -177,10 +199,11 @@ export default function ModelDetail() {
                   className="w-full h-full object-contain md:max-h-[70vh]"
                   decoding="async"
                   fetchPriority="high"
+                  sizes="(min-width: 768px) 50vw, 100vw"
                 />
               </div>
 
-              {/* Prev/Next 버튼 (접근성) */}
+              {/* Prev/Next 버튼 */}
               <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-2">
                 <button
                   type="button"
@@ -200,8 +223,8 @@ export default function ModelDetail() {
                 </button>
               </div>
 
-              {/* 인디케이터 */}
-              <div className="flex justify-center gap-2 py-2 md:py-0 md:absolute md:bottom-3 md:left-1/2 md:-translate-x-1/2">
+              {/* 인디케이터 도트 */}
+              <div className="flex justify-center gap-2 py-2">
                 {imgs.map((_, i) => (
                   <button
                     key={i}
@@ -217,6 +240,37 @@ export default function ModelDetail() {
                     ].join(' ')}
                   />
                 ))}
+              </div>
+
+              {/* ✅ 썸네일 스트립 (가로 스크롤) */}
+              <div className="w-full overflow-x-auto py-2">
+                <div className="flex gap-2 px-2">
+                  {imgs.map((src, i) => (
+                    <button
+                      key={'thumb-strip-' + i}
+                      onClick={() => {
+                        setImgIdx(i);
+                        trackEvent('model_image_nav', { code: model.code, index: i, via: 'thumb' });
+                      }}
+                      aria-current={i === imgIdx}
+                      aria-label={`Select image ${i + 1}`}
+                      className={[
+                        'rounded-lg border transition',
+                        i === imgIdx
+                          ? 'border-white ring-2 ring-white'
+                          : 'border-white/40 hover:border-white/70',
+                      ].join(' ')}
+                    >
+                      <img
+                        src={src}
+                        alt={`Thumbnail ${i + 1}`}
+                        className="h-14 w-24 object-cover rounded-md"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
