@@ -1,9 +1,17 @@
 import React, { useEffect } from "react";
 import type { TechCopy } from "../data/technology";
 import { trackEvent } from "../services/analytics";
+import { Cog, BatteryCharging, Radio, ShieldCheck, Car, Wind } from "lucide-react";
 
-type Props = {
-  copy: TechCopy;
+type Props = { copy: TechCopy };
+
+const IconById: Record<string, React.ReactNode> = {
+  drivetrain: <Cog className="w-5 h-5 mr-2" aria-hidden />,
+  battery: <BatteryCharging className="w-5 h-5 mr-2" aria-hidden />,
+  guidance: <Radio className="w-5 h-5 mr-2" aria-hidden />,
+  safety: <ShieldCheck className="w-5 h-5 mr-2" aria-hidden />,
+  suspension: <Car className="w-5 h-5 mr-2" aria-hidden />,
+  body: <Wind className="w-5 h-5 mr-2" aria-hidden />,
 };
 
 export default function TechSection({ copy }: Props) {
@@ -28,9 +36,13 @@ export default function TechSection({ copy }: Props) {
             <article
               key={b.id}
               id={b.id}
-              className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6"
+              onClick={() => trackEvent("tech_block_click", { id: b.id, title: b.title })}
+              className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
             >
-              <h3 className="text-xl font-semibold">{b.title}</h3>
+              <h3 className="text-xl font-semibold flex items-center">
+                <span className="inline-flex items-center justify-center">{IconById[b.id] ?? null}</span>
+                {b.title}
+              </h3>
               {b.body && (
                 <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
                   {b.body}
