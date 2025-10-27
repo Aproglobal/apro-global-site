@@ -1,16 +1,16 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MODELS, type ModelSpec } from '../data/models';
 import { trackEvent } from '../services/analytics';
 import { openLead } from './LeadModal';
 import { SPECS, SPEC_LABELS, type DetailedSpecs } from '../data/specs';
 
 let openRef: (code: string) => void = () => {};
-
 export function openModel(code: string) {
   openRef(code);
 }
 
 function imagesFor(code: string) {
+  // 필요 시 이미지 개수 늘려도 자동 반영됩니다 (썸네일/도트/버튼 모두 연동)
   return [`/models/${code}_1.jpg`, `/models/${code}_2.jpg`];
 }
 
@@ -42,6 +42,10 @@ export default function ModelDetail() {
   const [open, setOpen] = useState(false);
   const [model, setModel] = useState<ModelSpec | null>(null);
   const [imgIdx, setImgIdx] = useState(0);
+  const [hasSpec, setHasSpec] = useState<boolean | null>(null);
+
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     openRef = (code: string) => {
@@ -53,21 +57,101 @@ export default function ModelDetail() {
     };
   }, []);
 
-  // ESC 닫기
+  // ESC 닫기 + 키보드 네비 + 포커스 트랩
   useEffect(() => {
     if (!open) return;
+
+    const t = setTimeout(() => closeBtnRef.current?.focus(), 0);
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (!dialogRef.current) return;
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setOpen(false);
+        return;
+      }
+
+      if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
+        e.preventDefault();
+        setImgIdx((prev) => {
+          const imgs = imagesFor(model!.code);
+          let next = prev;
+          if (e.key === 'ArrowLeft') next = (prev - 1 + imgs.length) % imgs.length;
+          if (e.key === 'ArrowRight') next = (prev + 1) % imgs.length;
+          if (e.key === 'Home') next = 0;
+          if (e.key === 'End') next = imgs.length - 1;
+          if (next !== prev) trackEvent('model_image_nav', { code: model!.code, index: next, via: 'keyboard' });
+          return next;
+        });
+        return;
+      }
+
+      // 포커스 트랩
+      if (e.key === 'Tab') {
+        const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])'
+        );
+        if (!focusables.length) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          (last as HTMLElement).focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          (first as HTMLElement).focus();
+        }
+      }
     };
+
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open, model]);
+
+  // ✅ 모달 오픈 시 바디 스크롤락
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, [open]);
+
+  // ✅ 스펙 PDF 존재 확인 (HEAD)
+  useEffect(() => {
+    if (!open || !model) return;
+    const specHref = `/specs/${model.code}.pdf`;
+    setHasSpec(null);
+    (async () => {
+      try {
+        const res = await fetch(specHref, { method: 'HEAD' });
+        setHasSpec(res.ok);
+        trackEvent('spec_head_check', { code: model.code, ok: res.ok });
+      } catch {
+        setHasSpec(false);
+        trackEvent('spec_head_check', { code: model.code, ok: false });
+      }
+    })();
+  }, [open, model]);
 
   const spec = useMemo(() => (model ? SPECS[model.code] || {} : {}), [model]);
   if (!open || !model) return null;
 
   const imgs = imagesFor(model.code);
   const specHref = `/specs/${model.code}.pdf`;
+
+  const go = (dir: 'prev' | 'next') => {
+    setImgIdx((prev) => {
+      const next = dir === 'prev' ? (prev - 1 + imgs.length) % imgs.length : (prev + 1) % imgs.length;
+      trackEvent('model_image_nav', { code: model.code, index: next, via: 'button' });
+      return next;
+    });
+  };
 
   return (
     <div className="fixed inset-0 z-50">
@@ -77,7 +161,8 @@ export default function ModelDetail() {
       {/* Content (스크롤 가능) */}
       <div className="fixed inset-0 overflow-y-auto p-4 sm:p-6">
         <div
-          className="mx-auto my-4 sm:my-8 w-full max-w-5xl rounded-2xl bg-white text-black shadow-xl dark:bg-zinc-900 dark:text-white"
+          ref={dialogRef}
+          className="mx-auto my-4 sm:my-8 w-full max-w-5xl rounded-2xl bg-white text-black shadow-xl dark:bg-zinc-900 dark:text-white outline-none"
           role="dialog"
           aria-modal="true"
           aria-labelledby="model-detail-title"
@@ -88,6 +173,7 @@ export default function ModelDetail() {
               {model.name}
             </h3>
             <button
+              ref={closeBtnRef}
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close dialog"
@@ -108,31 +194,87 @@ export default function ModelDetail() {
 
           {/* Body */}
           <div className="grid md:grid-cols-2">
-            {/* 이미지 영역: 가운데 정렬 + contain + 적절한 최대 높이 */}
+            {/* 이미지: 가운데 정렬 + contain + 최대 높이 */}
             <div className="relative bg-black grid place-items-center p-2 md:p-3">
-              {/* 가운데 정렬용 래퍼: 가로폭에 맞춰 16:9, 뷰포트 기준 최대 높이 제한 */}
-              <div className="w-full aspect-[16/9] max-w-full">
+              <div className="relative w-full aspect-[16/9] max-w-full">
                 <img
                   src={imgs[imgIdx]}
                   alt={model.name}
                   className="w-full h-full object-contain md:max-h-[70vh]"
+                  decoding="async"
+                  fetchPriority="high"
+                  sizes="(min-width: 768px) 50vw, 100vw"
                 />
               </div>
 
-              {/* 인디케이터 (오버레이 하단) */}
-              <div className="flex justify-center gap-2 py-2 md:py-0 md:absolute md:bottom-3 md:left-1/2 md:-translate-x-1/2">
+              {/* Prev/Next 버튼 */}
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-2">
+                <button
+                  type="button"
+                  onClick={() => go('prev')}
+                  aria-label="Previous image"
+                  className="pointer-events-auto inline-grid place-items-center h-9 w-9 rounded-full bg-white/80 text-black hover:bg-white shadow"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  onClick={() => go('next')}
+                  aria-label="Next image"
+                  className="pointer-events-auto inline-grid place-items-center h-9 w-9 rounded-full bg-white/80 text-black hover:bg-white shadow"
+                >
+                  ›
+                </button>
+              </div>
+
+              {/* 인디케이터 도트 */}
+              <div className="flex justify-center gap-2 py-2">
                 {imgs.map((_, i) => (
                   <button
                     key={i}
                     aria-label={'thumb ' + (i + 1)}
                     aria-current={i === imgIdx}
-                    onClick={() => setImgIdx(i)}
+                    onClick={() => {
+                      setImgIdx(i);
+                      trackEvent('model_image_nav', { code: model.code, index: i, via: 'dot' });
+                    }}
                     className={[
                       'w-2.5 h-2.5 rounded-full transition',
                       i === imgIdx ? 'bg-white' : 'bg-white/50 hover:bg-white/70',
                     ].join(' ')}
                   />
                 ))}
+              </div>
+
+              {/* ✅ 썸네일 스트립 (가로 스크롤) */}
+              <div className="w-full overflow-x-auto py-2">
+                <div className="flex gap-2 px-2">
+                  {imgs.map((src, i) => (
+                    <button
+                      key={'thumb-strip-' + i}
+                      onClick={() => {
+                        setImgIdx(i);
+                        trackEvent('model_image_nav', { code: model.code, index: i, via: 'thumb' });
+                      }}
+                      aria-current={i === imgIdx}
+                      aria-label={`Select image ${i + 1}`}
+                      className={[
+                        'rounded-lg border transition',
+                        i === imgIdx
+                          ? 'border-white ring-2 ring-white'
+                          : 'border-white/40 hover:border-white/70',
+                      ].join(' ')}
+                    >
+                      <img
+                        src={src}
+                        alt={`Thumbnail ${i + 1}`}
+                        className="h-14 w-24 object-cover rounded-md"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -145,6 +287,9 @@ export default function ModelDetail() {
 
               <div className="mt-4">
                 <table className="w-full text-sm">
+                  <thead className="sr-only">
+                    <tr><th>Label</th><th>Value</th></tr>
+                  </thead>
                   <tbody>
                     {ORDER.map((key) => {
                       const label = SPEC_LABELS[key];
@@ -170,13 +315,27 @@ export default function ModelDetail() {
                 >
                   Talk to Sales
                 </button>
-                <a
-                  href={specHref}
-                  onClick={() => trackEvent('spec_download', { code: model.code })}
-                  className="px-5 py-3 rounded-full border border-zinc-300 dark:border-zinc-700"
-                >
-                  Download specs (PDF)
-                </a>
+
+                {hasSpec === true ? (
+                  <a
+                    href={specHref}
+                    onClick={() => trackEvent('spec_download', { code: model.code })}
+                    className="px-5 py-3 rounded-full border border-zinc-300 dark:border-zinc-700"
+                  >
+                    Download specs (PDF)
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    onClick={() => trackEvent('spec_download_missing_click', { code: model.code })}
+                    className="px-5 py-3 rounded-full border border-zinc-300 dark:border-zinc-700 opacity-50 cursor-not-allowed"
+                    title={hasSpec === null ? 'Checking…' : 'Specs coming soon'}
+                    aria-disabled="true"
+                  >
+                    {hasSpec === null ? 'Checking specs…' : 'Specs (coming soon)'}
+                  </button>
+                )}
               </div>
 
               <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
