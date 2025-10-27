@@ -84,10 +84,7 @@ const COMMON: TechCopy = {
  * 규칙: 같은 id의 블록이 있으면 그 블록을 '대체(replace)'합니다.
  */
 const OVERRIDES: Record<string, Partial<TechCopy>> = {
-  // 전자유도형 예: g2-eg-5 (common 유지 → 별도 override 필요 없음)
-  // 'g2-eg-5': { ... },
-
-  // 수동형 예: g2-man-5 (전자유도 프로파일 문구 제거/대체)
+  // 예) 수동 모델에서 guidance 문구 제거/대체
   'g2-man-5': {
     blocks: [
       {
