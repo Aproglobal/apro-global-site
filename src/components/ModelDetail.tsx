@@ -9,19 +9,8 @@ export function openModel(code: string) {
   openRef(code);
 }
 
-function imagesFor(code: string) {import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { MODELS, type ModelSpec } from '../data/models';
-import { trackEvent } from '../services/analytics';
-import { openLead } from './LeadModal';
-import { SPECS, SPEC_LABELS, type DetailedSpecs } from '../data/specs';
-
-let openRef: (code: string) => void = () => {};
-export function openModel(code: string) {
-  openRef(code);
-}
-
 function imagesFor(code: string) {
-  // 필요 시 이미지 개수 늘려도 자동 반영됩니다 (썸네일 스트립/도트/버튼 모두 연동)
+  // 필요 시 이미지 개수 늘려도 자동 반영됩니다 (썸네일/도트/버튼 모두 연동)
   return [`/models/${code}_1.jpg`, `/models/${code}_2.jpg`];
 }
 
@@ -53,6 +42,7 @@ export default function ModelDetail() {
   const [open, setOpen] = useState(false);
   const [model, setModel] = useState<ModelSpec | null>(null);
   const [imgIdx, setImgIdx] = useState(0);
+  const [hasSpec, setHasSpec] = useState<boolean | null>(null);
 
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -71,20 +61,17 @@ export default function ModelDetail() {
   useEffect(() => {
     if (!open) return;
 
-    // 첫 포커스 이동
     const t = setTimeout(() => closeBtnRef.current?.focus(), 0);
 
     const onKey = (e: KeyboardEvent) => {
       if (!dialogRef.current) return;
 
-      // ESC 닫기
       if (e.key === 'Escape') {
         e.preventDefault();
         setOpen(false);
         return;
       }
 
-      // 이미지 좌우 네비
       if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
         e.preventDefault();
         setImgIdx((prev) => {
@@ -100,7 +87,7 @@ export default function ModelDetail() {
         return;
       }
 
-      // 포커스 트랩 (Tab 순환)
+      // 포커스 트랩
       if (e.key === 'Tab') {
         const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
           'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])'
@@ -134,6 +121,23 @@ export default function ModelDetail() {
       document.body.style.overflow = prev;
     };
   }, [open]);
+
+  // ✅ 스펙 PDF 존재 확인 (HEAD)
+  useEffect(() => {
+    if (!open || !model) return;
+    const specHref = `/specs/${model.code}.pdf`;
+    setHasSpec(null);
+    (async () => {
+      try {
+        const res = await fetch(specHref, { method: 'HEAD' });
+        setHasSpec(res.ok);
+        trackEvent('spec_head_check', { code: model.code, ok: res.ok });
+      } catch {
+        setHasSpec(false);
+        trackEvent('spec_head_check', { code: model.code, ok: false });
+      }
+    })();
+  }, [open, model]);
 
   const spec = useMemo(() => (model ? SPECS[model.code] || {} : {}), [model]);
   if (!open || !model) return null;
@@ -311,13 +315,27 @@ export default function ModelDetail() {
                 >
                   Talk to Sales
                 </button>
-                <a
-                  href={specHref}
-                  onClick={() => trackEvent('spec_download', { code: model.code })}
-                  className="px-5 py-3 rounded-full border border-zinc-300 dark:border-zinc-700"
-                >
-                  Download specs (PDF)
-                </a>
+
+                {hasSpec === true ? (
+                  <a
+                    href={specHref}
+                    onClick={() => trackEvent('spec_download', { code: model.code })}
+                    className="px-5 py-3 rounded-full border border-zinc-300 dark:border-zinc-700"
+                  >
+                    Download specs (PDF)
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    onClick={() => trackEvent('spec_download_missing_click', { code: model.code })}
+                    className="px-5 py-3 rounded-full border border-zinc-300 dark:border-zinc-700 opacity-50 cursor-not-allowed"
+                    title={hasSpec === null ? 'Checking…' : 'Specs coming soon'}
+                    aria-disabled="true"
+                  >
+                    {hasSpec === null ? 'Checking specs…' : 'Specs (coming soon)'}
+                  </button>
+                )}
               </div>
 
               <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
