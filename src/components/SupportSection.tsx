@@ -1,13 +1,11 @@
-// src/components/SupportSection.tsx
 import React, { useEffect, useRef } from "react";
-import { openLead } from "./LeadModal";
 import { trackEvent } from "../services/analytics";
 
 /**
- * 사용자 제공 원문만 반영:
+ * ✅ 사용자 제공 원문만 반영:
  * - A/S 및 보증기간
  * - 진단프로그램 및 교육
- * (임의 점검주기 등의 새로운 내용은 추가하지 않음)
+ * ※ 카드 내부의 CTA(버튼)와 "Press Enter to contact" 힌트 제거
  */
 export default function SupportSection() {
   useEffect(() => {
@@ -49,7 +47,8 @@ export default function SupportSection() {
     items: string[];
   }) => (
     <article
-      role="button"
+      role="region"
+      aria-labelledby={`${id}-title`}
       tabIndex={0}
       onMouseEnter={() => handleHoverOnce(id)}
       onFocus={() => handleHoverOnce(id)}
@@ -61,11 +60,8 @@ export default function SupportSection() {
         focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20
       "
     >
-      <h3 className="text-lg font-semibold flex items-center gap-2">
+      <h3 id={`${id}-title`} className="text-lg font-semibold">
         {title}
-        <span className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity text-xs text-zinc-500 dark:text-zinc-400">
-          Press Enter to contact
-        </span>
       </h3>
       <ul className="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
         {items.map((li, i) => (
@@ -80,23 +76,10 @@ export default function SupportSection() {
           </li>
         ))}
       </ul>
-
-      <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            openLead(`Support • ${title}`);
-            trackEvent("cta_click", { where: "support", label: `Talk to Sales • ${title}` });
-          }}
-          className="px-4 py-2 rounded-full bg-black text-white font-medium dark:bg-white dark:text-black"
-        >
-          Talk to Sales
-        </button>
-      </div>
     </article>
   );
 
-  // 📱 모바일에서는 아코디언, 💻 데스크톱에서는 카드 그리드
+  // 📱 모바일 아코디언 / 💻 데스크톱 카드 그리드 (CTA 제거)
   return (
     <section id="support" className="py-20 bg-zinc-50 text-black dark:bg-zinc-900 dark:text-white">
       <div className="max-w-6xl mx-auto px-5">
@@ -104,8 +87,10 @@ export default function SupportSection() {
 
         {/* Mobile (Accordion) */}
         <div className="mt-6 space-y-3 md:hidden">
-          {[{ id: "as_warranty", title: "Service & Warranty", items: asWarranty },
-            { id: "diagnostics_training", title: "Diagnostics & Training", items: diagnosticsTraining }].map(block => (
+          {[
+            { id: "as_warranty", title: "Service & Warranty", items: asWarranty },
+            { id: "diagnostics_training", title: "Diagnostics & Training", items: diagnosticsTraining },
+          ].map((block) => (
             <details
               key={block.id}
               className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/90"
@@ -115,7 +100,7 @@ export default function SupportSection() {
             >
               <summary className="cursor-pointer list-none p-4 font-semibold flex items-center justify-between">
                 {block.title}
-                <span className="i-chevron">▾</span>
+                <span>▾</span>
               </summary>
               <div className="p-4 pt-0">
                 <ul className="space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
@@ -126,15 +111,6 @@ export default function SupportSection() {
                     </li>
                   ))}
                 </ul>
-                <button
-                  onClick={() => {
-                    openLead(`Support • ${block.title}`);
-                    trackEvent("cta_click", { where: "support", label: `Talk to Sales • ${block.title}` });
-                  }}
-                  className="mt-4 w-full px-4 py-2 rounded-full bg-black text-white font-medium dark:bg-white dark:text-black"
-                >
-                  Talk to Sales
-                </button>
               </div>
             </details>
           ))}
