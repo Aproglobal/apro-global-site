@@ -1,20 +1,26 @@
+// src/data/specs.ts
 export type SpecValue = string | string[] | undefined;
 
 export interface DetailedSpecs {
   dimensions?: string;
   wheelbase?: string;
   curbWeight?: string;
-  battery?: string;
-  motor?: string;
-  maxSpeed?: string;
-  gradeability?: string;
+  battery?: string;          // "51V 110Ah (Lithium)" or "Drive 51V 160Ah (Li); Aux 51V 110Ah (Li)"
+  motor?: string;            // "AC 48V 4.6 kW"
+  maxSpeed?: string;         // "Manual 19 km/h; Auto 8 km/h"
+  gradeability?: string;     // "25°"
   range?: string;
-  payload?: string;
-  charging?: string;
-  guidance?: string;
-  seating?: string;
-  deck?: string;
-  reverseSeating?: string;
+  payload?: string;          // "300 kg"
+  cargoBed?: string;         // "L×W×H mm"
+  charging?: string;         // "Typical 4–5 h"
+  guidance?: string;         // "Manual" | "Electronic"
+  seating?: string;          // "5"
+  deck?: string;             // "Short" | "Long" | "—"
+  reverseSeating?: string;   // "Yes" | "No"
+  suspension?: string;       // "4-wheel independent"
+  steering?: string;         // "Rack & Pinion (R&P)"
+  brakes?: string;           // "Hydraulic disc + motor control"
+  parkingBrake?: string;     // "EM brake"
   options?: string[];
 }
 
@@ -28,109 +34,230 @@ export const SPEC_LABELS: Record<keyof DetailedSpecs, string> = {
   gradeability: 'Gradeability',
   range: 'Range',
   payload: 'Payload',
+  cargoBed: 'Cargo bed (L×W×H)',
   charging: 'Charging',
   guidance: 'Guidance',
   seating: 'Seating',
   deck: 'Deck',
   reverseSeating: 'Reverse seating',
+  suspension: 'Suspension',
+  steering: 'Steering',
+  brakes: 'Brakes',
+  parkingBrake: 'Parking brake',
   options: 'Options',
 };
 
 export const SPECS: Record<string, DetailedSpecs> = {
   // ---------------------------
-  // G3 Series (placeholders)
+  // G3 Series
   // ---------------------------
   'g3-eg-5': {
     guidance: 'Electronic',
     seating: '5',
-    deck: '—',
     reverseSeating: 'No',
-    battery: '—',
-    motor: '—',
-    dimensions: '—',
-    maxSpeed: '—',
-    gradeability: '—',
-    range: '—',
-    payload: '—',
-    charging: '—',
-    options: ['Canopy', 'Windscreen'],
+    battery: '51V 110Ah (Lithium)',
+    motor: 'AC 48V 4.6 kW',
+    dimensions: '3,295 × 1,365 × 1,855 mm',
+    maxSpeed: 'Auto 8 km/h; Manual 19 km/h',
+    gradeability: '25°',
+    suspension: '4-wheel independent',
+    steering: 'Rack & Pinion (R&P)',
+    brakes: 'Hydraulic disc + motor control',
+    parkingBrake: 'EM brake',
+    charging: 'Typical 4–5 h',
+    options: [
+      'Weather curtain',
+      'Winter seat',
+      'Summer seat',
+      'Bag rain cover',
+      'Water bottle',
+      'Sand bottle',
+      'Grab handle cover',
+      'Auxiliary handle',
+      'Room mirror',
+      'Roof net',
+      'Rear seat net',
+      '13-inch wheel & tire',
+      'Embedded lights',
+      'Voice guidance',
+      'Upgraded display (CAN bus, SOC %)',
+    ],
   },
   'g3-long-2': {
     guidance: 'Manual',
     seating: '2',
     deck: 'Long',
     reverseSeating: 'No',
-    battery: '—',
-    motor: '—',
-    dimensions: '—',
-    options: ['Cargo deck', 'Canopy'],
+    battery: '51V 110Ah (Lithium)',
+    motor: 'AC 48V 4.6 kW',
+    dimensions: '3,325 × 1,365 × 1,855 mm',
+    maxSpeed: '23 km/h',
+    gradeability: '25°',
+    payload: '300 kg',
+    cargoBed: '1,310 × 1,170 × 255 mm',
+    suspension: '4-wheel independent',
+    steering: 'Rack & Pinion (R&P)',
+    brakes: 'Hydraulic disc + motor control',
+    parkingBrake: 'EM brake',
+    charging: 'Typical 4–5 h',
+    options: [
+      'Side mirrors',
+      'Room mirror',
+      'Turn signals',
+      'Embedded lights',
+      'Horn',
+      'Weather curtain',
+      'Winter seat',
+      'Summer seat',
+      '13-inch wheel & tire',
+    ],
   },
 
   // ---------------------------
   // G2 Series
   // ---------------------------
 
-  // Semi VIP 6 (placeholder)
   'g2-eg-semi-vip-6': {
     guidance: 'Electronic',
     seating: '6',
-    deck: '—',
     reverseSeating: 'No',
-    battery: '—',
-    motor: '—',
-    dimensions: '—',
-    options: ['Semi VIP seating'],
+    battery: '51V 160Ah (Lithium)',
+    motor: 'AC 48V 4.6 kW',
+    dimensions: '4,250 × 1,355 × 2,050 mm',
+    maxSpeed: 'Auto 8 km/h; Manual 19 km/h',
+    gradeability: '25°',
+    suspension: '4-wheel independent',
+    steering: 'Rack & Pinion (R&P)',
+    brakes: 'Hydraulic disc + motor control',
+    parkingBrake: 'EM brake',
+    charging: 'Typical 4–5 h',
+    options: [
+      'Weather curtain',
+      'Assist handle',
+      'Room mirror',
+      'Auxiliary armrest',
+      'Steering wheel cover',
+      '6-seat configuration',
+      '13-inch wheel & tire',
+      'Premium roof',
+      'Embedded fan',
+      'Embedded lights',
+      'Wiper',
+      '3-sensor ultrasonic',
+      'Console box',
+    ],
   },
 
-  // VIP 6 (placeholder)
   'g2-eg-vip-6': {
     guidance: 'Electronic',
     seating: '6',
-    deck: '—',
     reverseSeating: 'No',
-    battery: '—',
-    motor: '—',
-    dimensions: '—',
-    options: ['VIP seating'],
+    battery: 'Drive 51V 160Ah (Lithium); Aux 51V 110Ah (Lithium)',
+    motor: 'AC 48V 4.6 kW',
+    dimensions: '4,250 × 1,355 × 1,850 mm',
+    maxSpeed: 'Auto 8 km/h; Manual 19 km/h',
+    gradeability: '25°',
+    suspension: '4-wheel independent',
+    steering: 'Rack & Pinion (R&P)',
+    brakes: 'Hydraulic disc + motor control',
+    parkingBrake: 'EM brake',
+    charging: 'Typical 4–5 h',
+    options: [
+      'Weather curtain',
+      'Assist handle',
+      'Room mirror',
+      'Voltage indicator',
+      'Floor mat',
+      'Grab handle cover',
+      'VIP captain seats',
+      'Caddie seat',
+      '13-inch wheel & tire',
+      'Embedded fan',
+      'Embedded lights',
+      'Wiper',
+      '3-sensor ultrasonic',
+      'Body & roof custom paint',
+    ],
   },
 
-  // VIP 4 (placeholder)
   'g2-eg-vip-4': {
     guidance: 'Electronic',
     seating: '4',
-    deck: '—',
     reverseSeating: 'No',
-    battery: '—',
-    motor: '—',
-    dimensions: '—',
-    options: ['VIP seating'],
+    battery: 'Flooded lead-acid 8V × 6 = 240Ah',
+    motor: 'AC 48V 4.6 kW',
+    dimensions: '3,350 × 1,355 × 2,050 mm',
+    maxSpeed: 'Auto 8 km/h; Manual 19 km/h',
+    gradeability: '25°',
+    suspension: '4-wheel independent',
+    steering: 'Rack & Pinion (R&P)',
+    brakes: 'Hydraulic disc + motor control',
+    parkingBrake: 'EM brake',
+    options: [
+      'Weather curtain',
+      'Assist handle',
+      'Room mirror',
+      'Voltage indicator',
+      'Floor mat',
+      'VIP captain seats',
+      '13-inch wheel & tire',
+      'Embedded fan',
+      'Embedded lights',
+      'Wiper',
+      '3-sensor ultrasonic',
+      'Body & roof custom paint',
+    ],
   },
 
-  // G2 Electronic 8-seat (placeholder)
   'g2-eg-8': {
     guidance: 'Electronic',
     seating: '8',
-    deck: '—',
     reverseSeating: 'No',
-    battery: '—',
-    motor: '—',
-    dimensions: '—',
+    battery: '51V 160Ah (Lithium)',
+    motor: 'AC 48V 4.6 kW',
+    dimensions: '4,250 × 1,355 × 1,850 mm',
+    maxSpeed: 'Auto 8 km/h; Manual 19 km/h',
+    gradeability: '25°',
+    suspension: '4-wheel independent',
+    steering: 'Rack & Pinion (R&P)',
+    brakes: 'Hydraulic disc + motor control',
+    parkingBrake: 'EM brake',
+    charging: 'Typical 4–5 h',
+    options: [
+      'Weather curtain',
+      'Winter seat',
+      'Summer seat',
+      'Bag rain cover',
+      'Water bottle',
+      'Sand bottle',
+      'Grab handle cover',
+      'Assist handle',
+      'Room mirror',
+      'Roof net',
+      'Rear seat net',
+      'Wiper',
+      '3-sensor ultrasonic',
+      'Embedded lights',
+    ],
   },
 
-  // ✅ G2 Electronic 5-seat (filled)
+  // (기존 채움) G2 Electronic 5-seat
   'g2-eg-5': {
     guidance: 'Electronic (FM remote ~100 m)',
     seating: '5',
-    deck: '—',
     reverseSeating: 'No',
-    battery: '51V 110Ah (SK Mobile Energy), option 160Ah',
+    battery: '51V 110Ah (Lithium), option 160Ah',
     motor: 'AC 48V 4.6 kW',
-    dimensions: '3,350 × 1,355 × 1,850 mm', // L×W×H
+    dimensions: '3,350 × 1,355 × 1,850 mm',
     wheelbase: '2,150 mm',
     curbWeight: '490 kg (Lithium)',
     maxSpeed: 'Manual 0–19 km/h; E-guidance 8 / 5 / 3.5 km/h',
     gradeability: '25°',
     charging: 'Typical 4–5 h',
+    suspension: '4-wheel independent',
+    steering: 'Rack & Pinion (R&P)',
+    brakes: 'Hydraulic disc + motor control',
+    parkingBrake: 'EM brake',
     options: [
       'Heated/Ventilated seats',
       'Wide armrests',
@@ -145,20 +272,23 @@ export const SPECS: Record<string, DetailedSpecs> = {
     ],
   },
 
-  // ✅ G2 Manual 5-seat (filled, no e-guidance)
+  // (기존 채움) G2 Manual 5-seat
   'g2-man-5': {
     guidance: 'Manual',
     seating: '5',
-    deck: '—',
     reverseSeating: 'No',
-    battery: '51V 110Ah (SK Mobile Energy), option 160Ah',
+    battery: '51V 110Ah (Lithium), option 160Ah',
     motor: 'AC 48V 4.6 kW',
-    dimensions: '3,350 × 1,355 × 1,850 mm', // L×W×H
+    dimensions: '3,350 × 1,355 × 1,850 mm',
     wheelbase: '2,150 mm',
     curbWeight: '490 kg (Lithium)',
     maxSpeed: '0–19 km/h',
     gradeability: '25°',
     charging: 'Typical 4–5 h',
+    suspension: '4-wheel independent',
+    steering: 'Rack & Pinion (R&P)',
+    brakes: 'Hydraulic disc + motor control',
+    parkingBrake: 'EM brake',
     options: [
       'Heated/Ventilated seats',
       'Wide armrests',
@@ -173,58 +303,37 @@ export const SPECS: Record<string, DetailedSpecs> = {
     ],
   },
 
-  // Manual 11 (placeholder)
   'g2-man-11': {
     guidance: 'Manual',
     seating: '11',
-    deck: '—',
     reverseSeating: 'No',
-    battery: '—',
-    motor: '—',
-    dimensions: '—',
   },
 
-  // Manual 8 (placeholder)
   'g2-man-8': {
     guidance: 'Manual',
     seating: '8',
-    deck: '—',
     reverseSeating: 'No',
-    battery: '—',
-    motor: '—',
-    dimensions: '—',
   },
 
-  // Manual 5 reverse (placeholder)
+  // ✅ G2 Manual 5-seat (reverse) — 새 데이터 반영
   'g2-man-5-rev': {
     guidance: 'Manual',
     seating: '5',
-    deck: '—',
     reverseSeating: 'Yes',
-    battery: '—',
-    motor: '—',
-    dimensions: '—',
-  },
-
-  // Short deck 5 (placeholder)
-  'g2-short-5': {
-    guidance: 'Manual',
-    seating: '5',
-    deck: 'Short',
-    reverseSeating: 'No',
-    battery: '—',
-    motor: '—',
-    dimensions: '—',
-  },
-
-  // Long deck 2 (placeholder)
-  'g2-long-2': {
-    guidance: 'Manual',
-    seating: '2',
-    deck: 'Long',
-    reverseSeating: 'No',
-    battery: '—',
-    motor: '—',
-    dimensions: '—',
-  },
-};
+    battery: '51V 110Ah (Lithium)',
+    motor: 'AC 48V 4.6 kW',
+    dimensions: '3,650 × 1,355 × 1,850 mm',
+    maxSpeed: '19 km/h',
+    gradeability: '25°',
+    suspension: '4-wheel independent',
+    steering: 'Rack & Pinion (R&P)',
+    brakes: 'Hydraulic disc + motor control',
+    parkingBrake: 'EM brake',
+    charging: 'Typical 4–5 h',
+    options: [
+      'Weather curtain',
+      'Winter seat',
+      'Summer seat',
+      'Grab handle cover',
+      'Auxiliary handle',
+      'Room mir
