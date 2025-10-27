@@ -1,4 +1,3 @@
-// src/components/ModelDetail.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { MODELS, type ModelSpec } from '../data/models';
 import { trackEvent } from '../services/analytics';
@@ -109,17 +108,17 @@ export default function ModelDetail() {
 
           {/* Body */}
           <div className="grid md:grid-cols-2">
-            {/* 이미지 영역: 모바일은 object-contain + 16:9, 데스크톱은 object-cover */}
+            {/* 이미지 영역: 모든 해상도에서 contain 고정 + 16:9 비율 유지 */}
             <div className="relative bg-black">
-              <div className="w-full aspect-[16/9] md:aspect-auto md:h-full">
+              <div className="w-full aspect-[16/9]">
                 <img
                   src={imgs[imgIdx]}
                   alt={model.name}
-                  className="w-full h-full object-contain md:object-cover"
+                  className="w-full h-full object-contain"
                 />
               </div>
 
-              {/* 인디케이터: 모바일은 이미지 아래에, 데스크톱은 오버레이로 */}
+              {/* 인디케이터 */}
               <div className="flex justify-center gap-2 py-2 md:py-0 md:absolute md:bottom-3 md:left-1/2 md:-translate-x-1/2">
                 {imgs.map((_, i) => (
                   <button
