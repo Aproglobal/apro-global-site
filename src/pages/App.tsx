@@ -1,9 +1,11 @@
+// src/pages/App.tsx
 import React, { useEffect, useMemo } from 'react';
 import Header from '../components/Header';
 import ModelGrid from '../components/ModelGrid';
 import CompareTable from '../components/CompareTable';
 import TechSection from '../components/TechSection';
 import FleetSection from '../components/FleetSection';
+import SupportSection from '../components/SupportSection';
 import LeadModal, { openLead } from '../components/LeadModal';
 import ModelDetail from '../components/ModelDetail';
 import { getVariant } from '../utils/ab';
@@ -98,32 +100,8 @@ export default function App() {
 
         <FleetSection />
 
-        {/* SUPPORT */}
-        <section id="support" className="py-20 bg-zinc-50 text-black dark:bg-zinc-900 dark:text-white">
-          <div className="max-w-6xl mx-auto px-5">
-            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Support</h2>
-            <div className="mt-4 grid md:grid-cols-3 gap-6">
-              <div className="rounded-2xl border border-zinc-200 p-6 dark:border-zinc-700">
-                <h4 className="font-semibold">Installation</h4>
-                <p className="text-sm text-zinc-600 mt-1 dark:text-zinc-300">
-                  Onsite setup, guidance calibration, and safety training.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-zinc-200 p-6 dark:border-zinc-700">
-                <h4 className="font-semibold">Maintenance</h4>
-                <p className="text-sm text-zinc-600 mt-1 dark:text-zinc-300">
-                  Preventive checks, genuine parts, and service SLAs.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-zinc-200 p-6 dark:border-zinc-700">
-                <h4 className="font-semibold">Operations</h4>
-                <p className="text-sm text-zinc-600 mt-1 dark:text-zinc-300">
-                  Best practices for busy tee sheets and event logistics.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* ✅ Support 섹션 (Hover/Focus 반응형 카드) */}
+        <SupportSection />
 
         {/* CONTACT */}
         <section id="contact" className="py-20 bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white">

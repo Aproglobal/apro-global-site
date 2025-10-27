@@ -1,3 +1,4 @@
+// src/components/ModelDetail.tsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MODELS, type ModelSpec } from '../data/models';
 import { trackEvent } from '../services/analytics';
@@ -10,7 +11,6 @@ export function openModel(code: string) {
 }
 
 function imagesFor(code: string) {
-  // 필요 시 이미지 개수 늘려도 자동 반영됩니다 (썸네일/도트/버튼 모두 연동)
   return [`/models/${code}_1.jpg`, `/models/${code}_2.jpg`];
 }
 
@@ -19,15 +19,21 @@ const ORDER: (keyof DetailedSpecs)[] = [
   'seating',
   'deck',
   'reverseSeating',
+  'modelNo',        // ✅ 모델 번호 노출
   'dimensions',
   'wheelbase',
   'curbWeight',
   'battery',
   'motor',
+  'suspension',
+  'steering',
+  'brakes',
+  'parkingBrake',
   'maxSpeed',
   'gradeability',
   'range',
   'payload',
+  'cargoBed',
   'charging',
   'options',
 ];
@@ -42,7 +48,6 @@ export default function ModelDetail() {
   const [open, setOpen] = useState(false);
   const [model, setModel] = useState<ModelSpec | null>(null);
   const [imgIdx, setImgIdx] = useState(0);
-  const [hasSpec, setHasSpec] = useState<boolean | null>(null);
 
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -60,7 +65,6 @@ export default function ModelDetail() {
   // ESC 닫기 + 키보드 네비 + 포커스 트랩
   useEffect(() => {
     if (!open) return;
-
     const t = setTimeout(() => closeBtnRef.current?.focus(), 0);
 
     const onKey = (e: KeyboardEvent) => {
@@ -87,7 +91,6 @@ export default function ModelDetail() {
         return;
       }
 
-      // 포커스 트랩
       if (e.key === 'Tab') {
         const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
           'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])'
@@ -112,33 +115,6 @@ export default function ModelDetail() {
     };
   }, [open, model]);
 
-  // ✅ 모달 오픈 시 바디 스크롤락
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
-
-  // ✅ 스펙 PDF 존재 확인 (HEAD)
-  useEffect(() => {
-    if (!open || !model) return;
-    const specHref = `/specs/${model.code}.pdf`;
-    setHasSpec(null);
-    (async () => {
-      try {
-        const res = await fetch(specHref, { method: 'HEAD' });
-        setHasSpec(res.ok);
-        trackEvent('spec_head_check', { code: model.code, ok: res.ok });
-      } catch {
-        setHasSpec(false);
-        trackEvent('spec_head_check', { code: model.code, ok: false });
-      }
-    })();
-  }, [open, model]);
-
   const spec = useMemo(() => (model ? SPECS[model.code] || {} : {}), [model]);
   if (!open || !model) return null;
 
@@ -155,10 +131,10 @@ export default function ModelDetail() {
 
   return (
     <div className="fixed inset-0 z-50">
-      {/* Overlay (클릭 시 닫힘) */}
+      {/* Overlay */}
       <div className="absolute inset-0 bg-black/70" onClick={() => setOpen(false)} aria-hidden />
 
-      {/* Content (스크롤 가능) */}
+      {/* Content */}
       <div className="fixed inset-0 overflow-y-auto p-4 sm:p-6">
         <div
           ref={dialogRef}
@@ -170,7 +146,7 @@ export default function ModelDetail() {
           {/* Sticky Header */}
           <div className="sticky top-0 z-10 flex items-center gap-3 p-3 sm:p-4 bg-white/80 dark:bg-zinc-900/80 backdrop-blur border-b border-zinc-200 dark:border-zinc-800">
             <h3 id="model-detail-title" className="flex-1 text-base sm:text-lg font-bold">
-              {model.name}
+              {model.name} {model.variant ? `• ${model.variant}` : ''}
             </h3>
             <button
               ref={closeBtnRef}
@@ -194,8 +170,8 @@ export default function ModelDetail() {
 
           {/* Body */}
           <div className="grid md:grid-cols-2">
-            {/* 이미지: 가운데 정렬 + contain + 최대 높이 */}
-            <div className="relative bg-black grid place-items-center p-2 md:p-3">
+            {/* Image */}
+            <div className="relative bg-white dark:bg-zinc-900 grid place-items-center p-2 md:p-3">
               <div className="relative w-full aspect-[16/9] max-w-full">
                 <img
                   src={imgs[imgIdx]}
@@ -203,11 +179,10 @@ export default function ModelDetail() {
                   className="w-full h-full object-contain md:max-h-[70vh]"
                   decoding="async"
                   fetchPriority="high"
-                  sizes="(min-width: 768px) 50vw, 100vw"
                 />
               </div>
 
-              {/* Prev/Next 버튼 */}
+              {/* Prev/Next */}
               <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-2">
                 <button
                   type="button"
@@ -227,8 +202,8 @@ export default function ModelDetail() {
                 </button>
               </div>
 
-              {/* 인디케이터 도트 */}
-              <div className="flex justify-center gap-2 py-2">
+              {/* Dots */}
+              <div className="flex justify-center gap-2 py-2 md:py-0 md:absolute md:bottom-3 md:left-1/2 md:-translate-x-1/2">
                 {imgs.map((_, i) => (
                   <button
                     key={i}
@@ -245,40 +220,9 @@ export default function ModelDetail() {
                   />
                 ))}
               </div>
-
-              {/* ✅ 썸네일 스트립 (가로 스크롤) */}
-              <div className="w-full overflow-x-auto py-2">
-                <div className="flex gap-2 px-2">
-                  {imgs.map((src, i) => (
-                    <button
-                      key={'thumb-strip-' + i}
-                      onClick={() => {
-                        setImgIdx(i);
-                        trackEvent('model_image_nav', { code: model.code, index: i, via: 'thumb' });
-                      }}
-                      aria-current={i === imgIdx}
-                      aria-label={`Select image ${i + 1}`}
-                      className={[
-                        'rounded-lg border transition',
-                        i === imgIdx
-                          ? 'border-white ring-2 ring-white'
-                          : 'border-white/40 hover:border-white/70',
-                      ].join(' ')}
-                    >
-                      <img
-                        src={src}
-                        alt={`Thumbnail ${i + 1}`}
-                        className="h-14 w-24 object-cover rounded-md"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
 
-            {/* 스펙/CTA */}
+            {/* Specs / CTA */}
             <div className="p-4 sm:p-6">
               <p className="text-sm text-zinc-600 dark:text-zinc-300">
                 {model.guidance} • {model.seats} seats {model.deck ? `• ${model.deck} deck` : ''}{' '}
@@ -299,7 +243,7 @@ export default function ModelDetail() {
                       if (value === undefined) return null;
                       return (
                         <tr key={key} className="border-t border-zinc-200 dark:border-zinc-800">
-                          <td className="py-2 pr-3 text-zinc-500 dark:text-zinc-400 w-40">{label}</td>
+                          <td className="py-2 pr-3 text-zinc-500 dark:text-zinc-400 w-44">{label}</td>
                           <td className="py-2">{renderValue(value)}</td>
                         </tr>
                       );
@@ -315,27 +259,13 @@ export default function ModelDetail() {
                 >
                   Talk to Sales
                 </button>
-
-                {hasSpec === true ? (
-                  <a
-                    href={specHref}
-                    onClick={() => trackEvent('spec_download', { code: model.code })}
-                    className="px-5 py-3 rounded-full border border-zinc-300 dark:border-zinc-700"
-                  >
-                    Download specs (PDF)
-                  </a>
-                ) : (
-                  <button
-                    type="button"
-                    disabled
-                    onClick={() => trackEvent('spec_download_missing_click', { code: model.code })}
-                    className="px-5 py-3 rounded-full border border-zinc-300 dark:border-zinc-700 opacity-50 cursor-not-allowed"
-                    title={hasSpec === null ? 'Checking…' : 'Specs coming soon'}
-                    aria-disabled="true"
-                  >
-                    {hasSpec === null ? 'Checking specs…' : 'Specs (coming soon)'}
-                  </button>
-                )}
+                <a
+                  href={specHref}
+                  onClick={() => trackEvent('spec_download', { code: model.code })}
+                  className="px-5 py-3 rounded-full border border-zinc-300 dark:border-zinc-700"
+                >
+                  Download specs (PDF)
+                </a>
               </div>
 
               <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
