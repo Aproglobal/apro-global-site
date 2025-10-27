@@ -8,6 +8,16 @@ type Props = { copy: TechCopy };
 const IconById: Record<string, React.ReactNode> = {
   drivetrain: <Cog className="w-5 h-5 mr-2" aria-hidden />,
   battery: <BatteryCharging className="w-5 h-5 mr-2" aria-hidden />,
+  guidance: <Radio className="w-5 h-5 mr-2" aria-hidden />,import React, { useEffect } from "react";
+import type { TechCopy } from "../data/technology";
+import { trackEvent } from "../services/analytics";
+import { Cog, BatteryCharging, Radio, ShieldCheck, Car, Wind } from "lucide-react";
+
+type Props = { copy: TechCopy };
+
+const IconById: Record<string, React.ReactNode> = {
+  drivetrain: <Cog className="w-5 h-5 mr-2" aria-hidden />,
+  battery: <BatteryCharging className="w-5 h-5 mr-2" aria-hidden />,
   guidance: <Radio className="w-5 h-5 mr-2" aria-hidden />,
   safety: <ShieldCheck className="w-5 h-5 mr-2" aria-hidden />,
   suspension: <Car className="w-5 h-5 mr-2" aria-hidden />,
@@ -18,6 +28,32 @@ export default function TechSection({ copy }: Props) {
   useEffect(() => {
     trackEvent("tech_view");
   }, []);
+
+  // ✅ 블록 노출(첫 진입) 트래킹
+  useEffect(() => {
+    const seen = new Set<string>();
+    const selector = '[data-tech-id]';
+    const els = Array.from(document.querySelectorAll<HTMLElement>(selector));
+    if (!els.length) return;
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const el = entry.target as HTMLElement;
+          const id = el.dataset.techId!;
+          const title = el.dataset.techTitle || id;
+          if (seen.has(id)) return;
+          seen.add(id);
+          trackEvent("tech_block_view", { id, title });
+        });
+      },
+      { root: null, rootMargin: '0px', threshold: 0.25 }
+    );
+
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [copy.blocks.map((b) => b.id).join('|')]);
 
   return (
     <section id="technology" className="py-20 bg-white text-black dark:bg-black dark:text-white">
@@ -36,6 +72,8 @@ export default function TechSection({ copy }: Props) {
             <article
               key={b.id}
               id={b.id}
+              data-tech-id={b.id}
+              data-tech-title={b.title}
               onClick={() => trackEvent("tech_block_click", { id: b.id, title: b.title })}
               className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
             >
