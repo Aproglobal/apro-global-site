@@ -4,8 +4,7 @@ import Header from '../components/Header';
 import ModelGrid from '../components/ModelGrid';
 import CompareTable from '../components/CompareTable';
 import TechSection from '../components/TechSection';
-// 🔹 FleetSection은 다음에 진행하기로 하여 임시 제외
-// import FleetSection from '../components/FleetSection';
+import FleetSection from '../components/FleetSection';
 import SupportSection from '../components/SupportSection';
 import LeadModal, { openLead } from '../components/LeadModal';
 import ModelDetail from '../components/ModelDetail';
@@ -99,10 +98,9 @@ export default function App() {
         {/* ✅ 데이터 주입형 Technology 섹션 */}
         <TechSection copy={techCopy} />
 
-        {/* 🔹 Fleet & Leasing 섹션은 이후 단계에서 추가 예정 */}
-        {/* <FleetSection /> */}
+        {/* (원하면 주석 처리) <FleetSection /> */}
 
-        {/* ✅ Support 섹션: 사용자 제공 원문만 반영된 컴포넌트 */}
+        {/* ✅ Support 섹션: 컴포넌트로 교체 & hover 반응 포함 */}
         <SupportSection />
 
         {/* CONTACT */}
