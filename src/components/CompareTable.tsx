@@ -8,7 +8,10 @@ export default function CompareTable() {
   }, []);
 
   return (
-    <section id="compare" className="py-16 bg-zinc-50 text-black border-t border-zinc-200 dark:bg-zinc-900 dark:text-white dark:border-zinc-800">
+    <section
+      id="compare"
+      className="py-16 bg-zinc-50 text-black border-t border-zinc-200 dark:bg-zinc-900 dark:text-white dark:border-zinc-800"
+    >
       <div className="max-w-6xl mx-auto px-5">
         <h3 className="text-2xl font-bold">Compare Models</h3>
 
@@ -42,6 +45,7 @@ export default function CompareTable() {
         <div className="mt-6">
           <a
             href="#contact"
+            onClick={() => trackEvent('cta_click', { where: 'compare', label: 'Download full brochure' })}
             className="inline-block px-5 py-3 rounded-lg font-medium bg-black text-white hover:opacity-90 dark:bg-white dark:text-black"
           >
             Download full brochure
