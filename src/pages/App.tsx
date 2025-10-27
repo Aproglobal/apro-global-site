@@ -1,5 +1,4 @@
-// src/pages/App.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import Header from '../components/Header';
 import ModelGrid from '../components/ModelGrid';
 import CompareTable from '../components/CompareTable';
@@ -11,6 +10,7 @@ import { getVariant } from '../utils/ab';
 import { setupScrollDepth, trackEvent, initAnalytics } from '../services/analytics';
 import { initThemeWatcher } from '../utils/theme';
 import { loadRecaptcha } from '../lib/recaptcha';
+import { getTechCopy } from '../data/technology';
 
 export default function App() {
   const variant = getVariant();
@@ -27,6 +27,9 @@ export default function App() {
 
   const primaryCta = 'Talk to Sales';
   const secondaryCta = variant === 'A' ? 'Explore models' : 'Download brochure';
+
+  // ✅ Technology 데이터 주입 (공통 카피)
+  const techCopy = useMemo(() => getTechCopy(), []);
 
   return (
     <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
@@ -89,7 +92,10 @@ export default function App() {
 
         <ModelGrid />
         <CompareTable />
-        <TechSection />
+
+        {/* ✅ 데이터 주입형 Technology 섹션 */}
+        <TechSection copy={techCopy} />
+
         <FleetSection />
 
         {/* SUPPORT */}

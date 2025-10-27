@@ -1,4 +1,3 @@
-// src/components/ModelDetail.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { MODELS, type ModelSpec } from '../data/models';
 import { trackEvent } from '../services/analytics';
@@ -83,7 +82,7 @@ export default function ModelDetail() {
           aria-modal="true"
           aria-labelledby="model-detail-title"
         >
-          {/* Sticky Header: 모바일에서 X 버튼 항상 보이도록 */}
+          {/* Sticky Header */}
           <div className="sticky top-0 z-10 flex items-center gap-3 p-3 sm:p-4 bg-white/80 dark:bg-zinc-900/80 backdrop-blur border-b border-zinc-200 dark:border-zinc-800">
             <h3 id="model-detail-title" className="flex-1 text-base sm:text-lg font-bold">
               {model.name}
@@ -109,17 +108,18 @@ export default function ModelDetail() {
 
           {/* Body */}
           <div className="grid md:grid-cols-2">
-            {/* 이미지 영역: 모바일은 object-contain + 16:9, 데스크톱은 object-cover */}
-            <div className="relative bg-black">
-              <div className="w-full aspect-[16/9] md:aspect-auto md:h-full">
+            {/* 이미지 영역: 가운데 정렬 + contain + 적절한 최대 높이 */}
+            <div className="relative bg-black grid place-items-center p-2 md:p-3">
+              {/* 가운데 정렬용 래퍼: 가로폭에 맞춰 16:9, 뷰포트 기준 최대 높이 제한 */}
+              <div className="w-full aspect-[16/9] max-w-full">
                 <img
                   src={imgs[imgIdx]}
                   alt={model.name}
-                  className="w-full h-full object-contain md:object-cover"
+                  className="w-full h-full object-contain md:max-h-[70vh]"
                 />
               </div>
 
-              {/* 인디케이터: 모바일은 이미지 아래에, 데스크톱은 오버레이로 */}
+              {/* 인디케이터 (오버레이 하단) */}
               <div className="flex justify-center gap-2 py-2 md:py-0 md:absolute md:bottom-3 md:left-1/2 md:-translate-x-1/2">
                 {imgs.map((_, i) => (
                   <button
@@ -138,7 +138,6 @@ export default function ModelDetail() {
 
             {/* 스펙/CTA */}
             <div className="p-4 sm:p-6">
-              {/* 제목은 헤더에 있으므로 본문에선 보조 정보만 */}
               <p className="text-sm text-zinc-600 dark:text-zinc-300">
                 {model.guidance} • {model.seats} seats {model.deck ? `• ${model.deck} deck` : ''}{' '}
                 {model.variant ? `• ${model.variant}` : ''} {model.reverse ? '• Reverse Seating' : ''}
