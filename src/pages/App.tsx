@@ -98,9 +98,9 @@ export default function App() {
         {/* ✅ 데이터 주입형 Technology 섹션 */}
         <TechSection copy={techCopy} />
 
-        {/* (원하면 주석 처리) <FleetSection /> */}
+        <FleetSection />
 
-        {/* ✅ Support 섹션: 컴포넌트로 교체 & hover 반응 포함 */}
+        {/* ✅ Support 섹션 (Hover/Focus 반응형 카드) */}
         <SupportSection />
 
         {/* CONTACT */}
