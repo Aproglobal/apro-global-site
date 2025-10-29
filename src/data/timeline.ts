@@ -1,85 +1,41 @@
 // src/data/timeline.ts
-export type TimelineStep = {
-  id: string;
+export type Step = {
+  /** N일차 (자연수) */
+  day: number;
+  /** 단계 제목 (짧고 명확하게) */
   title: string;
-  days?: number;           // calendar days
-  role?: "APRO" | "Customer" | "Logistics" | "QC";
-  deliverables?: string[];
-  changeWindow?: string;
-  asset?: { src: string; alt: string } | null;
+  /** 부연 설명/거래처/비고 등 */
+  note?: string;
 };
 
-export const TIMELINE_STEPS: TimelineStep[] = [
+/** 국내 납품 기준 타임라인 (해외 납품은 상이할 수 있음) */
+export const domesticSteps: Step[] = [
+  { day: 1,  title: "견적서 발송", note: "고객사에 기본/옵션 견적 송부" },
+  { day: 2,  title: "발주서 양식 송부", note: "계약 진행 시, 고객사 발주서 양식 전달" },
+  { day: 3,  title: "계약서 양식 송부", note: "계약서(서명 절차) 공유" },
   {
-    id: "order-freeze",
-    title: "Order & Spec Freeze",
-    days: 2,
-    role: "Customer",
-    deliverables: ["PO & Spec lock", "Deposit invoice"],
-    changeWindow: "Full spec changes allowed before freeze",
-    asset: { src: "/timeline/01_order.jpg", alt: "Order confirmation" },
+    day: 4,
+    title: "카트 및 옵션 발주",
+    note: "카트: DY Innovate, 옵션: 한양사"
   },
   {
-    id: "frame-welding",
-    title: "Frame Welding",
-    days: 5,
-    role: "APRO",
-    deliverables: ["Welded frame"],
-    changeWindow: "Minor bracket changes only",
-    asset: { src: "/timeline/02_weld.jpg", alt: "Frame welding" },
+    day: 20,
+    title: "번호/로고 스티커 발주",
+    note: "미켈란기획"
   },
   {
-    id: "paint",
-    title: "E-Coat & Paint",
-    days: 4,
-    role: "APRO",
-    deliverables: ["Painted frame & panels"],
-    changeWindow: "Color locked at paint start",
-    asset: { src: "/timeline/03_paint.jpg", alt: "Paint line" },
+    day: 21,
+    title: "배차 요청",
+    note: "명진물류 (통상 출고일 10일 전 배차 완료)"
   },
   {
-    id: "powertrain-elec",
-    title: "Powertrain & Electrical",
-    days: 3,
-    role: "APRO",
-    deliverables: ["Motor, controller, harness"],
-    changeWindow: "No spec changes",
-    asset: { src: "/timeline/04_powertrain.jpg", alt: "Powertrain & electrical" },
+    day: 29,
+    title: "카트 출고",
+    note: "DY Innovate 출고"
   },
   {
-    id: "interior-options",
-    title: "Interior & Options",
-    days: 3,
-    role: "APRO",
-    deliverables: ["Seats, storage, accessories"],
-    changeWindow: "Seat trim/options until D-2",
-    asset: { src: "/timeline/05_interior.jpg", alt: "Interior & options" },
-  },
-  {
-    id: "qc-roadtest",
-    title: "QC & Road Test",
-    days: 3,
-    role: "QC",
-    deliverables: ["Road test report", "Final checklist"],
-    changeWindow: "Spec changes locked",
-    asset: { src: "/timeline/06_qc.jpg", alt: "QC road test" },
-  },
-  {
-    id: "pack-ship",
-    title: "Packing & Shipping",
-    days: 5,
-    role: "Logistics",
-    deliverables: ["Packing list", "Shipping schedule"],
-    changeWindow: "Delivery slot coordination",
-    asset: { src: "/timeline/07_ship.jpg", alt: "Packing & shipping" },
-  },
-  {
-    id: "onsite",
-    title: "On-Site Commissioning",
-    days: 2,
-    role: "APRO",
-    deliverables: ["Handover checklist", "Basic training"],
-    changeWindow: "Branding decal final check",
-    asset: { src: "/timeline/08_onsite.jpg", alt: "On-site handover" },
+    day: 30,
+    title: "카트 납품",
+    note: "현장 옵션 장착(한양사) 포함"
   },
 ];
