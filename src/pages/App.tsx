@@ -1,4 +1,3 @@
-// src/pages/App.tsx
 import React, { useEffect, useMemo } from 'react';
 import Header from '../components/Header';
 import ModelGrid from '../components/ModelGrid';
