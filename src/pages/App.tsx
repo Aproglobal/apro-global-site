@@ -60,10 +60,10 @@ export default function App() {
             <div className="absolute inset-0 bg-gradient-to-t from-white via-white/30 to-transparent dark:from-black dark:via-black/30 dark:to-transparent" />
             <div className="relative z-10 max-w-6xl mx-auto px-5 h-full flex flex-col justify-end pb-14">
               <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
-                Electric Carts for Modern Courses
+                Electric Golf Carts, Built for Courses, Resorts & Venues Worldwide
               </h1>
               <p className="mt-3 max-w-2xl text-zinc-700 dark:text-zinc-200">
-                Premium guidance, flexible seating, and dependable service across APAC.
+                Smart guidance, flexible seating, and global after-sales support.
               </p>
 
               <div className="mt-6 flex gap-3">
