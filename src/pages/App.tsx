@@ -51,10 +51,10 @@ export default function App() {
             <div className="relative z-10 max-w-6xl mx-auto px-5 h-full flex flex-col justify-end pb-14">
               {/* 개선된 카피 */}
               <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
-                Electric Golf Carts, Engineered for Modern Courses
+                Electric Golf Carts, Built for Courses, Resorts & Venues Worldwide
               </h1>
               <p className="mt-3 max-w-2xl text-zinc-700 dark:text-zinc-200">
-                Precision guidance, configurable seating, and responsive service across APAC.
+                Smart guidance, flexible seating, and global after-sales support.
               </p>
 
               <div className="mt-6 flex gap-3">
