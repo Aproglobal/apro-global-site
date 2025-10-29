@@ -64,8 +64,8 @@ export const TECH_FEATURES: TechItem[] = [
   {
     // 키는 유지(참조 호환), 명칭만 수정
     key: "auto_putter",
-    title: "One-Touch Caddy Bag Holder",
-    desc: "Open/lock the caddy bag clamp with a single touch for faster turnarounds.",
+    title: "One-Touch Caddie Bag Holder",
+    desc: "Open/lock the caddie bag clamp with a single touch for faster turnarounds.",
     img: "/tech/10_backholder.jpg",
   },
   {

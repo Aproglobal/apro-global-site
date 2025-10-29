@@ -1,4 +1,3 @@
-// src/pages/App.tsx
 import React, { useEffect, useMemo } from "react";
 import Header from "../components/Header";
 import ModelGrid from "../components/ModelGrid";
@@ -14,9 +13,17 @@ import { initThemeWatcher } from "../utils/theme";
 import { loadRecaptcha } from "../lib/recaptcha";
 import { getTechCopy } from "../data/technology";
 
-// Timeline
+// Production timeline
 import ProductionTimeline from "../components/ProductionTimeline";
 import { TIMELINE_STEPS } from "../data/timeline";
+
+// NEW sections
+import IndustriesSection from "../components/IndustriesSection";
+import ServiceWarrantySection from "../components/ServiceWarrantySection";
+import ChargingPowerSection from "../components/ChargingPowerSection";
+import ResourcesSection from "../components/ResourcesSection";
+import TcoCalculator from "../components/TcoCalculator";
+import ConfiguratorSection from "../components/ConfiguratorSection";
 
 export default function App() {
   const variant = getVariant();
@@ -25,6 +32,8 @@ export default function App() {
     initAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
     setupScrollDepth();
     initThemeWatcher();
+
+    // Preload reCAPTCHA v3
     const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
     if (siteKey) loadRecaptcha(siteKey);
   }, []);
@@ -32,6 +41,7 @@ export default function App() {
   const primaryCta = "Talk to Sales";
   const secondaryCta = variant === "A" ? "Explore models" : "Download brochure";
 
+  // Technology copy
   const techCopy = useMemo(() => getTechCopy(), []);
 
   return (
@@ -49,7 +59,6 @@ export default function App() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-white via-white/30 to-transparent dark:from-black dark:via-black/30 dark:to-transparent" />
             <div className="relative z-10 max-w-6xl mx-auto px-5 h-full flex flex-col justify-end pb-14">
-              {/* 개선된 카피 */}
               <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
                 Electric Golf Carts, Built for Courses, Resorts & Venues Worldwide
               </h1>
@@ -61,12 +70,7 @@ export default function App() {
                 <button
                   onClick={() => {
                     openLead("Hero CTA");
-                    trackEvent("cta_click", {
-                      section: "hero",
-                      where: "hero", // (구)대시보드 호환
-                      cta: primaryCta,
-                      ab_variant: variant,
-                    });
+                    trackEvent("heroCtaClick", { where: "hero", label: primaryCta, ab_variant: variant });
                   }}
                   className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
                 >
@@ -77,12 +81,7 @@ export default function App() {
                   <a
                     href="#models"
                     onClick={() =>
-                      trackEvent("cta_click", {
-                        section: "hero",
-                        where: "hero",
-                        cta: secondaryCta,
-                        ab_variant: variant,
-                      })
+                      trackEvent("modelExploreClick", { where: "hero", label: secondaryCta, ab_variant: variant })
                     }
                     className="px-5 py-3 rounded-full border border-black/40 text-black dark:border-white/60 dark:text-white"
                   >
@@ -92,10 +91,7 @@ export default function App() {
                   <a
                     href="/brochure.pdf"
                     onClick={() =>
-                      trackEvent("brochure_download", {
-                        section: "hero",
-                        file: "/brochure.pdf",
-                      })
+                      trackEvent("brochureDownload", { file: "/brochure.pdf", where: "hero", ab_variant: variant })
                     }
                     className="px-5 py-3 rounded-full border border-black/40 text-black dark:border-white/60 dark:text-white"
                   >
@@ -107,21 +103,41 @@ export default function App() {
           </div>
         </section>
 
+        {/* Products */}
         <ModelGrid />
         <CompareTable />
 
         {/* Technology */}
         <TechSection copy={techCopy} />
 
-        {/* Timeline: Day3 단독 강조 제거 → progressDay 미전달(=전체 중립 표시) */}
+        {/* Industries */}
+        <IndustriesSection />
+
+        {/* Production Timeline (Domestic standard) */}
         <ProductionTimeline steps={TIMELINE_STEPS} />
 
+        {/* Service & Warranty */}
+        <ServiceWarrantySection />
+
+        {/* Charging & Power */}
+        <ChargingPowerSection />
+
+        {/* Resources */}
+        <ResourcesSection />
+
+        {/* TCO / ROI (coming soon) */}
+        <TcoCalculator />
+
+        {/* Configurator (coming soon) */}
+        <ConfiguratorSection />
+
+        {/* Fleet */}
         <FleetSection />
 
         {/* Support */}
         <SupportSection />
 
-        {/* CONTACT */}
+        {/* Contact */}
         <section id="contact" className="py-20 bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white">
           <div className="max-w-6xl mx-auto px-5">
             <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Contact</h2>
@@ -140,11 +156,7 @@ export default function App() {
               <button
                 onClick={() => {
                   openLead("Contact CTA");
-                  trackEvent("cta_click", {
-                    section: "contact",
-                    where: "contact",
-                    cta: "Talk to Sales",
-                  });
+                  trackEvent("contactOpen", { where: "contact_section", label: "Talk to Sales" });
                 }}
                 className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
               >
@@ -154,10 +166,7 @@ export default function App() {
               <a
                 href="/brochure.pdf"
                 onClick={() =>
-                  trackEvent("brochure_download", {
-                    section: "contact",
-                    file: "/brochure.pdf",
-                  })
+                  trackEvent("brochureDownload", { file: "/brochure.pdf", where: "contact_section" })
                 }
                 className="px-5 py-3 rounded-full border border-black/30 dark:border-white/40"
               >
@@ -168,15 +177,11 @@ export default function App() {
         </section>
       </main>
 
-      {/* Sticky CTA */}
+      {/* Sticky CTA (kept above reCAPTCHA badge) */}
       <button
         onClick={() => {
           openLead("Sticky CTA");
-          trackEvent("cta_click", {
-            section: "sticky",
-            where: "sticky",
-            cta: "Talk to Sales",
-          });
+          trackEvent("contactOpen", { where: "sticky_cta", label: "Talk to Sales" });
         }}
         aria-label="Talk to Sales"
         className="
