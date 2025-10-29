@@ -114,7 +114,7 @@ export default function App() {
         <IndustriesSection />
 
         {/* Production Timeline (Domestic standard) */}
-        <ProductionTimeline steps={TIMELINE_STEPS} currentIndex={2} />
+        <ProductionTimeline steps={TIMELINE_STEPS} />
 
         {/* Service & Warranty */}
         <ServiceWarrantySection />
