@@ -3,19 +3,7 @@ import React, { useEffect, useRef } from "react";
 import { trackEvent } from "../services/analytics";
 import { TECH_FEATURES, type TechItem } from "../data/tech_features";
 
-/** ✅ App 쪽의 TechCopy와 이름 충돌/불일치가 나더라도 수용 가능한 느슨한 타입 */
-type TechCopyLike = {
-  title?: string;
-  subtitle?: string;
-  bullets?: string[];
-  // 다른 필드가 추가돼도 허용
-  [k: string]: unknown;
-};// src/components/TechSection.tsx
-import React, { useEffect, useRef } from "react";
-import { trackEvent } from "../services/analytics";
-import { TECH_FEATURES, type TechItem } from "../data/tech_features";
-
-/** 느슨한 카피 타입: App의 getTechCopy() 결과 어떤 구조든 수용 */
+/** App의 getTechCopy() 결과를 느슨하게 수용 */
 type TechCopyLike = {
   title?: string;
   subtitle?: string;
