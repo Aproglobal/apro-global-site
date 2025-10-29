@@ -10,6 +10,17 @@ type TechCopyLike = {
   bullets?: string[];
   // 다른 필드가 추가돼도 허용
   [k: string]: unknown;
+};// src/components/TechSection.tsx
+import React, { useEffect, useRef } from "react";
+import { trackEvent } from "../services/analytics";
+import { TECH_FEATURES, type TechItem } from "../data/tech_features";
+
+/** 느슨한 카피 타입: App의 getTechCopy() 결과 어떤 구조든 수용 */
+type TechCopyLike = {
+  title?: string;
+  subtitle?: string;
+  bullets?: string[];
+  [k: string]: unknown;
 };
 
 /** 내부 카드에서 쓰는 아이템 타입: key → id 매핑 */
@@ -132,5 +143,24 @@ export default function TechSection({ copy }: { copy?: TechCopyLike }) {
               />
               <span className="flex-1">{f.title}</span>
               <span className="text-zinc-500">▾</span>
-            </sum
-::contentReference[oaicite:0]{index=0}
+            </summary>
+            {f.desc && (
+              <div className="px-4 pb-4 -mt-2">
+                <p className="text-sm text-zinc-700 dark:text-zinc-300">{f.desc}</p>
+              </div>
+            )}
+          </details>
+        ))}
+      </div>
+
+      {/* 💻 Desktop: 카드 그리드 */}
+      <div className="hidden md:block max-w-6xl mx-auto px-5">
+        <div className="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {FEATURES.map((f) => (
+            <Card key={f.id} item={f} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
