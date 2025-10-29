@@ -6,9 +6,16 @@ import { trackEvent } from "../services/analytics";
 
 type ViewMode = "gallery" | "list";
 
+/**
+ * 목표
+ * - 300x300 원본 이미지를 '그대로' 보여준다 (업스케일 금지, 선명도 유지)
+ * - 모바일: Photos / Specs 전환 토글
+ * - 데스크탑: 좌측 텍스트(스펙 카드), 우측 네이티브 갤러리(300x300)
+ * - 단순 라이트박스 포함
+ */
 export default function TechSection({ copy }: { copy: TechCopy }) {
-  // 300x300 원본 이미지에 최적화: 업스케일 금지, 중앙정렬, 카드 폭 가이드(320px)
-  const items = useMemo<TechItem[]>(() => TECH_FEATURES, []);
+  // 원본 300x300 이미지 배열 (업스케일 금지)
+  const items: TechItem[] = useMemo(() => TECH_FEATURES, []);
 
   const [view, setView] = useState<ViewMode>("gallery");
   const [active, setActive] = useState<TechItem | null>(null);
