@@ -5,7 +5,8 @@ import { trackEvent } from "../services/analytics";
  * ✅ 사용자 제공 원문만 반영:
  * - A/S 및 보증기간
  * - 진단프로그램 및 교육
- * ※ 카드 내부의 CTA(버튼)와 "Press Enter to contact" 힌트 제거
+ * ※ 카드 내부 CTA(버튼)나 "Press Enter..." 힌트 없음
+ * ※ 텍스트는 hover 시 이동/색 변화 없음(불필요한 시각적 반응 제거)
  */
 export default function SupportSection() {
   useEffect(() => {
@@ -70,7 +71,8 @@ export default function SupportSection() {
               className="absolute left-0 top-2 h-1.5 w-1.5 rounded-full bg-zinc-400
                          transition-colors group-hover:bg-black dark:group-hover:bg-white"
             />
-            <span className="block translate-x-1 group-hover:translate-x-0 transition-transform">
+            {/* 텍스트는 hover 영향 없음 */}
+            <span className="block">
               {li}
             </span>
           </li>
@@ -79,7 +81,7 @@ export default function SupportSection() {
     </article>
   );
 
-  // 📱 모바일 아코디언 / 💻 데스크톱 카드 그리드 (CTA 제거)
+  // 📱 모바일 아코디언 / 💻 데스크톱 카드 그리드
   return (
     <section id="support" className="py-20 bg-zinc-50 text-black dark:bg-zinc-900 dark:text-white">
       <div className="max-w-6xl mx-auto px-5">
@@ -107,7 +109,7 @@ export default function SupportSection() {
                   {block.items.map((li, i) => (
                     <li key={i} className="pl-4 relative">
                       <span className="absolute left-0 top-2 h-1.5 w-1.5 rounded-full bg-zinc-400" />
-                      <span className="block translate-x-1">{li}</span>
+                      <span className="block">{li}</span>
                     </li>
                   ))}
                 </ul>
@@ -116,20 +118,10 @@ export default function SupportSection() {
           ))}
         </div>
 
-        {/* Desktop (Cards) */}
+        {/* Desktop (Cards) — Tech와 동일한 반응형: 1 → 2 → 3열이 아닌, 여기선 2열 구성 유지 */}
         <div className="hidden md:grid md:grid-cols-2 gap-6 mt-6">
           <Card id="as_warranty" title="Service &amp; Warranty" items={asWarranty} />
           <Card id="diagnostics_training" title="Diagnostics &amp; Training" items={diagnosticsTraining} />
-        </div>
-
-        <div className="mt-10">
-          <a
-            href="/brochure.pdf"
-            onClick={() => trackEvent("brochure_download", { file: "/brochure.pdf", where: "support" })}
-            className="inline-block px-5 py-3 rounded-full border border-black/30 dark:border-white/40"
-          >
-            Download brochure (PDF)
-          </a>
         </div>
       </div>
     </section>
