@@ -1,63 +1,59 @@
 // src/data/timeline.ts
-export type StepStatus = "planned" | "in_progress" | "done";
+export type Step = {
+  day: number;
+  title: string;
+  /** extra explanation shown in the card body */
+  note?: string;
+  /** partner / supplier name */
+  vendor?: string;
+  /** optional 300x300 image path */
+  img?: string;
+};
 
-export interface Step {
-  day: number;            // Day number on the timeline
-  title: string;          // Short headline
-  desc?: string;          // One-line detail
-  vendor?: string;        // Supplier / Partner (optional)
-  status?: StepStatus;    // Optional explicit status (usually computed by currentIndex)
-  img?: string;           // Optional 300x300 image path (if available)
-}
-
-/**
- * Domestic fulfillment flow.
- * Note: Export/overseas flow may differ by country, customs and incoterms.
- */
 export const TIMELINE_STEPS: Step[] = [
   {
     day: 1,
-    title: "Quotation sent to customer",
-    desc: "Provide pricing and specifications for requested models and options.",
+    title: "Send quotation to customer",
+    note: "Formal price quote including scope, lead time, and commercial terms.",
   },
   {
     day: 2,
-    title: "Purchase Order template shared",
-    desc: "Send PO form for confirmation if the customer decides to proceed.",
+    title: "Issue Purchase Order (PO) template",
+    note: "Share our PO form so the customer can proceed upon approval.",
   },
   {
     day: 3,
-    title: "Contract template shared",
-    desc: "Share contract form to finalize commercial terms and timeline.",
+    title: "Issue contract template",
+    note: "Provide contract document for review and signature.",
   },
   {
     day: 4,
-    title: "Production orders placed",
-    desc: "Cart production to DY Innovate; options to Hanyangsa.",
+    title: "Place production & option orders",
     vendor: "DY Innovate / Hanyangsa",
+    note: "Cart production order to DY Innovate; option kit order to Hanyangsa.",
   },
   {
     day: 20,
-    title: "Decals ordered",
-    desc: "Order number plates and logo decals for carts.",
+    title: "Order cart numbers & logo decals",
     vendor: "Mikelan Planning",
+    note: "Artwork proof and decal production (cart numbers and course logo).",
   },
   {
     day: 21,
-    title: "Truck dispatch booked",
-    desc: "Arrange carrier; typically confirmed ~10 days before ship-out.",
+    title: "Book trucks (dispatch)",
     vendor: "Myungjin Logistics",
+    note: "Logistics scheduled about 10 days before factory release.",
   },
   {
     day: 29,
-    title: "Factory shipment",
-    desc: "Units depart the factory and head to the site.",
+    title: "Factory release",
     vendor: "DY Innovate",
+    note: "QC completed; units loaded and handed over for delivery.",
   },
   {
     day: 30,
-    title: "On-site delivery & install",
-    desc: "Final hand-off; options installed on site.",
+    title: "On-site delivery & installation",
     vendor: "Hanyangsa",
+    note: "Deliver carts; install option kits on site.",
   },
 ];
