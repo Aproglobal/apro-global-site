@@ -1,53 +1,63 @@
 // src/data/timeline.ts
-export type Step = {
-  /** Day number (1-based) */
-  day: number;
-  /** Short, clear phase title */
-  title: string;
-  /** Optional note/context */
-  note?: string;
-};
+export type StepStatus = "planned" | "in_progress" | "done";
 
-/** Domestic delivery flow (export process may differ) */
+export interface Step {
+  day: number;            // Day number on the timeline
+  title: string;          // Short headline
+  desc?: string;          // One-line detail
+  vendor?: string;        // Supplier / Partner (optional)
+  status?: StepStatus;    // Optional explicit status (usually computed by currentIndex)
+  img?: string;           // Optional 300x300 image path (if available)
+}
+
+/**
+ * Domestic fulfillment flow.
+ * Note: Export/overseas flow may differ by country, customs and incoterms.
+ */
 export const TIMELINE_STEPS: Step[] = [
   {
     day: 1,
-    title: "Send quotation",
-    note: "Email the formal quotation to the customer.",
+    title: "Quotation sent to customer",
+    desc: "Provide pricing and specifications for requested models and options.",
   },
   {
     day: 2,
-    title: "Send PO template",
-    note: "Provide our standard purchase order (PO) form to proceed.",
+    title: "Purchase Order template shared",
+    desc: "Send PO form for confirmation if the customer decides to proceed.",
   },
   {
     day: 3,
-    title: "Send contract template",
-    note: "Share the contract draft for signature and approval.",
+    title: "Contract template shared",
+    desc: "Share contract form to finalize commercial terms and timeline.",
   },
   {
     day: 4,
-    title: "Place production orders",
-    note: "Carts: DY Innovate; Options: Hanyangsa.",
+    title: "Production orders placed",
+    desc: "Cart production to DY Innovate; options to Hanyangsa.",
+    vendor: "DY Innovate / Hanyangsa",
   },
   {
     day: 20,
-    title: "Order numbers & logo stickers",
-    note: "Artwork and print (Mikelan Design).",
+    title: "Decals ordered",
+    desc: "Order number plates and logo decals for carts.",
+    vendor: "Mikelan Planning",
   },
   {
     day: 21,
-    title: "Dispatch booking",
-    note: "Request trucking schedule (Myungjin Logistics). Typically 10 days prior to ship-out.",
+    title: "Truck dispatch booked",
+    desc: "Arrange carrier; typically confirmed ~10 days before ship-out.",
+    vendor: "Myungjin Logistics",
   },
   {
     day: 29,
-    title: "Factory release",
-    note: "Ship-out from DY Innovate.",
+    title: "Factory shipment",
+    desc: "Units depart the factory and head to the site.",
+    vendor: "DY Innovate",
   },
   {
     day: 30,
     title: "On-site delivery & install",
-    note: "Deliver carts; mount options on site (Hanyangsa).",
+    desc: "Final hand-off; options installed on site.",
+    vendor: "Hanyangsa",
   },
 ];
