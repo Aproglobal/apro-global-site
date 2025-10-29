@@ -9,159 +9,59 @@ type SplitBlock = {
   key: string;           // TECH_FEATURES.key 참조
   eyebrow?: string;
   headline: string;
-  body?: string;
-  align?: "left" | "right";
-};
+  body?: string;// src/components/TechSection.tsx
+import React, { useMemo, useState } from "react";
+import type { TechCopy } from "../data/technology";
+import { TECH_FEATURES, type TechItem } from "../data/tech_features";
+import { trackEvent } from "../services/analytics";
+
+type ViewMode = "photos" | "specs";
+
+/** 원본 크기 유지: 컨테이너보다 클 때만 줄이고, 그 외에는 절대 확대하지 않음 */
+function NativeImage({ src, alt }: { src: string; alt: string }) {
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      className="w-auto max-w-full h-auto block"
+      style={{ imageRendering: "auto" }}
+    />
+  );
+}
 
 export default function TechSection({ copy }: { copy: TechCopy }) {
-  // 전체 피처 인덱스
-  const items = useMemo(() => TECH_FEATURES, []);
-  const byKey = useMemo(() => new Map(items.map((i) => [i.key, i])), [items]);
-
-  // 1) 서사 축: 좌우 분할 모듈(이미지+카피 결합)
-  const splits: SplitBlock[] = [
-    {
-      key: "motor_46kw",
-      eyebrow: "Powertrain",
-      headline: "4.6 kW AC Motor — 즉각적인 토크, 부드러운 가속",
-      body:
-        "장거리 페어웨이와 업힐에서도 일정한 속도를 유지합니다. 조용하고 효율적인 AC 구동으로 라운드 전체가 더 쾌적해집니다.",
-      align: "left",
-    },
-    {
-      key: "independent_suspension",
-      eyebrow: "Chassis",
-      headline: "독립 현가 + MacPherson — 흔들림을 제어하는 승차감",
-      body:
-        "잔진동과 요철을 줄여 플레이 집중도를 높입니다. 코스 구배가 심한 환경에서도 차체 안정성을 확보합니다.",
-      align: "right",
-    },
-    {
-      key: "hydraulic_disc",
-      eyebrow: "Safety",
-      headline: "4륜 유압 디스크 브레이크 — 젖은 노면에서도 자신감",
-      body:
-        "일관된 제동력과 페이드 저감 설정으로 안전한 정차를 구현합니다. 장마철·새벽 이슬 노면에서도 차분합니다.",
-      align: "left",
-    },
-  ];
-
-  // 2) 시그니처 그리드: 스플릿에 쓴 키 제외한 나머지 대표 기능
-  const usedKeys = new Set(splits.map((s) => s.key));
-  const signature = items.filter((i) => !usedKeys.has(i.key));
-
-  // 3) 라이트박스
-  const [active, setActive] = useState<TechItem | null>(null);
-  const open = (it: TechItem) => {
-    setActive(it);
-    try {
-      trackEvent("tech:image_open", { key: it.key });
-    } catch {}
-  };
-  const close = () => setActive(null);
-
-  // 4) 모바일 전환(사진/스펙)
-  const [view, setView] = useState<ViewMode>("gallery");
-
-  // 5) 운영 가치 콜아웃: 기존 copy.sections의 bullets를 납작하게 모아 미니 배지로
-  const opsPills = useMemo(() => {
-    const pills: string[] = [];
-    for (const sec of copy.sections || []) {
-      for (const b of sec.bullets || []) {
-        if (pills.length < 18) pills.push(b);
-      }
-    }
-    return pills;
-  }, [copy.sections]);
+  const items: TechItem[] = useMemo(() => TECH_FEATURES, []);
+  const [view, setView] = useState<ViewMode>("photos");
 
   return (
     <section id="technology" className="py-20 bg-white text-black dark:bg-black dark:text-white">
       <div className="max-w-6xl mx-auto px-5">
-        {/* 헤더 */}
-        <header>
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Technology</h2>
+        {/* Heading */}
+        <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Technology</h2>
 
-          {copy?.highlights?.length ? (
-            <ul className="mt-3 grid gap-2 md:grid-cols-3">
-              {copy.highlights.map((h, i) => (
-                <li
-                  key={i}
-                  className="text-sm rounded-full border border-zinc-200 dark:border-zinc-800 px-3 py-2 bg-white dark:bg-zinc-950 text-zinc-700 dark:text-zinc-300"
-                >
-                  {h}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </header>
-
-        {/* A. Split Blocks (이미지-카피 결합) */}
-        <div className="mt-10 space-y-10">
-          {splits.map((s, idx) => {
-            const f = byKey.get(s.key);
-            if (!f) return null;
-            const media = (
-              <button
-                type="button"
-                onClick={() => open(f)}
-                className="group block w-full rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900"
-                aria-label={`Open ${f.title} image`}
+        {/* Highlights */}
+        {copy.highlights?.length ? (
+          <ul className="mt-4 grid md:grid-cols-3 gap-4">
+            {copy.highlights.map((h, i) => (
+              <li
+                key={i}
+                className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 text-sm text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-950"
               >
-                <div className="aspect-[3/2] overflow-hidden">
-                  <img
-                    src={f.img}
-                    alt={f.title}
-                    loading="lazy"
-                    width={1200}
-                    height={800}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                  />
-                </div>
-              </button>
-            );
+                {h}
+              </li>
+            ))}
+          </ul>
+        ) : null}
 
-            const copyBlock = (
-              <div className="p-1">
-                {s.eyebrow && (
-                  <div className="text-xs uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
-                    {s.eyebrow}
-                  </div>
-                )}
-                <h3 className="mt-2 text-xl md:text-2xl font-semibold">{s.headline}</h3>
-                {s.body && (
-                  <p className="mt-3 text-sm text-zinc-700 dark:text-zinc-300">{s.body}</p>
-                )}
-
-                {/* 관련 한줄 설명(있으면) */}
-                {(f as any).oneLiner && (
-                  <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-                    {(f as any).oneLiner}
-                  </p>
-                )}
-              </div>
-            );
-
-            return (
-              <div
-                key={s.key}
-                className={`grid gap-6 md:grid-cols-2 items-center ${
-                  s.align === "right" ? "md:[&>*:first-child]:order-2" : ""
-                }`}
-              >
-                {media}
-                {copyBlock}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* B. 모바일 전환 토글 */}
-        <div className="mt-12 md:hidden flex items-center gap-2">
+        {/* Mobile toggle */}
+        <div className="mt-6 md:hidden flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setView("gallery")}
+            onClick={() => setView("photos")}
             className={`flex-1 rounded-full border px-4 py-2 text-sm ${
-              view === "gallery"
+              view === "photos"
                 ? "bg-black text-white dark:bg-white dark:text-black border-black dark:border-white"
                 : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
             }`}
@@ -170,9 +70,9 @@ export default function TechSection({ copy }: { copy: TechCopy }) {
           </button>
           <button
             type="button"
-            onClick={() => setView("list")}
+            onClick={() => setView("specs")}
             className={`flex-1 rounded-full border px-4 py-2 text-sm ${
-              view === "list"
+              view === "specs"
                 ? "bg-black text-white dark:bg-white dark:text-black border-black dark:border-white"
                 : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
             }`}
@@ -181,130 +81,123 @@ export default function TechSection({ copy }: { copy: TechCopy }) {
           </button>
         </div>
 
-        {/* C-1. 모바일: 사진 그리드 */}
-        {view === "gallery" && (
-          <ul className="mt-6 grid grid-cols-2 gap-4 md:hidden">
-            {signature.map((f) => (
+        {/* Mobile: Photos */}
+        {view === "photos" && (
+          <ul className="md:hidden mt-6 space-y-4">
+            {items.map((f) => (
               <li
                 key={f.key}
-                className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950"
+                className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3"
               >
-                <button
-                  type="button"
-                  onClick={() => open(f)}
-                  className="block w-full text-left"
-                  aria-label={`Open ${f.title} image`}
-                >
-                  <div className="aspect-square overflow-hidden bg-zinc-50 dark:bg-zinc-900">
-                    <img
-                      src={f.img}
-                      alt={f.title}
-                      loading="lazy"
-                      width={300}
-                      height={300}
-                      className="h-full w-full object-cover"
-                    />
+                <figure className="text-center">
+                  {/* 프레임 안에서 중앙 정렬 + 원본 크기 유지 */}
+                  <div className="w-full flex justify-center">
+                    <NativeImage src={f.img} alt={f.title} />
                   </div>
-                  <div className="p-3">
-                    <h4 className="text-sm font-semibold">{f.title}</h4>
+                  <figcaption className="mt-3 text-left">
+                    <p className="text-sm font-semibold">{f.title}</p>
                     {f.desc && (
-                      <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{f.desc}</p>
+                      <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">{f.desc}</p>
                     )}
-                  </div>
-                </button>
+                  </figcaption>
+                </figure>
               </li>
             ))}
           </ul>
         )}
 
-        {/* C-2. 데스크톱: Signature Innovations */}
-        <div className="mt-12 hidden md:block">
-          <h3 className="text-lg font-semibold">Signature Innovations</h3>
-          <ul className="mt-4 grid grid-cols-2 lg:grid-cols-3 gap-4">
-            {signature.map((f) => (
+        {/* Mobile: Specs */}
+        {view === "specs" && (
+          <div className="md:hidden mt-6 space-y-3">
+            {copy.sections.map((sec) => (
+              <details
+                key={sec.id}
+                className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/90"
+              >
+                <summary className="cursor-pointer list-none p-4 font-semibold flex items-center justify-between">
+                  {sec.title}
+                  <span>▾</span>
+                </summary>
+                <div className="p-4 pt-0">
+                  <ul className="space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
+                    {sec.bullets.map((b, i) => (
+                      <li key={i} className="pl-4 relative">
+                        <span className="absolute left-0 top-2 h-1.5 w-1.5 rounded-full bg-zinc-400" />
+                        <span className="block translate-x-1">{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </details>
+            ))}
+          </div>
+        )}
+
+        {/* Desktop: 좌(스펙 카드), 우(원본 크기 갤러리) */}
+        <div className="mt-10 hidden md:grid md:grid-cols-2 gap-8">
+          {/* Left: specs cards */}
+          <div className="space-y-6">
+            {copy.sections.map((sec) => (
+              <article
+                key={sec.id}
+                className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 bg-white dark:bg-zinc-950/90 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:border-black/15 dark:hover:border-white/20"
+              >
+                <h3 className="text-lg font-semibold">{sec.title}</h3>
+                <ul className="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
+                  {sec.bullets.map((b, i) => (
+                    <li key={i} className="pl-4 relative">
+                      <span className="absolute left-0 top-2 h-1.5 w-1.5 rounded-full bg-zinc-400" />
+                      <span className="block translate-x-1">{b}</span>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+
+          {/* Right: native-size photo gallery */}
+          <ul className="grid grid-cols-2 gap-4 content-start">
+            {items.map((f) => (
               <li
                 key={f.key}
-                className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950"
+                className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3"
               >
                 <button
                   type="button"
-                  onClick={() => open(f)}
+                  onClick={() => {
+                    try {
+                      trackEvent("tech:image_click", { key: f.key });
+                    } catch {}
+                    // 필요 시 원본 새 탭 열기 (라이트박스 대신)
+                    window.open(f.img, "_blank", "noopener,noreferrer");
+                  }}
                   className="block w-full text-left"
-                  aria-label={`Open ${f.title} image`}
+                  aria-label={`Open ${f.title} original`}
                 >
-                  <div className="aspect-square overflow-hidden bg-zinc-50 dark:bg-zinc-900">
-                    <img
-                      src={f.img}
-                      alt={f.title}
-                      loading="lazy"
-                      width={400}
-                      height={400}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <div className="p-3">
-                    <h4 className="text-sm font-semibold">{f.title}</h4>
-                    {f.desc && (
-                      <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{f.desc}</p>
-                    )}
-                  </div>
+                  <figure className="text-center">
+                    <div className="w-full flex justify-center">
+                      <NativeImage src={f.img} alt={f.title} />
+                    </div>
+                    <figcaption className="mt-3">
+                      <p className="text-sm font-semibold">{f.title}</p>
+                      {f.desc && (
+                        <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
+                          {f.desc}
+                        </p>
+                      )}
+                    </figcaption>
+                  </figure>
                 </button>
               </li>
             ))}
           </ul>
         </div>
 
-        {/* D. 운영 가치 콜아웃(기존 bullets 재활용) */}
-        {opsPills.length > 0 && (
-          <div className="mt-12">
-            <h3 className="text-lg font-semibold">Operational Advantages</h3>
-            <ul className="mt-3 flex flex-wrap gap-2">
-              {opsPills.map((t, i) => (
-                <li
-                  key={i}
-                  className="text-xs rounded-full border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 bg-white dark:bg-zinc-950 text-zinc-700 dark:text-zinc-300"
-                >
-                  {t}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* 각주 */}
-        {copy?.footnote ? (
+        {/* Footnote */}
+        {copy.footnote ? (
           <p className="mt-8 text-xs text-zinc-500 dark:text-zinc-400">{copy.footnote}</p>
         ) : null}
       </div>
-
-      {/* Lightbox */}
-      {active && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-          onClick={close}
-        >
-          <div className="max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
-            <div className="overflow-hidden rounded-2xl bg-black">
-              <img src={active.img} alt={active.title} className="w-full h-auto" />
-            </div>
-            <div className="mt-3 flex items-start justify-between gap-4 text-white">
-              <div>
-                <h4 className="text-base font-semibold">{active.title}</h4>
-                {active.desc && <p className="text-sm text-zinc-300 mt-1">{active.desc}</p>}
-              </div>
-              <button
-                type="button"
-                onClick={close}
-                className="rounded-full border border-white/30 px-3 py-1 text-sm"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   );
 }
