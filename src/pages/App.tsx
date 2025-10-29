@@ -1,18 +1,22 @@
 // src/pages/App.tsx
-import React, { useEffect, useMemo } from 'react';
-import Header from '../components/Header';
-import ModelGrid from '../components/ModelGrid';
-import CompareTable from '../components/CompareTable';
-import TechSection from '../components/TechSection';
-import FleetSection from '../components/FleetSection';
-import SupportSection from '../components/SupportSection';
-import LeadModal, { openLead } from '../components/LeadModal';
-import ModelDetail from '../components/ModelDetail';
-import { getVariant } from '../utils/ab';
-import { setupScrollDepth, trackEvent, initAnalytics } from '../services/analytics';
-import { initThemeWatcher } from '../utils/theme';
-import { loadRecaptcha } from '../lib/recaptcha';
-import { getTechCopy } from '../data/technology';
+import React, { useEffect, useMemo } from "react";
+import Header from "../components/Header";
+import ModelGrid from "../components/ModelGrid";
+import CompareTable from "../components/CompareTable";
+import TechSection from "../components/TechSection";
+import FleetSection from "../components/FleetSection";
+import SupportSection from "../components/SupportSection";
+import LeadModal, { openLead } from "../components/LeadModal";
+import ModelDetail from "../components/ModelDetail";
+import { getVariant } from "../utils/ab";
+import { setupScrollDepth, trackEvent, initAnalytics } from "../services/analytics";
+import { initThemeWatcher } from "../utils/theme";
+import { loadRecaptcha } from "../lib/recaptcha";
+import { getTechCopy } from "../data/technology";
+
+// ⬇️ 생산 타임라인 섹션
+import ProductionTimeline from "../components/ProductionTimeline";
+import { TIMELINE_STEPS } from "../data/timeline";
 
 export default function App() {
   const variant = getVariant();
@@ -27,8 +31,8 @@ export default function App() {
     if (siteKey) loadRecaptcha(siteKey);
   }, []);
 
-  const primaryCta = 'Talk to Sales';
-  const secondaryCta = variant === 'A' ? 'Explore models' : 'Download brochure';
+  const primaryCta = "Talk to Sales";
+  const secondaryCta = variant === "A" ? "Explore models" : "Download brochure";
 
   // ✅ Technology 데이터 주입 (공통 카피)
   const techCopy = useMemo(() => getTechCopy(), []);
@@ -58,19 +62,19 @@ export default function App() {
               <div className="mt-6 flex gap-3">
                 <button
                   onClick={() => {
-                    openLead('Hero CTA');
-                    trackEvent('cta_click', { where: 'hero', label: primaryCta, variant });
+                    openLead("Hero CTA");
+                    trackEvent("cta_click", { where: "hero", label: primaryCta, variant });
                   }}
                   className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
                 >
                   {primaryCta}
                 </button>
 
-                {secondaryCta === 'Explore models' ? (
+                {secondaryCta === "Explore models" ? (
                   <a
                     href="#models"
                     onClick={() =>
-                      trackEvent('cta_click', { where: 'hero', label: secondaryCta, variant })
+                      trackEvent("cta_click", { where: "hero", label: secondaryCta, variant })
                     }
                     className="px-5 py-3 rounded-full border border-black/40 text-black dark:border-white/60 dark:text-white"
                   >
@@ -80,7 +84,7 @@ export default function App() {
                   <a
                     href="/brochure.pdf"
                     onClick={() =>
-                      trackEvent('brochure_download', { file: '/brochure.pdf', where: 'hero' })
+                      trackEvent("brochure_download", { file: "/brochure.pdf", where: "hero" })
                     }
                     className="px-5 py-3 rounded-full border border-black/40 text-black dark:border-white/60 dark:text-white"
                   >
@@ -98,6 +102,9 @@ export default function App() {
         {/* ✅ 데이터 주입형 Technology 섹션 */}
         <TechSection copy={techCopy} />
 
+        {/* ✅ 생산 타임라인 섹션 (300x300 원본 이미지 라이트박스 포함) */}
+        <ProductionTimeline steps={TIMELINE_STEPS} currentIndex={2} />
+
         <FleetSection />
 
         {/* ✅ Support 섹션 (Hover/Focus 반응형 카드) */}
@@ -108,21 +115,21 @@ export default function App() {
           <div className="max-w-6xl mx-auto px-5">
             <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Contact</h2>
             <p className="mt-2 text-zinc-700 max-w-2xl dark:text-zinc-200">
-              Email us at{' '}
+              Email us at{" "}
               <a
-                href={`mailto:${import.meta.env.VITE_SALES_EMAIL || 'sales@example.com'}`}
+                href={`mailto:${import.meta.env.VITE_SALES_EMAIL || "sales@example.com"}`}
                 className="underline"
               >
-                {import.meta.env.VITE_SALES_EMAIL || 'sales@example.com'}
-              </a>{' '}
+                {import.meta.env.VITE_SALES_EMAIL || "sales@example.com"}
+              </a>{" "}
               or open the form above.
             </p>
 
             <div className="mt-6 flex gap-3">
               <button
                 onClick={() => {
-                  openLead('Contact CTA');
-                  trackEvent('cta_click', { where: 'contact', label: 'Talk to Sales' });
+                  openLead("Contact CTA");
+                  trackEvent("cta_click", { where: "contact", label: "Talk to Sales" });
                 }}
                 className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
               >
@@ -132,7 +139,7 @@ export default function App() {
               <a
                 href="/brochure.pdf"
                 onClick={() =>
-                  trackEvent('brochure_download', { file: '/brochure.pdf', where: 'contact' })
+                  trackEvent("brochure_download", { file: "/brochure.pdf", where: "contact" })
                 }
                 className="px-5 py-3 rounded-full border border-black/30 dark:border-white/40"
               >
@@ -146,8 +153,8 @@ export default function App() {
       {/* ✅ Sticky CTA - reCAPTCHA 배지(우하단) 위로 올리기 */}
       <button
         onClick={() => {
-          openLead('Sticky CTA');
-          trackEvent('cta_click', { where: 'sticky', label: 'Talk to Sales' });
+          openLead("Sticky CTA");
+          trackEvent("cta_click", { where: "sticky", label: "Talk to Sales" });
         }}
         aria-label="Talk to Sales"
         className="
