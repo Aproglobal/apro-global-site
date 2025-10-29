@@ -1,21 +1,47 @@
-// src/components/TechSection.tsx
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import type { TechCopy } from "../data/technology";
 import { TECH_FEATURES, type TechItem } from "../data/tech_features";
 import { trackEvent } from "../services/analytics";
 
 type ViewMode = "gallery" | "list";
 
-/**
- * 목표
- * - 300x300 원본 이미지를 '그대로' 보여준다 (업스케일 금지, 선명도 유지)
- * - 모바일: Photos / Specs 전환 토글
- * - 데스크탑: 좌측 텍스트(스펙 카드), 우측 네이티브 갤러리(300x300)
- * - 단순 라이트박스 포함
- */
+type Block =
+  | { kind: "image"; item: TechItem }
+  | {
+      kind: "text";
+      sec: {
+        id: string;
+        title: string;
+        bullets: string[];
+      };
+    };
+
 export default function TechSection({ copy }: { copy: TechCopy }) {
-  // 원본 300x300 이미지 배열 (업스케일 금지)
-  const items: TechItem[] = useMemo(() => TECH_FEATURES, []);
+  // 300x300 원본 이미지에 최적화: 업스케일 금지, 중앙정렬, 카드 폭 가이드(최소 320px)
+  const items = useMemo<TechItem[]>(() => TECH_FEATURES, []);
+  const sections = useMemo(() => copy?.sections ?? [], [copy]);
+
+  // 데스크톱 전용: 텍스트 카드와 이미지 카드를 하나의 그리드에 인터리브 배치
+  const blocks = useMemo<Block[]>(() => {
+    const out: Block[] = [];
+    const queue = [...sections];
+
+    // 첫 단에 텍스트 1개 넣어 스타트(있다면)
+    if (queue.length) out.push({ kind: "text", sec: queue.shift()! });
+
+    let imgCount = 0;
+    for (const it of items) {
+      out.push({ kind: "image", item: it });
+      imgCount++;
+      // 이미지 4장마다 텍스트 1개 삽입(남아있다면)
+      if (imgCount % 4 === 0 && queue.length) {
+        out.push({ kind: "text", sec: queue.shift()! });
+      }
+    }
+    // 남은 텍스트 마저 삽입
+    while (queue.length) out.push({ kind: "text", sec: queue.shift()! });
+    return out;
+  }, [items, sections]);
 
   const [view, setView] = useState<ViewMode>("gallery");
   const [active, setActive] = useState<TechItem | null>(null);
@@ -27,6 +53,16 @@ export default function TechSection({ copy }: { copy: TechCopy }) {
     } catch {}
   };
   const onClose = () => setActive(null);
+
+  // ESC 닫기
+  useEffect(() => {
+    if (!active) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [active]);
 
   return (
     <section id="technology" className="py-20 bg-white text-black dark:bg-black dark:text-white">
@@ -47,7 +83,7 @@ export default function TechSection({ copy }: { copy: TechCopy }) {
           </ul>
         ) : null}
 
-        {/* 모바일 전환 토글 */}
+        {/* 모바일 전환 토글 (Photos / Specs) */}
         <div className="mt-6 md:hidden flex items-center gap-2">
           <button
             type="button"
@@ -88,21 +124,13 @@ export default function TechSection({ copy }: { copy: TechCopy }) {
                     className="block w-full text-left"
                     aria-label={`Open ${f.title} image`}
                   >
+                    {/* 원본 300×300 유지, 중앙 정렬 */}
                     <div className="w-full flex justify-center max-w-[320px] mx-auto">
-                      <img
-                        src={f.img}
-                        alt={f.title}
-                        loading="lazy"
-                        width={300}
-                        height={300}
-                        className="block"
-                      />
+                      <img src={f.img} alt={f.title} loading="lazy" width={300} height={300} className="block" />
                     </div>
                     <div className="p-3">
                       <h3 className="text-sm font-semibold">{f.title}</h3>
-                      {f.desc ? (
-                        <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{f.desc}</p>
-                      ) : null}
+                      {f.desc ? <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{f.desc}</p> : null}
                     </div>
                   </button>
                 </li>
@@ -110,7 +138,7 @@ export default function TechSection({ copy }: { copy: TechCopy }) {
             </ul>
           ) : (
             <div className="mt-6 space-y-3">
-              {copy.sections.map((sec) => (
+              {sections.map((sec) => (
                 <details
                   key={sec.id}
                   className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/90"
@@ -135,60 +163,57 @@ export default function TechSection({ copy }: { copy: TechCopy }) {
           )}
         </div>
 
-        {/* 데스크톱: 좌(텍스트) / 우(네이티브 이미지 갤러리) */}
-        <div className="mt-10 hidden md:grid md:grid-cols-2 gap-6">
-          {/* 좌: 텍스트 카드 */}
-          <div className="space-y-6">
-            {copy.sections.map((sec) => (
-              <article
-                key={sec.id}
-                className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 bg-white dark:bg-zinc-950/90 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:border-black/15 dark:hover:border-white/20"
-              >
-                <h3 className="text-lg font-semibold">{sec.title}</h3>
-                <ul className="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
-                  {sec.bullets.map((b, i) => (
-                    <li key={i} className="pl-4 relative">
-                      <span className="absolute left-0 top-2 h-1.5 w-1.5 rounded-full bg-zinc-400" />
-                      <span className="block translate-x-1">{b}</span>
-                    </li>
-                  ))}
-                </ul>
-              </article>
-            ))}
-          </div>
-
-          {/* 우: 300px 네이티브 이미지 갤러리 */}
-          <ul className="grid gap-4 content-start grid-cols-[repeat(auto-fit,minmax(320px,1fr))]">
-            {items.map((f) => (
-              <li
-                key={f.key}
-                className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950"
-              >
-                <button
-                  type="button"
-                  onClick={() => onOpen(f)}
-                  className="block w-full text-left"
-                  aria-label={`Open ${f.title} image`}
+        {/* 데스크톱: 유니파이드 카드 그리드 (텍스트/이미지 혼합, 빈 공간 없음) */}
+        <div className="mt-10 hidden md:block">
+          <ul className="grid gap-6 grid-cols-[repeat(auto-fill,minmax(320px,1fr))]">
+            {blocks.map((blk, idx) =>
+              blk.kind === "image" ? (
+                <li
+                  key={`img-${blk.item.key}-${idx}`}
+                  className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950"
                 >
-                  <div className="w-full flex justify-center max-w-[320px] mx-auto">
-                    <img
-                      src={f.img}
-                      alt={f.title}
-                      loading="lazy"
-                      width={300}
-                      height={300}
-                      className="block"
-                    />
-                  </div>
-                  <div className="p-3">
-                    <h3 className="text-sm font-semibold">{f.title}</h3>
-                    {f.desc ? (
-                      <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{f.desc}</p>
-                    ) : null}
-                  </div>
-                </button>
-              </li>
-            ))}
+                  <button
+                    type="button"
+                    onClick={() => onOpen(blk.item)}
+                    className="block w-full text-left"
+                    aria-label={`Open ${blk.item.title} image`}
+                  >
+                    <div className="w-full flex justify-center max-w-[320px] mx-auto">
+                      {/* 300×300 원본 그대로, 업스케일 금지 */}
+                      <img
+                        src={blk.item.img}
+                        alt={blk.item.title}
+                        loading="lazy"
+                        width={300}
+                        height={300}
+                        className="block"
+                      />
+                    </div>
+                    <div className="p-3">
+                      <h3 className="text-sm font-semibold">{blk.item.title}</h3>
+                      {blk.item.desc ? (
+                        <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{blk.item.desc}</p>
+                      ) : null}
+                    </div>
+                  </button>
+                </li>
+              ) : (
+                <li
+                  key={`txt-${blk.sec.id}-${idx}`}
+                  className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 bg-white dark:bg-zinc-950/90"
+                >
+                  <h3 className="text-lg font-semibold">{blk.sec.title}</h3>
+                  <ul className="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
+                    {blk.sec.bullets.map((b, i) => (
+                      <li key={i} className="pl-4 relative">
+                        <span className="absolute left-0 top-2 h-1.5 w-1.5 rounded-full bg-zinc-400" />
+                        <span className="block translate-x-1">{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              )
+            )}
           </ul>
         </div>
 
