@@ -3,20 +3,22 @@ import React, { useEffect, useRef } from "react";
 import { trackEvent } from "../services/analytics";
 import { TECH_FEATURES, type TechItem } from "../data/tech_features";
 
-/** 외부에서 주입되는 카피(유연한 구조, 모두 optional) */
-type TechCopy = {
+/** ✅ App 쪽의 TechCopy와 이름 충돌/불일치가 나더라도 수용 가능한 느슨한 타입 */
+type TechCopyLike = {
   title?: string;
   subtitle?: string;
   bullets?: string[];
+  // 다른 필드가 추가돼도 허용
+  [k: string]: unknown;
 };
 
 /** 내부 카드에서 쓰는 아이템 타입: key → id 매핑 */
 type FeatureItem = TechItem & { id: string };
 
-/** 🔧 key를 id로 매핑하여 타입 오류(‘id’ 누락) 해결 */
+/** key를 id로 매핑(타입 오류 방지) */
 const FEATURES: FeatureItem[] = TECH_FEATURES.map((f) => ({ ...f, id: f.key }));
 
-export default function TechSection({ copy }: { copy?: TechCopy }) {
+export default function TechSection({ copy }: { copy?: TechCopyLike }) {
   useEffect(() => {
     trackEvent("technology_view");
   }, []);
@@ -39,9 +41,9 @@ export default function TechSection({ copy }: { copy?: TechCopy }) {
       {copy?.subtitle && (
         <p className="mt-2 text-zinc-700 dark:text-zinc-300">{copy.subtitle}</p>
       )}
-      {copy?.bullets?.length ? (
+      {Array.isArray(copy?.bullets) && copy!.bullets!.length > 0 ? (
         <ul className="mt-3 list-disc pl-5 text-sm text-zinc-600 dark:text-zinc-400 space-y-1">
-          {copy.bullets.map((b, i) => (
+          {copy!.bullets!.map((b, i) => (
             <li key={i}>{b}</li>
           ))}
         </ul>
@@ -65,7 +67,7 @@ export default function TechSection({ copy }: { copy?: TechCopy }) {
         focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20
       "
     >
-      {/* 이미지 래퍼: 4:3 비율, 작은 원본도 깔끔하게 보이도록 object-cover + 약한 링 */}
+      {/* 이미지: 작은 원본도 깔끔하게 보이도록 */}
       <div
         className="
           relative rounded-xl overflow-hidden
@@ -110,7 +112,7 @@ export default function TechSection({ copy }: { copy?: TechCopy }) {
     >
       <TitleBlock />
 
-      {/* 📱 Mobile: 아코디언 리스트 (이미지 썸네일 + 텍스트) */}
+      {/* 📱 Mobile: 아코디언 */}
       <div className="mt-6 md:hidden max-w-6xl mx-auto px-5 space-y-3">
         {FEATURES.map((f) => (
           <details
@@ -130,24 +132,5 @@ export default function TechSection({ copy }: { copy?: TechCopy }) {
               />
               <span className="flex-1">{f.title}</span>
               <span className="text-zinc-500">▾</span>
-            </summary>
-            {f.desc && (
-              <div className="px-4 pb-4 -mt-2">
-                <p className="text-sm text-zinc-700 dark:text-zinc-300">{f.desc}</p>
-              </div>
-            )}
-          </details>
-        ))}
-      </div>
-
-      {/* 💻 Desktop: 2~3열 카드 그리드 (Support와 유사한 hover/focus 인터랙션) */}
-      <div className="hidden md:block max-w-6xl mx-auto px-5">
-        <div className="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {FEATURES.map((f) => (
-            <Card key={f.id} item={f} />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
+            </sum
+::contentReference[oaicite:0]{index=0}
