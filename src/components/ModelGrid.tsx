@@ -1,3 +1,4 @@
+// src/components/ModelGrid.tsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MODELS } from '../data/models';
 import { openModel } from './ModelDetail';
@@ -23,14 +24,13 @@ function imgSrc(code: string) {
   return `/models/${code}_1.jpg`;
 }
 function imgPreviewSrc(code: string) {
-  // 선택사항: 같은 경로에 저해상도 프리뷰가 있다면 사용 (/models/{code}_1-preview.jpg)
   return `/models/${code}_1-preview.jpg`;
 }
 
 export default function ModelGrid() {
   const models = useMemo(() => MODELS, []);
   return (
-    <section id="models" className="py-16 bg-white text-black dark:bg-black dark:text-white">
+    <section id="models" className="py-16 bg-white text-black dark:bg-black dark:text-white scroll-mt-24 md:scroll-mt-28">
       <div className="max-w-6xl mx-auto px-5">
         <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Models</h2>
 
@@ -67,15 +67,11 @@ function ModelCard({ code, name, subtitle }: { code: string; name: string; subti
         aria-label={`Open ${name} details`}
       >
         <div className="relative aspect-[16/9] bg-zinc-100 dark:bg-zinc-900">
-          {/* Blur-up preview (선택사항: 프리뷰 파일 없으면 자동 실패 → 그냥 숨김) */}
           <img
             src={imgPreviewSrc(code)}
             alt=""
             aria-hidden="true"
-            className={[
-              'absolute inset-0 w-full h-full object-cover blur-md scale-105 transition-opacity',
-              loaded ? 'opacity-0' : 'opacity-100',
-            ].join(' ')}
+            className={['absolute inset-0 w-full h-full object-cover blur-md scale-105 transition-opacity', loaded ? 'opacity-0' : 'opacity-100'].join(' ')}
             onError={(e) => ((e.currentTarget.style.display = 'none'))}
           />
           <img
