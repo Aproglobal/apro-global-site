@@ -1,18 +1,9 @@
+// src/components/SupportSection.tsx
 import React, { useEffect, useRef } from "react";
 import { trackEvent } from "../services/analytics";
 
-/**
- * ✅ 사용자 제공 원문만 반영:
- * - A/S 및 보증기간
- * - 진단프로그램 및 교육
- * ※ 카드 내부 CTA(버튼)나 "Press Enter..." 힌트 없음
- * ※ 텍스트는 hover 시 이동/색 변화 없음(불필요한 시각적 반응 제거)
- */
 export default function SupportSection() {
-  useEffect(() => {
-    trackEvent("support_view");
-  }, []);
-
+  useEffect(() => { trackEvent("support_view"); }, []);
   const hoveredRef = useRef<Set<string>>(new Set());
 
   const asWarranty = [
@@ -32,62 +23,35 @@ export default function SupportSection() {
 
   const handleHoverOnce = (id: string) => {
     const seen = hoveredRef.current;
-    if (!seen.has(id)) {
-      seen.add(id);
-      trackEvent("support_block_hover", { id });
-    }
+    if (!seen.has(id)) { seen.add(id); trackEvent("support_block_hover", { id }); }
   };
 
-  const Card = ({
-    id,
-    title,
-    items,
-  }: {
-    id: string;
-    title: string;
-    items: string[];
-  }) => (
+  const Card = ({ id, title, items }: { id: string; title: string; items: string[]; }) => (
     <article
       role="region"
       aria-labelledby={`${id}-title`}
       tabIndex={0}
       onMouseEnter={() => handleHoverOnce(id)}
       onFocus={() => handleHoverOnce(id)}
-      className="
-        group rounded-2xl border border-zinc-200 dark:border-zinc-800
-        bg-white dark:bg-zinc-950/90
-        p-5 md:p-6 transition-all duration-200
-        hover:shadow-lg hover:-translate-y-0.5 hover:border-black/15 dark:hover:border-white/20
-        focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20
-      "
+      className="group rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/90 p-5 md:p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 hover:border-black/15 dark:hover:border-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
     >
-      <h3 id={`${id}-title`} className="text-lg font-semibold">
-        {title}
-      </h3>
+      <h3 id={`${id}-title`} className="text-lg font-semibold">{title}</h3>
       <ul className="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
         {items.map((li, i) => (
           <li key={i} className="pl-4 relative">
-            <span
-              className="absolute left-0 top-2 h-1.5 w-1.5 rounded-full bg-zinc-400
-                         transition-colors group-hover:bg-black dark:group-hover:bg-white"
-            />
-            {/* 텍스트는 hover 영향 없음 */}
-            <span className="block">
-              {li}
-            </span>
+            <span className="absolute left-0 top-2 h-1.5 w-1.5 rounded-full bg-zinc-400 transition-colors group-hover:bg-black dark:group-hover:bg-white" />
+            <span className="block">{li}</span>
           </li>
         ))}
       </ul>
     </article>
   );
 
-  // 📱 모바일 아코디언 / 💻 데스크톱 카드 그리드
   return (
-    <section id="support" className="py-20 bg-zinc-50 text-black dark:bg-zinc-900 dark:text-white">
+    <section id="support" className="py-20 bg-zinc-50 text-black dark:bg-zinc-900 dark:text-white scroll-mt-24 md:scroll-mt-28">
       <div className="max-w-6xl mx-auto px-5">
         <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Support</h2>
 
-        {/* Mobile (Accordion) */}
         <div className="mt-6 space-y-3 md:hidden">
           {[
             { id: "as_warranty", title: "Service & Warranty", items: asWarranty },
@@ -96,9 +60,7 @@ export default function SupportSection() {
             <details
               key={block.id}
               className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/90"
-              onToggle={(e) => {
-                if ((e.target as HTMLDetailsElement).open) handleHoverOnce(block.id);
-              }}
+              onToggle={(e) => { if ((e.target as HTMLDetailsElement).open) handleHoverOnce(block.id); }}
             >
               <summary className="cursor-pointer list-none p-4 font-semibold flex items-center justify-between">
                 {block.title}
@@ -118,7 +80,6 @@ export default function SupportSection() {
           ))}
         </div>
 
-        {/* Desktop (Cards) — Tech와 동일한 반응형: 1 → 2 → 3열이 아닌, 여기선 2열 구성 유지 */}
         <div className="hidden md:grid md:grid-cols-2 gap-6 mt-6">
           <Card id="as_warranty" title="Service &amp; Warranty" items={asWarranty} />
           <Card id="diagnostics_training" title="Diagnostics &amp; Training" items={diagnosticsTraining} />
