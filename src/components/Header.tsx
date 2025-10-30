@@ -38,48 +38,68 @@ const CANDIDATE_IDS = [
 ];
 
 /** -------------------------------
- *  Theme (Cycle: light → dark → system)
+ *  Theme
+ *  - 기본값: 시간대 자동(light/daytime, dark/night)
+ *  - 사용자 토글 시: 라이트/다크 2-상태 고정(로컬 저장)
  * --------------------------------*/
-type ThemeMode = "light" | "dark" | "system";
+type UserPref = "light" | "dark" | null;
+const USER_KEY = "theme_user_pref";
 
-function useThemeCycle() {
-  const [mode, setMode] = useState<ThemeMode>(() => {
-    const v = localStorage.getItem("theme") as ThemeMode | null;
-    return v ?? "system";
+/** 밤 시간 정의(원하면 조정) — 19:00~06:59 는 다크 */
+function isNightNow(d: Date = new Date()) {
+  const h = d.getHours();
+  return h >= 19 || h < 7;
+}
+function applyThemeClass(isDark: boolean) {
+  const root = document.documentElement;
+  root.classList.toggle("dark", isDark);
+  root.style.colorScheme = isDark ? "dark" : "light";
+}
+
+function useTheme2State() {
+  const [userPref, setUserPref] = useState<UserPref>(() => {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw === "light" || raw === "dark" ? (raw as UserPref) : null;
+  });
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    const saved = localStorage.getItem(USER_KEY) as UserPref;
+    if (saved) return saved;
+    return isNightNow() ? "dark" : "light";
   });
 
-  const apply = useCallback((m: ThemeMode) => {
-    const root = document.documentElement;
-    const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
-    const effectiveDark = m === "dark" || (m === "system" && prefersDark);
-    root.classList.toggle("dark", !!effectiveDark);
-    root.style.colorScheme = effectiveDark ? "dark" : "light";
-  }, []);
-
+  // 적용
   useEffect(() => {
-    apply(mode);
-    localStorage.setItem("theme", mode);
-  }, [mode, apply]);
+    applyThemeClass(theme === "dark");
+  }, [theme]);
 
+  // 자동(시간대) 갱신 — 사용자 고정이 없을 때만 주기적으로 확인
   useEffect(() => {
-    const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
-    const onChange = () => {
-      const saved = (localStorage.getItem("theme") as ThemeMode | null) ?? "system";
-      if (saved === "system") apply("system");
+    if (userPref) return;
+    const tick = () => {
+      const want = isNightNow() ? "dark" : "light";
+      setTheme((cur) => (cur !== want ? want : cur));
     };
-    mq?.addEventListener?.("change", onChange);
-    return () => mq?.removeEventListener?.("change", onChange);
-  }, [apply]);
+    tick();
+    const id = window.setInterval(tick, 5 * 60 * 1000); // 5분마다 체크
+    return () => window.clearInterval(id);
+  }, [userPref]);
 
-  const cycle = useCallback(() => {
-    setMode((prev) => (prev === "light" ? "dark" : prev === "dark" ? "system" : "light"));
-    trackEvent("theme_cycle_click", {});
+  // 토글: 2-상태만
+  const toggle = useCallback(() => {
+    setTheme((cur) => {
+      const next = cur === "light" ? "dark" : "light";
+      localStorage.setItem(USER_KEY, next);
+      setUserPref(next);
+      trackEvent("theme_toggle_click", { to: next });
+      return next;
+    });
   }, []);
 
-  const icon = mode === "light" ? "☀️" : mode === "dark" ? "🌙" : "🖥️";
-  const label = `Theme: ${mode}`;
+  // 아이콘/라벨
+  const icon = theme === "dark" ? "🌙" : "☀️";
+  const label = theme === "dark" ? "Theme: dark" : "Theme: light";
 
-  return { mode, cycle, icon, label };
+  return { theme, toggle, icon, label };
 }
 
 /** -------------------------------
@@ -99,7 +119,7 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [active, setActive] = useState<string>("");
   const [navItems, setNavItems] = useState<NavItem[]>([]);
-  const { cycle, icon: themeIcon, label: themeLabel } = useThemeCycle();
+  const { toggle: toggleTheme, icon: themeIcon, label: themeLabel } = useTheme2State();
 
   const firstMobileLinkRef = useRef<HTMLButtonElement | null>(null);
   const desktopScrollRef = useRef<HTMLDivElement | null>(null);
@@ -137,7 +157,7 @@ export default function Header() {
     };
   }, []);
 
-  /** Active section highlight (with bottom-of-page fallback) */
+  /** Active section highlight + bottom fallback */
   useEffect(() => {
     if (!navItems.length) return;
     const io = new IntersectionObserver(
@@ -145,16 +165,9 @@ export default function Header() {
         const visible = entries
           .filter((e) => e.isIntersecting)
           .sort((a, b) => Math.abs(a.boundingClientRect.top) - Math.abs(b.boundingClientRect.top));
-        if (visible.length) {
-          setActive(visible[0].target.id);
-        }
+        if (visible.length) setActive(visible[0].target.id);
       },
-      {
-        root: null,
-        // 넉넉한 마진으로 하단 섹션도 안정적으로 활성화
-        rootMargin: "-30% 0px -30% 0px",
-        threshold: [0, 0.2, 0.5, 1],
-      }
+      { root: null, rootMargin: "-30% 0px -30% 0px", threshold: [0, 0.2, 0.5, 1] }
     );
 
     const targets: HTMLElement[] = [];
@@ -170,9 +183,7 @@ export default function Header() {
       const atBottom =
         window.innerHeight + (window.scrollY || 0) >=
         (document.scrollingElement?.scrollHeight || document.body.scrollHeight) - 2;
-      if (atBottom && navItems.length) {
-        setActive(navItems[navItems.length - 1].id); // 마지막 섹션 활성
-      }
+      if (atBottom && navItems.length) setActive(navItems[navItems.length - 1].id);
     };
     window.addEventListener("scroll", onScrollBottomFallback, { passive: true });
 
@@ -249,27 +260,20 @@ export default function Header() {
       <header
         className={[
           "fixed inset-x-0 top-0 z-50 transition-all",
-          scrolled
-            ? "bg-white/90 dark:bg-black/70 backdrop-blur-md shadow-sm"
-            : "bg-transparent dark:bg-transparent",
+          scrolled ? "bg-white/90 dark:bg-black/70 backdrop-blur-md shadow-sm" : "bg-transparent dark:bg-transparent",
         ].join(" ")}
         role="banner"
       >
         <div className="max-w-6xl mx-auto px-5">
           <div className="flex items-center gap-3 h-16 lg:h-20">
-            {/* Left: Brand (no overlap) */}
+            {/* Left: Brand */}
             <div className="flex-none">{Brand}</div>
 
-            {/* Center: Desktop Nav — 가로 스크롤 가능 + 마스크 페이드, 로고와 겹치지 않음 */}
+            {/* Center: Desktop Nav (scrollable) */}
             <div className="relative hidden lg:flex flex-1 min-w-0 items-center justify-center px-2">
-              {/* Edge fade masks */}
               <div className="pointer-events-none absolute left-0 top-0 h-full w-6 bg-gradient-to-r from-white/90 dark:from-black/70 to-transparent" />
               <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-white/90 dark:from-black/70 to-transparent" />
-              <div
-                ref={desktopScrollRef}
-                className="mx-auto max-w-[720px] overflow-x-auto overscroll-x-contain"
-                style={{ scrollbarWidth: "thin" }}
-              >
+              <div ref={desktopScrollRef} className="mx-auto max-w-[760px] overflow-x-auto overscroll-x-contain" style={{ scrollbarWidth: "thin" }}>
                 <ul className="flex items-center gap-1 whitespace-nowrap pr-6">
                   {navItems.map((item) => {
                     const isActive = active === item.id;
@@ -297,12 +301,12 @@ export default function Header() {
               </div>
             </div>
 
-            {/* Right: CTA + Theme + Hamburger */}
-            <div className="flex items-center gap-2 flex-none">
-              {/* Theme Cycle (icon-only) */}
+            {/* Right: Theme + CTA + Hamburger (모바일 우측 정렬 보장) */}
+            <div className="flex items-center gap-2 flex-none ml-auto">
+              {/* Theme (2-state toggle only) */}
               <button
                 type="button"
-                onClick={cycle}
+                onClick={toggleTheme}
                 title={themeLabel}
                 aria-label={themeLabel}
                 className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
@@ -320,7 +324,7 @@ export default function Header() {
                 Talk to Sales
               </button>
 
-              {/* Hamburger (mobile only) */}
+              {/* Hamburger (mobile only) — 항상 우측 고정 */}
               <button
                 type="button"
                 className="inline-flex lg:hidden items-center justify-center w-10 h-10 rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
@@ -349,15 +353,13 @@ export default function Header() {
           aria-hidden={!mobileOpen}
           onClick={() => setMobileOpen(false)}
         >
-          {/* 더 진한 스크림 */}
           <div className="absolute inset-0 bg-black/70" />
 
-          {/* Drawer */}
+          {/* Drawer (no theme button inside to avoid duplication) */}
           <div
             id="mobile-drawer"
             className={[
               "absolute right-0 top-0 h-[100dvh] w-[86%] max-w-sm",
-              // 완전 불투명으로 가독성 최대화
               "bg-white dark:bg-zinc-950",
               "border-l border-zinc-200 dark:border-zinc-800 shadow-xl",
               "transition-transform duration-200",
@@ -371,35 +373,20 @@ export default function Header() {
             {/* Drawer header */}
             <div className="flex items-center justify-between h-16 px-4">
               <div className="font-extrabold">APRO</div>
-              <div className="flex items-center gap-2">
-                {/* Theme button in drawer too */}
-                <button
-                  type="button"
-                  onClick={cycle}
-                  title={themeLabel}
-                  aria-label={themeLabel}
-                  className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70"
-                >
-                  <span aria-hidden="true" className="text-base leading-none">{themeIcon}</span>
-                </button>
-                <button
-                  type="button"
-                  className="w-10 h-10 inline-flex items-center justify-center rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
-                  aria-label="Close menu"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                </button>
-              </div>
+              <button
+                type="button"
+                className="w-10 h-10 inline-flex items-center justify-center rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
+                aria-label="Close menu"
+                onClick={() => setMobileOpen(false)}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </button>
             </div>
 
             {/* Scrollable content */}
-            <div
-              className="px-4 pb-6 overflow-y-auto"
-              style={{ maxHeight: "calc(100dvh - 64px)" }}
-            >
+            <div className="px-4 pb-6 overflow-y-auto" style={{ maxHeight: "calc(100dvh - 64px)" }}>
               {/* CTA */}
               <div className="py-3">
                 <button
@@ -438,7 +425,6 @@ export default function Header() {
                 })}
               </ul>
 
-              {/* bottom padding */}
               <div className="h-6" />
             </div>
           </div>
