@@ -21,7 +21,6 @@ const ALL_LINKS = [
   { id: "contact", label: "Contact" },
 ] as const;
 
-// lg에서 보여줄 핵심 메뉴(겹침 방지), xl 이상에서 전체 노출
 const CORE_LINK_IDS = new Set([
   "models",
   "technology",
@@ -38,7 +37,6 @@ function useActiveSection() {
       (el): el is HTMLElement => !!el
     );
     if (!targets.length) return;
-
     const io = new IntersectionObserver(
       (entries) => {
         const visible = entries
@@ -46,11 +44,7 @@ function useActiveSection() {
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
         if (visible[0]?.target?.id) setActive(visible[0].target.id);
       },
-      {
-        root: null,
-        rootMargin: "-45% 0px -45% 0px",
-        threshold: [0, 0.1, 0.25, 0.5, 0.75, 1],
-      }
+      { root: null, rootMargin: "-45% 0px -45% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] }
     );
     targets.forEach((t) => io.observe(t));
     return () => io.disconnect();
@@ -62,17 +56,13 @@ function ThemeToggle() {
   const [mode, setMode] = React.useState<Mode>(() => getThemeMode());
   React.useEffect(() => {
     const unsub = subscribeTheme(() => setMode(getThemeMode()));
-    return () => {
-      unsub();
-    };
+    return () => unsub();
   }, []);
-
   const OPTIONS = ["system", "light", "dark"] as const;
   const LABEL: Record<Mode, string> = { system: "Auto", light: "Light", dark: "Dark" };
-
   return (
     <div
-      className="hidden lg:flex rounded-full border border-black/20 dark:border-white/20 overflow-hidden text-sm h-9"
+      className="hidden xl:flex rounded-full border border-black/20 dark:border-white/20 overflow-hidden text-sm h-10"
       role="group"
       aria-label="Theme"
     >
@@ -83,7 +73,7 @@ function ThemeToggle() {
           aria-pressed={mode === m}
           title={m === "system" ? "Follow OS theme" : LABEL[m]}
           className={[
-            "px-3 py-1.5 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20",
+            "px-4 py-2 leading-none transition focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20",
             mode === m ? "bg-black text-white dark:bg-white dark:text-black" : "text-black dark:text-white",
           ].join(" ")}
         >
@@ -98,50 +88,48 @@ function ThemeCycleButton() {
   const [mode, setMode] = React.useState<Mode>(() => getThemeMode());
   React.useEffect(() => {
     const unsub = subscribeTheme(() => setMode(getThemeMode()));
-    return () => {
-      unsub();
-    };
+    return () => unsub();
   }, []);
-
   const order: Mode[] = ["system", "light", "dark"];
   const next = () => {
     const idx = order.indexOf(mode);
     const to = order[(idx + 1) % order.length];
     setThemeMode(to);
   };
-
   const label = mode === "system" ? "Auto" : mode === "light" ? "Light" : "Dark";
   const icon = mode === "system" ? "A" : mode === "light" ? "☀️" : "🌙";
-
   return (
     <button
       onClick={next}
-      className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full border border-black/20 dark:border-white/20 text-xs lg:hidden"
+      className="inline-flex items-center gap-1.5 h-10 px-3 rounded-full border border-black/20 dark:border-white/20 text-sm xl:hidden"
       title="Theme"
       aria-label={`Theme: ${label}`}
     >
       <span aria-hidden>{icon}</span>
-      <span>{label}</span>
+      <span className="leading-none">{label}</span>
     </button>
   );
 }
 
 function DesktopNav({ active }: { active: string }) {
-  // lg: 핵심 링크만, xl+: 전체 링크
   const coreLinks = ALL_LINKS.filter((l) => CORE_LINK_IDS.has(l.id));
-  const extraLinks = ALL_LINKS.filter((l) => !CORE_LINK_IDS.has(l.id));
-
   const linkCls = (isActive: boolean) =>
     [
-      "px-1.5 py-1 rounded-md text-sm transition-colors",
+      "px-2 py-1 rounded-md text-[15px] leading-none transition-colors whitespace-nowrap",
       "text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white",
       isActive ? "underline underline-offset-8 decoration-2" : "",
     ].join(" ");
-
   return (
-    <nav className="hidden lg:flex items-center justify-center gap-6 text-sm h-9 whitespace-nowrap">
-      {/* lg: 핵심 */}
-      <div className="lg:flex xl:hidden flex-wrap items-center justify-center gap-6">
+    <nav
+      className="
+        hidden lg:flex items-center justify-center h-10
+        overflow-x-auto
+        [scrollbar-width:none] [-ms-overflow-style:none]
+        [&::-webkit-scrollbar]:hidden
+      "
+    >
+      {/* lg: 핵심 링크만 (nowrap, 스크롤 허용) */}
+      <div className="lg:flex xl:hidden flex-nowrap items-center gap-5">
         {coreLinks.map((l) => {
           const isActive = active === l.id;
           return (
@@ -157,9 +145,8 @@ function DesktopNav({ active }: { active: string }) {
           );
         })}
       </div>
-
-      {/* xl+: 전체 */}
-      <div className="hidden xl:flex flex-wrap items-center justify-center gap-6">
+      {/* xl+: 전체 링크 (nowrap, 스크롤 허용) */}
+      <div className="hidden xl:flex flex-nowrap items-center gap-6">
         {ALL_LINKS.map((l) => {
           const isActive = active === l.id;
           return (
@@ -179,13 +166,11 @@ function DesktopNav({ active }: { active: string }) {
   );
 }
 
-/** 작은/중간 화면에서 겹침 방지를 위한 “More” 콜랩스 */
 function MoreMenu() {
   return (
     <details className="relative md:flex lg:hidden">
-      <summary className="list-none cursor-pointer inline-flex items-center h-9 px-3 rounded-full border border-black/20 dark:border-white/20 text-sm select-none">
-        Menu
-        <span className="ml-1">▾</span>
+      <summary className="list-none cursor-pointer inline-flex items-center h-10 px-3 rounded-full border border-black/20 dark:border-white/20 text-sm select-none">
+        Menu <span className="ml-1">▾</span>
       </summary>
       <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl p-2 z-50">
         {ALL_LINKS.map((l) => (
@@ -205,26 +190,25 @@ function MoreMenu() {
 
 export default function Header() {
   const active = useActiveSection();
-
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/70 dark:bg-black/70 backdrop-blur border-b border-zinc-200 dark:border-zinc-800">
-      {/* 3열 그리드: 좌 로고 / 중앙 네비(정중앙) / 우 액션 */}
-      <div className="max-w-6xl mx-auto px-5 py-3 grid grid-cols-[1fr_auto_1fr] items-center">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white/75 dark:bg-black/75 backdrop-blur border-b border-zinc-200 dark:border-zinc-800">
+      {/* 단일 행 고정 */}
+      <div className="max-w-6xl mx-auto px-5 h-16 grid grid-cols-[1fr_auto_1fr] items-center">
         {/* Left: Logo */}
         <a
           href="#home"
           onClick={() => trackEvent("headerLogoClick")}
-          className="text-black dark:text-white text-xl tracking-wide font-semibold justify-self-start"
+          className="text-black dark:text-white text-xl tracking-wide font-semibold justify-self-start leading-none"
           aria-label="Go to top"
         >
           APRO
         </a>
 
-        {/* Center: Nav (가운데 정렬) */}
+        {/* Center: Nav */}
         <DesktopNav active={active} />
 
         {/* Right: Actions */}
-        <div className="flex items-center justify-self-end gap-2">
+        <div className="flex items-center justify-self-end gap-3">
           <MoreMenu />
           <ThemeCycleButton />
           <ThemeToggle />
@@ -233,7 +217,7 @@ export default function Header() {
               openLead("Header CTA");
               trackEvent("contactOpen", { where: "header", label: "Talk to Sales" });
             }}
-            className="ml-1 h-9 px-3 rounded-full bg-black text-white text-xs font-semibold hover:opacity-90 dark:bg-white dark:text-black transition md:text-sm md:px-4"
+            className="ml-1 h-11 px-5 rounded-full bg-black text-white text-base font-semibold hover:opacity-90 dark:bg-white dark:text-black transition shadow-sm"
             aria-label="Talk to Sales"
           >
             Talk to Sales
