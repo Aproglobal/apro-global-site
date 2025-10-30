@@ -102,7 +102,7 @@ export default function App() {
               alt="APRO Golf Carts"
               className="absolute inset-0 w-full h-full object-cover"
               loading="eager"
-              fetchpriority="high"
+              fetchPriority="high"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-white via-white/30 to-transparent dark:from-black dark:via-black/30 dark:to-transparent" />
             <div className="relative z-10 max-w-6xl mx-auto px-5 h-full flex flex-col justify-end pb-14">
