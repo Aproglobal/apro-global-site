@@ -43,13 +43,13 @@ function buildTip(code: string): string {
  *  Spec keys & labels
  * --------------------------------*/
 const DESKTOP_HEADERS = [
-  'model',        // 가상: 이름
+  'model',
   'modelNo',
-  'guidance',     // 가상: MODELS에서
-  'seats',        // 가상: MODELS에서
-  'variant',      // 가상: MODELS에서
-  'deck',         // 가상: MODELS에서
-  'reverse',      // 가상: MODELS에서
+  'guidance',
+  'seats',
+  'variant',
+  'deck',
+  'reverse',
   'maxSpeed',
   'gradeability',
   'battery',
@@ -76,7 +76,6 @@ const HEADER_LABEL: Record<FieldKey, string> = {
   payload: 'Payload',
 };
 
-/** 모바일 미니 비교에서 보여줄 핵심 키 (2열) */
 const MOBILE_KEYS: FieldKey[] = [
   'guidance',
   'seats',
@@ -90,7 +89,6 @@ const MOBILE_KEYS: FieldKey[] = [
   'payload',
 ];
 
-/** 셀 값 계산 (모델/스펙 혼재 키) */
 function getCellValue(m: any, key: FieldKey): string {
   const s = (SPECS as any)[m.code] || {};
   switch (key) {
@@ -133,7 +131,7 @@ export default function CompareTable() {
   const models = useMemo(() => MODELS, []);
   const [tip, setTip] = useState<TipState>({ show: false, x: 0, y: 0 });
 
-  // ✅ 데스크탑: 차이만 보기
+  // 데스크탑: 차이만 보기
   const [showDiffOnly, setShowDiffOnly] = useState(false);
   const diffCols = useMemo(() => findDiffColumns(DESKTOP_HEADERS, models), [models]);
 
@@ -145,9 +143,25 @@ export default function CompareTable() {
     [showDiffOnly, diffCols]
   );
 
-  // ✅ 모바일: 핀 고정 → 하단 트레이 → 2열 미니 비교
+  // 모바일: 핀 & 미니 비교
   const [pinned, setPinned] = useState<string[]>([]);
   const [showMini, setShowMini] = useState(false);
+
+  // ✅ 하단 UI 충돌 방지: 핀 개수/미니 비교 상태 브로드캐스트
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('compare:pinned', { detail: { count: pinned.length } } as any));
+  }, [pinned]);
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('compare:mini', { detail: { open: showMini } } as any));
+  }, [showMini]);
+  useEffect(() => {
+    return () => {
+      // 언마운트 시 초기화
+      window.dispatchEvent(new CustomEvent('compare:pinned', { detail: { count: 0 } } as any));
+      window.dispatchEvent(new CustomEvent('compare:mini', { detail: { open: false } } as any));
+    };
+  }, []);
+
   const togglePin = (code: string) => {
     setPinned((cur) => {
       if (cur.includes(code)) return cur.filter((c) => c !== code);
@@ -161,9 +175,6 @@ export default function CompareTable() {
     trackEvent('compare_row_click', { code, name });
   };
 
-  /** -------------------------------
-   *  Render
-   * --------------------------------*/
   return (
     <section
       id="compare"
@@ -220,7 +231,7 @@ export default function CompareTable() {
                       </div>
                     </header>
 
-                    {/* 하이라이트 스펙 칩 3개 정도 */}
+                    {/* 하이라이트 스펙 칩 */}
                     <ul className="mt-3 flex flex-wrap gap-2 text-[12px]">
                       {[
                         ['Max', s.maxSpeed ?? '—'],
@@ -242,9 +253,12 @@ export default function CompareTable() {
           })}
         </div>
 
-        {/* 모바일 핀 트레이 */}
+        {/* 모바일 핀 트레이 - safe-area 하단 보정 */}
         {pinned.length > 0 && (
-          <div className="md:hidden fixed bottom-20 left-0 right-0 z-40">
+          <div
+            className="md:hidden fixed left-0 right-0 z-40"
+            style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}
+          >
             <div className="mx-auto max-w-6xl px-5">
               <div className="flex items-center gap-2 rounded-2xl bg-black text-white dark:bg-white dark:text-black px-4 py-3 shadow-lg">
                 <div className="text-sm font-semibold">{pinned.length} selected</div>
@@ -337,7 +351,7 @@ export default function CompareTable() {
                   onClick={() => {
                     const first = pinned[0];
                     window.dispatchEvent(
-                      new CustomEvent('lead:open', { detail: { source: 'Mobile Compare', modelCode: first } })
+                      new CustomEvent('lead:open', { detail: { source: 'Mobile Compare', modelCode: first } } as any)
                     );
                     setShowMini(false);
                   }}
@@ -350,7 +364,7 @@ export default function CompareTable() {
           </div>
         )}
 
-        {/* ---------------- Desktop: 테이블 + 차이만 보기 ---------------- */}
+        {/* ---------------- Desktop ---------------- */}
         <div className="hidden md:flex items-center justify-between mt-6">
           <div className="text-sm text-zinc-600 dark:text-zinc-400">Scroll horizontally to see all specs</div>
           <label className="inline-flex items-center gap-2 text-sm cursor-pointer select-none">
@@ -368,7 +382,6 @@ export default function CompareTable() {
         </div>
 
         <div className="mt-3 hidden md:block relative">
-          {/* gradient edges */}
           <div className="pointer-events-none absolute left-0 top-0 h-full w-6 bg-gradient-to-r from-zinc-50 dark:from-zinc-900 to-transparent" />
           <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-zinc-50 dark:from-zinc-900 to-transparent" />
 
@@ -447,7 +460,7 @@ export default function CompareTable() {
           </div>
         </div>
 
-        {/* Tooltip (desktop hover/focus) */}
+        {/* Tooltip */}
         {tip.show && (
           <div
             className="pointer-events-none fixed z-30 max-w-[80vw] md:max-w-md px-3 py-2 rounded-lg shadow-lg
