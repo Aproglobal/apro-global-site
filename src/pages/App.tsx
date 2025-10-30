@@ -6,9 +6,7 @@ import CompareTable from "../components/CompareTable";
 import TechSection from "../components/TechSection";
 import FleetSection from "../components/FleetSection";
 import SupportSection from "../components/SupportSection";
-import LeadModal, { openLead } from "../components/LeadModal";
-import ModelDetail from "../components/ModelDetail";
-import { getVariant } from "../utils/ab";// src/pages/App.tsx
+import LeadModal, { openLead } from "../components/LeadModal";// src/pages/App.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import Header from "../components/Header";
 import ModelGrid from "../components/ModelGrid";
@@ -247,24 +245,14 @@ export default function App() {
               </a>
             </div>
 
-            {/* ✅ reCAPTCHA v3 공식 문구 (모바일에서 배지 숨길 때 필수) */}
+            {/* reCAPTCHA 정책 고지 (모바일 배지 숨김시 필수) */}
             <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
               This site is protected by reCAPTCHA and the Google{" "}
-              <a
-                href="https://policies.google.com/privacy"
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
+              <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">
                 Privacy Policy
               </a>{" "}
               and{" "}
-              <a
-                href="https://policies.google.com/terms"
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
+              <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="underline">
                 Terms of Service
               </a>{" "}
               apply.
@@ -299,24 +287,14 @@ export default function App() {
               Address: Floor 12, 124, Sagimakgol-ro, Jungwon-gu, Seongnam-si, Gyeonggi-do, Republic of Korea
             </p>
 
-            {/* ✅ reCAPTCHA v3 공식 문구 (푸터에도 노출해두면 가장 안전) */}
+            {/* 고지 문구를 푸터에도 한 번 더 표기해두면 정책상 가장 안전 */}
             <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-500">
               This site is protected by reCAPTCHA and the Google{" "}
-              <a
-                href="https://policies.google.com/privacy"
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
+              <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">
                 Privacy Policy
               </a>{" "}
               and{" "}
-              <a
-                href="https://policies.google.com/terms"
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
+              <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="underline">
                 Terms of Service
               </a>{" "}
               apply.
