@@ -13,17 +13,19 @@ import { initThemeWatcher } from "../utils/theme";
 import { loadRecaptcha } from "../lib/recaptcha";
 import { getTechCopy } from "../data/technology";
 
-// Production timeline
+// Timeline
 import ProductionTimeline from "../components/ProductionTimeline";
 import { TIMELINE_STEPS } from "../data/timeline";
 
-// NEW sections
+// New sections
 import IndustriesSection from "../components/IndustriesSection";
-import ServiceWarrantySection from "../components/ServiceWarrantySection";
-import ChargingPowerSection from "../components/ChargingPowerSection";
-import ResourcesSection from "../components/ResourcesSection";
-import TcoCalculator from "../components/TcoCalculator";
-import ConfiguratorSection from "../components/ConfiguratorSection";
+import AfterSalesSection from "../components/AfterSalesSection";
+import CertificationsSection from "../components/CertificationsSection";
+import DownloadsSection from "../components/DownloadsSection";
+import CaseStudiesSection from "../components/CaseStudiesSection";
+import ExportSection from "../components/ExportSection";
+import SustainabilitySection from "../components/SustainabilitySection";
+import PartnerProgramSection from "../components/PartnerProgramSection";
 
 export default function App() {
   const variant = getVariant();
@@ -32,8 +34,6 @@ export default function App() {
     initAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
     setupScrollDepth();
     initThemeWatcher();
-
-    // Preload reCAPTCHA v3
     const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
     if (siteKey) loadRecaptcha(siteKey);
   }, []);
@@ -41,7 +41,6 @@ export default function App() {
   const primaryCta = "Talk to Sales";
   const secondaryCta = variant === "A" ? "Explore models" : "Download brochure";
 
-  // Technology copy
   const techCopy = useMemo(() => getTechCopy(), []);
 
   return (
@@ -60,17 +59,17 @@ export default function App() {
             <div className="absolute inset-0 bg-gradient-to-t from-white via-white/30 to-transparent dark:from-black dark:via-black/30 dark:to-transparent" />
             <div className="relative z-10 max-w-6xl mx-auto px-5 h-full flex flex-col justify-end pb-14">
               <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
-                Electric Golf Carts, Built for Courses, Resorts & Venues Worldwide
+                Smart Electric Carts for Courses, Resorts &amp; Venues
               </h1>
               <p className="mt-3 max-w-2xl text-zinc-700 dark:text-zinc-200">
-                Smart guidance, flexible seating, and global after-sales support.
+                Safer guidance, flexible seating, and dependable after-sales — delivered worldwide.
               </p>
 
               <div className="mt-6 flex gap-3">
                 <button
                   onClick={() => {
                     openLead("Hero CTA");
-                    trackEvent("heroCtaClick", { where: "hero", label: primaryCta, ab_variant: variant });
+                    trackEvent("cta_click", { where: "hero", label: primaryCta, variant });
                   }}
                   className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
                 >
@@ -80,9 +79,7 @@ export default function App() {
                 {secondaryCta === "Explore models" ? (
                   <a
                     href="#models"
-                    onClick={() =>
-                      trackEvent("modelExploreClick", { where: "hero", label: secondaryCta, ab_variant: variant })
-                    }
+                    onClick={() => trackEvent("cta_click", { where: "hero", label: secondaryCta, variant })}
                     className="px-5 py-3 rounded-full border border-black/40 text-black dark:border-white/60 dark:text-white"
                   >
                     {secondaryCta}
@@ -90,54 +87,63 @@ export default function App() {
                 ) : (
                   <a
                     href="/brochure.pdf"
-                    onClick={() =>
-                      trackEvent("brochureDownload", { file: "/brochure.pdf", where: "hero", ab_variant: variant })
-                    }
+                    onClick={() => trackEvent("brochure_download", { file: "/brochure.pdf", where: "hero" })}
                     className="px-5 py-3 rounded-full border border-black/40 text-black dark:border-white/60 dark:text-white"
                   >
                     {secondaryCta}
                   </a>
                 )}
               </div>
+
+              {/* Value props badges */}
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  { t: "Electronic Guidance", d: "Reduce incidents and improve pace-of-play." },
+                  { t: "Flexible Seating", d: "2/4/6-seat, VIP and utility options." },
+                  { t: "Service You Can Count On", d: "Warranty, parts & on-site support." },
+                ].map((v, i) => (
+                  <div key={i} className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/70 backdrop-blur p-3">
+                    <div className="text-sm font-semibold">{v.t}</div>
+                    <div className="text-xs text-zinc-600 dark:text-zinc-300 mt-0.5">{v.d}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Products */}
-        <ModelGrid />
-        <CompareTable />
-
-        {/* Technology */}
-        <TechSection copy={techCopy} />
-
-        {/* Industries */}
         <IndustriesSection />
 
-        {/* Production Timeline (Domestic standard) */}
-        <ProductionTimeline steps={TIMELINE_STEPS} />
+        <section id="models" className="pt-12">
+          <ModelGrid />
+        </section>
 
-        {/* Service & Warranty */}
-        <ServiceWarrantySection />
+        <CompareTable />
 
-        {/* Charging & Power */}
-        <ChargingPowerSection />
+        <section id="technology" className="pt-6">
+          <TechSection copy={techCopy} />
+        </section>
 
-        {/* Resources */}
-        <ResourcesSection />
+        {/* Timeline (no highlight by default) */}
+        <ProductionTimeline steps={TIMELINE_STEPS} showSummary />
 
-        {/* TCO / ROI (coming soon) */}
-        <TcoCalculator />
+        <section id="fleet">
+          <FleetSection />
+        </section>
 
-        {/* Configurator (coming soon) */}
-        <ConfiguratorSection />
+        <AfterSalesSection />
+        <CertificationsSection />
+        <DownloadsSection />
+        <CaseStudiesSection />
+        <ExportSection />
+        <SustainabilitySection />
+        <PartnerProgramSection />
 
-        {/* Fleet */}
-        <FleetSection />
+        <section id="support">
+          <SupportSection />
+        </section>
 
-        {/* Support */}
-        <SupportSection />
-
-        {/* Contact */}
+        {/* CONTACT */}
         <section id="contact" className="py-20 bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white">
           <div className="max-w-6xl mx-auto px-5">
             <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Contact</h2>
@@ -146,6 +152,7 @@ export default function App() {
               <a
                 href={`mailto:${import.meta.env.VITE_SALES_EMAIL || "sales@example.com"}`}
                 className="underline"
+                onClick={() => trackEvent('nav_click', { label: 'Email link', location: 'contact' })}
               >
                 {import.meta.env.VITE_SALES_EMAIL || "sales@example.com"}
               </a>{" "}
@@ -156,7 +163,7 @@ export default function App() {
               <button
                 onClick={() => {
                   openLead("Contact CTA");
-                  trackEvent("contactOpen", { where: "contact_section", label: "Talk to Sales" });
+                  trackEvent("cta_click", { where: "contact", label: "Talk to Sales" });
                 }}
                 className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
               >
@@ -165,9 +172,7 @@ export default function App() {
 
               <a
                 href="/brochure.pdf"
-                onClick={() =>
-                  trackEvent("brochureDownload", { file: "/brochure.pdf", where: "contact_section" })
-                }
+                onClick={() => trackEvent("brochure_download", { file: "/brochure.pdf", where: "contact" })}
                 className="px-5 py-3 rounded-full border border-black/30 dark:border-white/40"
               >
                 Download brochure (PDF)
@@ -177,11 +182,11 @@ export default function App() {
         </section>
       </main>
 
-      {/* Sticky CTA (kept above reCAPTCHA badge) */}
+      {/* Sticky CTA */}
       <button
         onClick={() => {
           openLead("Sticky CTA");
-          trackEvent("contactOpen", { where: "sticky_cta", label: "Talk to Sales" });
+          trackEvent("cta_click", { where: "sticky", label: "Talk to Sales" });
         }}
         aria-label="Talk to Sales"
         className="
@@ -201,14 +206,9 @@ export default function App() {
         <div className="max-w-6xl mx-auto px-5 py-6 text-sm text-zinc-600 dark:text-zinc-400">
           © {new Date().getFullYear()} APRO. All rights reserved.
           <div className="mt-4">
-            <h3 className="text-xs font-semibold tracking-wider uppercase text-zinc-500 dark:text-zinc-500">
-              Company information
-            </h3>
+            <h3 className="text-xs font-semibold tracking-wider uppercase text-zinc-500 dark:text-zinc-500">Company information</h3>
             <p className="mt-1">KUKJE INTERTRADE Co., Ltd.</p>
-            <p className="mt-1">
-              Address: Floor 12, 124, Sagimakgol-ro, Jungwon-gu,
-              Seongnam-si, Gyeonggi-do, Republic of Korea
-            </p>
+            <p className="mt-1">Address: Floor 12, 124, Sagimakgol-ro, Jungwon-gu, Seongnam-si, Gyeonggi-do, Republic of Korea</p>
           </div>
         </div>
       </footer>
