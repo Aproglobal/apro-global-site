@@ -1,144 +1,460 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { trackEvent } from "../services/analytics";
 import { openLead } from "./LeadModal";
 
-const LINKS = [
-  { href: "#models", label: "Models" },
-  { href: "#compare", label: "Compare" },
-  { href: "#technology", label: "Technology" },
-  { href: "#charging", label: "Charging" },
-  { href: "#industries", label: "Industries" },
-  { href: "#resources", label: "Resources" },
-  { href: "#support", label: "Support" },
-  { href: "#contact", label: "Contact" },
+/** -------------------------------
+ *  Config
+ * --------------------------------*/
+type NavItem = { id: string; label: string };
+
+const LABELS: Record<string, string> = {
+  models: "Models",
+  technology: "Technology",
+  industries: "Industries",
+  compare: "Compare",
+  charging: "Charging",
+  resources: "Resources",
+  support: "Support",
+  timeline: "Timeline",
+  configurator: "Configurator",
+  fleet: "Fleet",
+  service: "Service",
+  contact: "Contact",
+};
+
+const CANDIDATE_IDS = [
+  "models",
+  "technology",
+  "industries",
+  "compare",
+  "charging",
+  "resources",
+  "support",
+  "timeline",
+  "configurator",
+  "fleet",
+  "service",
+  "contact",
 ];
 
-export default function Header() {
-  const [open, setOpen] = useState(false);
+/** -------------------------------
+ *  Theme (시간대 자동 + 사용자가 Light/Dark 둘 중 하나만 고정)
+ * --------------------------------*/
+type UserPref = "light" | "dark" | null;
+const USER_KEY = "theme_user_pref";
 
-  const close = useCallback(() => setOpen(false), []);
+function isNightNow(d: Date = new Date()) {
+  const h = d.getHours();
+  return h >= 19 || h < 7;
+}
+function applyThemeClass(isDark: boolean) {
+  const root = document.documentElement;
+  root.classList.toggle("dark", isDark);
+  root.style.colorScheme = isDark ? "dark" : "light";
+}
+function useTheme2State() {
+  const [userPref, setUserPref] = useState<UserPref>(() => {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw === "light" || raw === "dark" ? (raw as UserPref) : null;
+  });
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    const saved = localStorage.getItem(USER_KEY) as UserPref;
+    if (saved) return saved;
+    return isNightNow() ? "dark" : "light";
+  });
+
   useEffect(() => {
-    const onEsc = (e: KeyboardEvent) => e.key === "Escape" && close();
-    const onResize = () => window.innerWidth >= 1024 && close();
-    document.addEventListener("keydown", onEsc);
+    applyThemeClass(theme === "dark");
+  }, [theme]);
+
+  useEffect(() => {
+    if (userPref) return;
+    const tick = () => {
+      const want = isNightNow() ? "dark" : "light";
+      setTheme((cur) => (cur !== want ? want : cur));
+    };
+    tick();
+    const id = window.setInterval(tick, 5 * 60 * 1000);
+    return () => window.clearInterval(id);
+  }, [userPref]);
+
+  const toggle = useCallback(() => {
+    setTheme((cur) => {
+      const next = cur === "light" ? "dark" : "light";
+      localStorage.setItem(USER_KEY, next);
+      setUserPref(next);
+      trackEvent("theme_toggle_click", { to: next });
+      return next;
+    });
+  }, []);
+
+  const icon = theme === "dark" ? "🌙" : "☀️";
+  const label = theme === "dark" ? "Theme: dark" : "Theme: light";
+  return { theme, toggle, icon, label };
+}
+
+/** -------------------------------
+ *  Utils
+ * --------------------------------*/
+function getDocTop(el: Element) {
+  const rect = el.getBoundingClientRect();
+  const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+  return rect.top + scrollY;
+}
+
+/** Header 높이를 CSS 변수로 반영 */
+function setHeaderVar(px: number) {
+  const r = document.documentElement;
+  r.style.setProperty("--header-h", `${px}px`);
+}
+
+/** -------------------------------
+ *  Header
+ * --------------------------------*/
+export default function Header() {
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [active, setActive] = useState<string>("");
+  const [navItems, setNavItems] = useState<NavItem[]>([]);
+  const { toggle: toggleTheme, icon: themeIcon, label: themeLabel } = useTheme2State();
+
+  const firstMobileLinkRef = useRef<HTMLButtonElement | null>(null);
+  const desktopScrollRef = useRef<HTMLDivElement | null>(null);
+  const headerRef = useRef<HTMLElement | null>(null);
+
+  /** Header 높이 → CSS 변수 */
+  useLayoutEffect(() => {
+    if (!headerRef.current) return;
+    const el = headerRef.current;
+
+    const apply = () => setHeaderVar(el.offsetHeight);
+    apply();
+
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    window.addEventListener("resize", apply);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", apply);
+    };
+  }, []);
+
+  /** Shadow / bg */
+  useEffect(() => {
+    const onScroll = () => setScrolled((window.scrollY || 0) > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  /** Build nav by actual DOM order */
+  useEffect(() => {
+    let t: number | undefined;
+    const recalc = () => {
+      const existing = CANDIDATE_IDS
+        .map((id) => ({ id, el: document.getElementById(id) }))
+        .filter((x): x is { id: string; el: HTMLElement } => !!x.el)
+        .sort((a, b) => getDocTop(a.el) - getDocTop(b.el))
+        .map(({ id }) => ({ id, label: LABELS[id] || id }));
+      setNavItems(existing);
+    };
+    recalc();
+    window.addEventListener("load", recalc);
+    const onResize = () => {
+      if (t) window.clearTimeout(t);
+      t = window.setTimeout(recalc, 120);
+    };
     window.addEventListener("resize", onResize);
     return () => {
-      document.removeEventListener("keydown", onEsc);
+      window.removeEventListener("load", recalc);
       window.removeEventListener("resize", onResize);
+      if (t) window.clearTimeout(t);
     };
-  }, [close]);
+  }, []);
 
+  /** Active section highlight + bottom fallback */
   useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [open]);
+    if (!navItems.length) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => Math.abs(a.boundingClientRect.top) - Math.abs(b.boundingClientRect.top));
+        if (visible.length) setActive(visible[0].target.id);
+      },
+      { root: null, rootMargin: "-30% 0px -30% 0px", threshold: [0, 0.2, 0.5, 1] }
+    );
 
+    const targets: HTMLElement[] = [];
+    navItems.forEach((n) => {
+      const el = document.getElementById(n.id);
+      if (el) {
+        io.observe(el);
+        targets.push(el);
+      }
+    });
+
+    const onScrollBottomFallback = () => {
+      const atBottom =
+        window.innerHeight + (window.scrollY || 0) >=
+        (document.scrollingElement?.scrollHeight || document.body.scrollHeight) - 2;
+      if (atBottom && navItems.length) setActive(navItems[navItems.length - 1].id);
+    };
+    window.addEventListener("scroll", onScrollBottomFallback, { passive: true });
+
+    return () => {
+      io.disconnect();
+      window.removeEventListener("scroll", onScrollBottomFallback);
+    };
+  }, [navItems]);
+
+  /** Lock body when mobile drawer open */
+  useEffect(() => {
+    const original = document.body.style.overflow;
+    document.body.style.overflow = mobileOpen ? "hidden" : original || "";
+    return () => {
+      document.body.style.overflow = original || "";
+    };
+  }, [mobileOpen]);
+
+  /** Close on ESC */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const onNavClick = useCallback((id: string) => {
+    setMobileOpen(false);
+    trackEvent("nav_click", { id, where: "header" });
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      history.pushState({}, "", `#${id}`);
+    }
+  }, []);
+
+  const onTalkToSales = useCallback(() => {
+    openLead("Header CTA");
+    trackEvent("cta_click", { where: "header", label: "Talk to Sales" });
+  }, []);
+
+  const Brand = useMemo(
+    () => (
+      <a
+        href="#top"
+        onClick={(e) => {
+          e.preventDefault();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          history.pushState({}, "", "#top");
+        }}
+        className="inline-flex items-center gap-2 font-extrabold tracking-tight text-lg lg:text-xl whitespace-nowrap"
+        aria-label="APRO Home"
+      >
+        <span>APRO</span>
+      </a>
+    ),
+    []
+  );
+
+  /** -------------------------------
+   *  Render
+   * --------------------------------*/
   return (
-    <header className="sticky top-0 z-50 backdrop-blur bg-white/80 dark:bg-black/60 border-b border-zinc-200 dark:border-zinc-800">
-      <div className="max-w-6xl mx-auto px-5">
-        {/* ✅ 3열 그리드: 좌 로고 / 중 내비(가운데 고정) / 우 CTA */}
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center h-16 gap-3">
-          {/* Left: Logo */}
-          <a href="/" className="font-extrabold tracking-tight text-lg text-black dark:text-white">
-            APRO
-          </a>
+    <>
+      {/* Skip link */}
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-md focus:bg-black focus:text-white"
+      >
+        Skip to content
+      </a>
 
-          {/* Center: Desktop nav */}
-          <nav className="hidden lg:block">
-            <ul className="flex items-center gap-6 text-sm font-medium">
-              {LINKS.map((l) => (
-                <li key={l.href}>
-                  <a
-                    href={l.href}
-                    className="text-zinc-800 dark:text-zinc-200 hover:opacity-80"
-                  >
-                    {l.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
+      <header
+        ref={headerRef}
+        className={[
+          "fixed inset-x-0 top-0 z-50 transition-all",
+          scrolled ? "bg-white/90 dark:bg-black/70 backdrop-blur-md shadow-sm" : "bg-transparent dark:bg-transparent",
+          "border-b border-transparent",
+        ].join(" ")}
+        role="banner"
+      >
+        <div className="max-w-6xl mx-auto px-5">
+          <div className="flex items-center gap-3 h-16 lg:h-20">
+            {/* Left: Brand */}
+            <div className="flex-none">{Brand}</div>
 
-          {/* Right: CTA (desktop) + Burger (mobile) */}
-          <div className="flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setOpen(true)}
-              aria-label="Open menu"
-              className="lg:hidden inline-flex h-10 px-3 items-center justify-center rounded-lg border border-zinc-300 dark:border-zinc-700 text-sm"
-            >
-              Menu
-            </button>
-
-            {/* ✅ 데스크탑 CTA: 한 줄 고정 + 중앙 정렬 보장 */}
-            <button
-              type="button"
-              onClick={() => openLead("Header CTA")}
-              className="hidden lg:inline-flex h-10 px-4 items-center justify-center rounded-full
-                         bg-black text-white dark:bg-white dark:text-black
-                         text-sm font-semibold whitespace-nowrap leading-none tracking-tight
-                         shrink-0"
-            >
-              Talk to Sales
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile drawer */}
-      {open && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black/60" onClick={close} />
-          <aside
-            role="dialog"
-            aria-modal="true"
-            className="absolute right-0 top-0 h-full w-[78%] max-w-sm bg-white dark:bg-zinc-900 shadow-xl
-                       p-5 flex flex-col"
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-extrabold tracking-tight text-lg">APRO</span>
-              <button
-                type="button"
-                onClick={close}
-                aria-label="Close menu"
-                className="inline-grid place-items-center h-9 w-9 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            {/* Center: Desktop Nav (scrollable, 중앙 고정 & 로고 겹침 방지) */}
+            <div className="relative hidden lg:flex flex-1 min-w-0 items-center justify-center px-2">
+              <div className="pointer-events-none absolute left-0 top-0 h-full w-6 bg-gradient-to-r from-white/90 dark:from-black/70 to-transparent" />
+              <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-white/90 dark:from-black/70 to-transparent" />
+              <div
+                ref={desktopScrollRef}
+                className="mx-auto overflow-x-auto overscroll-x-contain"
+                style={{
+                  scrollbarWidth: "thin",
+                  maxWidth: "min(760px, calc(100vw - 280px))", // 좌우(로고/우측버튼) 공간 고려
+                }}
               >
-                ✕
-              </button>
+                <ul className="flex items-center gap-1 whitespace-nowrap pr-6">
+                  {navItems.map((item) => {
+                    const isActive = active === item.id;
+                    return (
+                      <li key={item.id}>
+                        <button
+                          type="button"
+                          onClick={() => onNavClick(item.id)}
+                          className={[
+                            "px-3 py-2 rounded-full text-sm font-medium transition-all",
+                            "hover:-translate-y-0.5 hover:shadow-sm",
+                            isActive
+                              ? "bg-black text-white dark:bg-white dark:text-black"
+                              : "text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70",
+                            "focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20",
+                          ].join(" ")}
+                          aria-current={isActive ? "page" : undefined}
+                        >
+                          {item.label}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             </div>
 
-            <nav className="mt-6">
-              <ul className="space-y-2 text-base">
-                {LINKS.map((l) => (
-                  <li key={l.href}>
-                    <a
-                      href={l.href}
-                      onClick={close}
-                      className="block rounded-lg px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                    >
-                      {l.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-
-            <div className="mt-auto pt-4">
+            {/* Right: Theme + CTA + Hamburger */}
+            <div className="flex items-center gap-2 flex-none ml-auto">
+              {/* Theme (2-state toggle only) */}
               <button
                 type="button"
-                onClick={() => {
-                  close();
-                  openLead("Header CTA (Mobile)");
-                }}
-                className="w-full inline-flex h-11 px-4 items-center justify-center rounded-full
-                           bg-black text-white dark:bg-white dark:text-black
-                           text-sm font-semibold"
+                onClick={toggleTheme}
+                title={themeLabel}
+                aria-label={themeLabel}
+                className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
+              >
+                <span aria-hidden="true" className="text-base leading-none">{themeIcon}</span>
+              </button>
+
+              {/* CTA on md+; 모바일은 드로어 내부 */}
+              <button
+                type="button"
+                onClick={onTalkToSales}
+                className="hidden md:inline-flex h-10 shrink-0 items-center justify-center px-4 rounded-full text-sm font-semibold bg-black text-white dark:bg-white dark:text-black hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20 whitespace-nowrap"
+                title="Talk to Sales"
               >
                 Talk to Sales
               </button>
+
+              {/* Hamburger (mobile only) — 항상 우측 고정 */}
+              <button
+                type="button"
+                className="inline-flex lg:hidden items-center justify-center w-10 h-10 rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
+                aria-label="Open menu"
+                aria-expanded={mobileOpen}
+                aria-controls="mobile-drawer"
+                onClick={() => {
+                  setMobileOpen((v) => !v);
+                  setTimeout(() => firstMobileLinkRef.current?.focus(), 60);
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </button>
             </div>
-          </aside>
+          </div>
         </div>
-      )}
-    </header>
+
+        {/* Mobile Drawer Overlay */}
+        <div
+          className={[
+            "lg:hidden fixed inset-0 z-40 transition-opacity",
+            mobileOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
+          ].join(" ")}
+          aria-hidden={!mobileOpen}
+          onClick={() => setMobileOpen(false)}
+        >
+          <div className="absolute inset-0 bg-black/70" />
+
+          {/* Drawer */}
+          <div
+            id="mobile-drawer"
+            className={[
+              "absolute right-0 top-0 h-[100dvh] w-[86%] max-w-sm",
+              "bg-white dark:bg-zinc-950",
+              "border-l border-zinc-200 dark:border-zinc-800 shadow-xl",
+              "transition-transform duration-200",
+              mobileOpen ? "translate-x-0" : "translate-x-full",
+              "flex flex-col",
+            ].join(" ")}
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Drawer header */}
+            <div className="flex items-center justify-between h-16 px-4">
+              <div className="font-extrabold">APRO</div>
+              <button
+                type="button"
+                className="w-10 h-10 inline-flex items-center justify-center rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
+                aria-label="Close menu"
+                onClick={() => setMobileOpen(false)}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Scrollable content */}
+            <div className="px-4 pb-6 overflow-y-auto flex-1">
+              {/* CTA */}
+              <div className="py-3">
+                <button
+                  ref={firstMobileLinkRef}
+                  type="button"
+                  onClick={() => {
+                    onTalkToSales();
+                    setMobileOpen(false);
+                  }}
+                  className="w-full inline-flex items-center justify-center px-4 py-3 rounded-xl text-sm font-semibold bg-black text-white dark:bg-white dark:text-black hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20 whitespace-nowrap"
+                >
+                  Talk to Sales
+                </button>
+              </div>
+
+              {/* Menu — DOM 순서 반영 */}
+              <ul className="space-y-1">
+                {navItems.map((item) => {
+                  const isActive = active === item.id;
+                  return (
+                    <li key={item.id}>
+                      <button
+                        type="button"
+                        onClick={() => onNavClick(item.id)}
+                        className={[
+                          "w-full text-left px-4 py-3 rounded-lg text-[15px] font-medium transition",
+                          "hover:bg-zinc-100 dark:hover:bg-zinc-800",
+                          isActive ? "bg-zinc-100 dark:bg-zinc-800" : "",
+                        ].join(" ")}
+                        aria-current={isActive ? "page" : undefined}
+                      >
+                        {item.label}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              <div className="h-6" />
+            </div>
+          </div>
+        </div>
+      </header>
+      {/* ✅ Spacer 제거 (헤더 높이는 CSS 변수로 보정) */}
+    </>
   );
 }
