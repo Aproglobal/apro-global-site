@@ -18,6 +18,7 @@ const RIGHT_LINKS = [
   { id: "contact", label: "Contact" },
 ] as const;
 
+/* ---------- Active section ---------- */
 function useActiveSection() {
   const [active, setActive] = React.useState<string>("");
   React.useEffect(() => {
@@ -40,20 +41,27 @@ function useActiveSection() {
   return active;
 }
 
+/* ---------- Theme: cycle-only ---------- */
 function ThemeCycleButton() {
   const [mode, setMode] = React.useState<Mode>(() => getThemeMode());
+
   React.useEffect(() => {
     const cleanupMaybe = subscribeTheme(() => setMode(getThemeMode()));
-    return () => { if (typeof cleanupMaybe === "function") cleanupMaybe(); };
+    return () => {
+      if (typeof cleanupMaybe === "function") cleanupMaybe();
+    };
   }, []);
+
   const order: Mode[] = ["system", "light", "dark"];
   const next = () => {
     const idx = order.indexOf(mode);
     const to = order[(idx + 1) % order.length];
     setThemeMode(to);
   };
+
   const label = mode === "system" ? "Auto" : mode === "light" ? "Light" : "Dark";
   const icon = mode === "system" ? "A" : mode === "light" ? "☀️" : "🌙";
+
   return (
     <button
       onClick={next}
@@ -67,6 +75,7 @@ function ThemeCycleButton() {
   );
 }
 
+/* ---------- Center nav (lg+) ---------- */
 function DesktopNav({ active }: { active: string }) {
   const scrollerRef = React.useRef<HTMLDivElement | null>(null);
   const [canLeft, setCanLeft] = React.useState(false);
@@ -90,7 +99,8 @@ function DesktopNav({ active }: { active: string }) {
     };
   }, [updateOverflow]);
 
-  const scrollBy = (dx: number) => scrollerRef.current?.scrollBy({ left: dx, behavior: "smooth" });
+  const scrollBy = (dx: number) =>
+    scrollerRef.current?.scrollBy({ left: dx, behavior: "smooth" });
 
   const linkCls = (isActive: boolean) =>
     [
@@ -101,8 +111,12 @@ function DesktopNav({ active }: { active: string }) {
 
   return (
     <div className="relative min-w-0 hidden lg:block">
-      {canLeft && <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white/90 dark:from-black/70 to-transparent" />}
-      {canRight && <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white/90 dark:from-black/70 to-transparent" />}
+      {canLeft && (
+        <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white/90 dark:from-black/70 to-transparent" />
+      )}
+      {canRight && (
+        <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white/90 dark:from-black/70 to-transparent" />
+      )}
 
       <button
         type="button"
@@ -115,7 +129,9 @@ function DesktopNav({ active }: { active: string }) {
           canLeft ? "opacity-100" : "opacity-0 pointer-events-none",
         ].join(" ")}
         aria-label="Scroll left"
-      >‹</button>
+      >
+        ‹
+      </button>
       <button
         type="button"
         onClick={() => scrollBy(220)}
@@ -127,7 +143,9 @@ function DesktopNav({ active }: { active: string }) {
           canRight ? "opacity-100" : "opacity-0 pointer-events-none",
         ].join(" ")}
         aria-label="Scroll right"
-      >›</button>
+      >
+        ›
+      </button>
 
       <nav
         ref={scrollerRef}
@@ -152,20 +170,70 @@ function DesktopNav({ active }: { active: string }) {
   );
 }
 
+/* ---------- Mobile menu (outside/Escape/Item click to close) ---------- */
 function MoreMenu() {
   const ALL_FOR_MENU = [...NAV_LINKS, ...RIGHT_LINKS];
+  const ref = React.useRef<HTMLDetailsElement | null>(null);
+  const [open, setOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    const d = ref.current;
+    if (!d) return;
+
+    const onToggle = () => setOpen(d.open);
+    d.addEventListener("toggle", onToggle);
+
+    const onDocClick = (e: MouseEvent) => {
+      if (!d.open) return;
+      if (d && !d.contains(e.target as Node)) d.removeAttribute("open");
+    };
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") d.removeAttribute("open");
+    };
+
+    document.addEventListener("click", onDocClick);
+    document.addEventListener("keydown", onEsc);
+
+    return () => {
+      d.removeEventListener("toggle", onToggle);
+      document.removeEventListener("click", onDocClick);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, []);
+
   return (
-    <details className="relative flex lg:hidden">
-      <summary className="list-none cursor-pointer inline-flex items-center h-10 px-3 rounded-full border border-black/20 dark:border-white/20 text-sm select-none">
-        Menu <span className="ml-1">▾</span>
+    <details ref={ref} className="relative flex lg:hidden">
+      <summary
+        className="list-none cursor-pointer inline-flex items-center h-10 px-3 rounded-full border border-black/20 dark:border-white/20 text-sm select-none"
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        Menu <span className="ml-1 transition-transform" style={{ transform: open ? "rotate(180deg)" : "none" }}>▾</span>
       </summary>
-      <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl p-2 z-50">
+
+      {/* 배경 오버레이: 열렸을 때 클릭 시 닫힘 */}
+      {open && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => ref.current?.removeAttribute("open")}
+          aria-hidden
+        />
+      )}
+
+      <div
+        role="menu"
+        className="absolute right-0 mt-2 w-56 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl p-2 z-50"
+      >
         {ALL_FOR_MENU.map((l) => (
           <a
             key={l.id}
             href={`#${l.id}`}
-            onClick={() => trackEvent("headerMoreClick", { target: l.id })}
+            onClick={() => {
+              trackEvent("headerMoreClick", { target: l.id });
+              ref.current?.removeAttribute("open");
+            }}
             className="block px-3 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            role="menuitem"
           >
             {l.label}
           </a>
@@ -175,14 +243,15 @@ function MoreMenu() {
   );
 }
 
+/* ---------- Header ---------- */
 export default function Header() {
   const active = useActiveSection();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-black/75 backdrop-blur border-b border-zinc-200 dark:border-zinc-800">
-      {/* 모바일 h-14, md이상 h-16 / 중앙 칸은 0까지 수축 가능 */}
+      {/* 모바일 h-14, md이상 h-16 / 가운데 칸은 0까지 수축 */}
       <div className="max-w-6xl mx-auto px-4 md:px-5 h-14 md:h-16 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 md:gap-4">
-        {/* Left: Logo (모바일 안전 처리: nowrap + truncate) */}
+        {/* Left: Logo — 모바일 겹침 방지 (nowrap + truncate) */}
         <a
           href="#home"
           onClick={() => trackEvent("headerLogoClick")}
@@ -192,37 +261,39 @@ export default function Header() {
           APRO
         </a>
 
-        {/* Center: nav (모바일에서는 숨김, lg부터 노출) */}
+        {/* Center: nav (lg+ 노출) */}
         <DesktopNav active={active} />
 
-        {/* Right: 모바일 최소화(메뉴만), md+에서 Support/Contact/Theme/CTA */}
-        <div className="flex items-center justify-self-end gap-2 md:gap-4 shrink-0">
-          {/* 모바일/태블릿 공통: More */}
+        {/* Right: actions — 모바일 최소화, md+ 확장 */}
+        <div className="flex items-center justify-self-end gap-2 md:gap-4 shrink-0 flex-nowrap">
           <MoreMenu />
 
-          {/* md+ 전용: Support/Contact 텍스트 링크 */}
-          {RIGHT_LINKS.map((l) => (
-            <a
-              key={l.id}
-              href={`#${l.id}`}
-              onClick={() => trackEvent("headerRightLink", { target: l.id })}
-              className="hidden md:inline-block text-sm text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white whitespace-nowrap"
+            {/* md+ 텍스트 링크 */}
+            {RIGHT_LINKS.map((l) => (
+              <a
+                key={l.id}
+                href={`#${l.id}`}
+                onClick={() => trackEvent("headerRightLink", { target: l.id })}
+                className="hidden md:inline-block text-sm text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white whitespace-nowrap"
+              >
+                {l.label}
+              </a>
+            ))}
+
+            {/* md+ 테마 */}
+            <ThemeCycleButton />
+
+            {/* md+ CTA: 한 줄 고정 (줄바꿈/들썩임 방지) */}
+            <button
+              onClick={() => {
+                openLead("Header CTA");
+                trackEvent("contactOpen", { where: "header", label: "Talk to Sales" });
+              }}
+              className="hidden md:inline-flex h-11 px-5 rounded-full bg-black text-white text-base font-semibold leading-none hover:opacity-90 dark:bg-white dark:text-black transition shadow-sm whitespace-nowrap shrink-0 min-w-[152px]"
+              aria-label="Talk to Sales"
             >
-              {l.label}
-            </a>
-          ))}
-
-          {/* md+ 전용: 테마 토글(사이클) */}
-          <ThemeCycleButton />
-
-          {/* md+ 전용: 메인 CTA (모바일 헤더에서는 숨김 — 하단 Sticky CTA 사용) */}
-          <button
-            onClick={() => { openLead("Header CTA"); trackEvent("contactOpen", { where: "header", label: "Talk to Sales" }); }}
-            className="hidden md:inline-flex h-11 px-5 rounded-full bg-black text-white text-base font-semibold hover:opacity-90 dark:bg-white dark:text-black transition shadow-sm whitespace-nowrap"
-            aria-label="Talk to Sales"
-          >
-            Talk to Sales
-          </button>
+              Talk to Sales
+            </button>
         </div>
       </div>
     </header>
