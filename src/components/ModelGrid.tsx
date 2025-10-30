@@ -1,8 +1,7 @@
-// src/components/ModelGrid.tsx
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { MODELS } from '../data/models';
-import { openModel } from './ModelDetail';
-import { trackEvent } from '../services/analytics';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { MODELS } from "../data/models";
+import { openModel } from "./ModelDetail";
+import { trackEvent } from "../services/analytics";
 
 function useReveal() {
   const [visible, setVisible] = useState(false);
@@ -30,11 +29,11 @@ function imgPreviewSrc(code: string) {
 export default function ModelGrid() {
   const models = useMemo(() => MODELS, []);
   return (
-    <section id="models" className="py-16 bg-white text-black dark:bg-black dark:text-white scroll-mt-24 md:scroll-mt-28">
+    <section id="models" className="py-16 bg-white text-black dark:bg-black dark:text-white scroll-mt-24">
       <div className="max-w-6xl mx-auto px-5">
         <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Models</h2>
 
-        <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="mt-6 grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-6">
           {models.map((m) => (
             <ModelCard key={m.code} code={m.code} name={m.name} subtitle={`${m.guidance} • ${m.seats} seats`} />
           ))}
@@ -50,16 +49,18 @@ function ModelCard({ code, name, subtitle }: { code: string; name: string; subti
 
   const onOpen = () => {
     openModel(code);
-    trackEvent('model_card_click', { code, name });
+    trackEvent("model_card_click", { code, name });
   };
 
   return (
     <div
       ref={ref}
       className={[
-        'rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden hover:shadow-lg transition',
-        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3',
-      ].join(' ')}
+        "rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden transition-all duration-200",
+        "hover:shadow-lg hover:-translate-y-0.5 hover:border-black/15 dark:hover:border-white/20",
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3",
+        "motion-reduce:transition-none motion-reduce:hover:translate-y-0",
+      ].join(" ")}
     >
       <button
         onClick={onOpen}
@@ -71,8 +72,8 @@ function ModelCard({ code, name, subtitle }: { code: string; name: string; subti
             src={imgPreviewSrc(code)}
             alt=""
             aria-hidden="true"
-            className={['absolute inset-0 w-full h-full object-cover blur-md scale-105 transition-opacity', loaded ? 'opacity-0' : 'opacity-100'].join(' ')}
-            onError={(e) => ((e.currentTarget.style.display = 'none'))}
+            className={["absolute inset-0 w-full h-full object-cover blur-md scale-105 transition-opacity", loaded ? "opacity-0" : "opacity-100"].join(" ")}
+            onError={(e) => ((e.currentTarget.style.display = "none"))}
           />
           <img
             src={imgSrc(code)}
