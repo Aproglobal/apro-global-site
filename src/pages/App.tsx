@@ -1,4 +1,3 @@
-// src/pages/App.tsx
 import React, { useEffect, useMemo } from "react";
 import Header from "../components/Header";
 import ModelGrid from "../components/ModelGrid";
@@ -47,11 +46,15 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
+      {/* #top 앵커(브랜드 클릭 시 hash 사용) */}
+      <div id="top" className="sr-only" />
+
       <Header />
 
-      <main className="pt-16">
+      {/* ✅ 헤더 높이만큼 한 번만 보정 */}
+      <main id="main" className="pt-[var(--header-h)]">
         {/* HERO */}
-        <section id="home" className="relative scroll-mt-24" aria-label="Hero">
+        <section id="home" className="relative" aria-label="Hero">
           <div className="relative h-[72vh] md:h-[84vh] w-full">
             <img
               src="/assets/hero.jpg"
@@ -110,68 +113,68 @@ export default function App() {
         </section>
 
         {/* MODELS + COMPARE */}
-        <section id="models" className="scroll-mt-24" aria-label="Models">
+        <section id="models" aria-label="Models">
           <ModelGrid />
           <div className="border-t border-zinc-200 dark:border-zinc-800" />
           <CompareTable />
         </section>
 
         {/* TECHNOLOGY */}
-        <section id="technology" className="scroll-mt-24" aria-label="Technology">
+        <section id="technology" aria-label="Technology">
           <div className="border-t border-zinc-200 dark:border-zinc-800" />
           <TechSection copy={techCopy} />
         </section>
 
         {/* INDUSTRIES */}
-        <section id="industries" className="scroll-mt-24" aria-label="Industries">
+        <section id="industries" aria-label="Industries">
           <div className="border-t border-zinc-200 dark:border-zinc-800" />
           <IndustriesSection />
         </section>
 
         {/* PRODUCTION TIMELINE */}
-        <section id="timeline" className="scroll-mt-24" aria-label="Production timeline">
+        <section id="timeline" aria-label="Production timeline">
           <div className="border-t border-zinc-200 dark:border-zinc-800" />
           <ProductionTimeline steps={TIMELINE_STEPS} />
         </section>
 
         {/* SERVICE & WARRANTY */}
-        <section id="service" className="scroll-mt-24" aria-label="Service and warranty">
+        <section id="service" aria-label="Service and warranty">
           <div className="border-t border-zinc-200 dark:border-zinc-800" />
           <ServiceWarrantySection />
         </section>
 
         {/* CHARGING & POWER */}
-        <section id="charging" className="scroll-mt-24" aria-label="Charging and power">
+        <section id="charging" aria-label="Charging and power">
           <div className="border-t border-zinc-200 dark:border-zinc-800" />
           <ChargingPowerSection />
         </section>
 
         {/* RESOURCES */}
-        <section id="resources" className="scroll-mt-24" aria-label="Resources">
+        <section id="resources" aria-label="Resources">
           <div className="border-t border-zinc-200 dark:border-zinc-800" />
           <ResourcesSection />
         </section>
 
         {/* TCO / ROI */}
-        <section id="tco" className="scroll-mt-24" aria-label="Total cost of ownership">
+        <section id="tco" aria-label="Total cost of ownership">
           <div className="border-t border-zinc-200 dark:border-zinc-800" />
           <TcoCalculator />
         </section>
 
         {/* CONFIGURATOR */}
-        <section id="configurator" className="scroll-mt-24" aria-label="Configurator">
+        <section id="configurator" aria-label="Configurator">
           <div className="border-t border-zinc-200 dark:border-zinc-800" />
           <ConfiguratorSection />
         </section>
 
         {/* FLEET */}
-        <section id="fleet" className="scroll-mt-24" aria-label="Fleet">
+        <section id="fleet" aria-label="Fleet">
           <div className="border-t border-zinc-200 dark:border-zinc-800" />
           <FleetSection />
         </section>
 
         {/* SUPPORT */}
-        <section id="support" className="scroll-mt-24" aria-label="Support">
+        <section id="support" aria-label="Support">
           <div className="border-t border-zinc-200 dark:border-zinc-800" />
           <SupportSection />
         </section>
@@ -179,7 +182,7 @@ export default function App() {
         {/* CONTACT */}
         <section
           id="contact"
-          className="scroll-mt-24 py-20 bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white"
+          className="py-20 bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white"
           aria-label="Contact"
         >
           <div className="max-w-6xl mx-auto px-5">
