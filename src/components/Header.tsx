@@ -47,48 +47,21 @@ function useActiveSection() {
       { root: null, rootMargin: "-45% 0px -45% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] }
     );
     targets.forEach((t) => io.observe(t));
-    return () => io.disconnect();
+    return () => {
+      io.disconnect();
+    };
   }, []);
   return active;
 }
 
-function ThemeToggle() {
-  const [mode, setMode] = React.useState<Mode>(() => getThemeMode());
-  React.useEffect(() => {
-    const unsub = subscribeTheme(() => setMode(getThemeMode()));
-    return () => unsub();
-  }, []);
-  const OPTIONS = ["system", "light", "dark"] as const;
-  const LABEL: Record<Mode, string> = { system: "Auto", light: "Light", dark: "Dark" };
-  return (
-    <div
-      className="hidden xl:flex rounded-full border border-black/20 dark:border-white/20 overflow-hidden text-sm h-10"
-      role="group"
-      aria-label="Theme"
-    >
-      {OPTIONS.map((m) => (
-        <button
-          key={m}
-          onClick={() => setThemeMode(m)}
-          aria-pressed={mode === m}
-          title={m === "system" ? "Follow OS theme" : LABEL[m]}
-          className={[
-            "px-4 py-2 leading-none transition focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20",
-            mode === m ? "bg-black text-white dark:bg-white dark:text-black" : "text-black dark:text-white",
-          ].join(" ")}
-        >
-          {LABEL[m]}
-        </button>
-      ))}
-    </div>
-  );
-}
-
+/** ✅ 유일한 테마 UI: 작은 사이클 버튼(모든 해상도에서 노출) */
 function ThemeCycleButton() {
   const [mode, setMode] = React.useState<Mode>(() => getThemeMode());
   React.useEffect(() => {
     const unsub = subscribeTheme(() => setMode(getThemeMode()));
-    return () => unsub();
+    return () => {
+      unsub();
+    };
   }, []);
   const order: Mode[] = ["system", "light", "dark"];
   const next = () => {
@@ -101,7 +74,7 @@ function ThemeCycleButton() {
   return (
     <button
       onClick={next}
-      className="inline-flex items-center gap-1.5 h-10 px-3 rounded-full border border-black/20 dark:border-white/20 text-sm xl:hidden"
+      className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full border border-black/20 dark:border-white/20 text-sm"
       title="Theme"
       aria-label={`Theme: ${label}`}
     >
@@ -128,7 +101,7 @@ function DesktopNav({ active }: { active: string }) {
         [&::-webkit-scrollbar]:hidden
       "
     >
-      {/* lg: 핵심 링크만 (nowrap, 스크롤 허용) */}
+      {/* lg: 핵심 링크 */}
       <div className="lg:flex xl:hidden flex-nowrap items-center gap-5">
         {coreLinks.map((l) => {
           const isActive = active === l.id;
@@ -145,7 +118,7 @@ function DesktopNav({ active }: { active: string }) {
           );
         })}
       </div>
-      {/* xl+: 전체 링크 (nowrap, 스크롤 허용) */}
+      {/* xl+: 전체 링크 */}
       <div className="hidden xl:flex flex-nowrap items-center gap-6">
         {ALL_LINKS.map((l) => {
           const isActive = active === l.id;
@@ -207,11 +180,10 @@ export default function Header() {
         {/* Center: Nav */}
         <DesktopNav active={active} />
 
-        {/* Right: Actions */}
+        {/* Right: Actions (미니멀: 테마는 사이클 버튼만) */}
         <div className="flex items-center justify-self-end gap-3">
           <MoreMenu />
           <ThemeCycleButton />
-          <ThemeToggle />
           <button
             onClick={() => {
               openLead("Header CTA");
