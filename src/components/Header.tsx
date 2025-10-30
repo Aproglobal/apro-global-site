@@ -4,61 +4,119 @@ import { openLead } from "./LeadModal";
 
 type NavItem = { id: string; label: string };
 
-const NAV_ITEMS: NavItem[] = [
-  { id: "models", label: "Models" },
-  { id: "technology", label: "Technology" },
-  { id: "industries", label: "Industries" },
-  { id: "compare", label: "Compare" },
-  { id: "charging", label: "Charging" },
-  { id: "resources", label: "Resources" },
-  { id: "support", label: "Support" },
-  { id: "timeline", label: "Timeline" },
+// 라벨 사전 (DOM 자동 정렬 시 사용)
+const LABELS: Record<string, string> = {
+  models: "Models",
+  technology: "Technology",
+  industries: "Industries",
+  compare: "Compare",
+  charging: "Charging",
+  resources: "Resources",
+  support: "Support",
+  timeline: "Timeline",
+  configurator: "Configurator",
+  fleet: "Fleet",
+  service: "Service",
+  contact: "Contact",
+};
+
+// 후보 섹션 ID (존재하는 것만 자동 취합)
+const CANDIDATE_IDS = [
+  "models",
+  "technology",
+  "industries",
+  "compare",
+  "charging",
+  "resources",
+  "support",
+  "timeline",
+  "configurator",
+  "fleet",
+  "service",
+  "contact",
 ];
+
+function getDocTop(el: Element) {
+  const rect = el.getBoundingClientRect();
+  const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+  return rect.top + scrollY;
+}
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [active, setActive] = useState<string>("");
+  const [navItems, setNavItems] = useState<NavItem[]>([]); // ✅ 실제 DOM 순서 기반 메뉴
 
   const firstMobileLinkRef = useRef<HTMLButtonElement | null>(null);
-  const lastScrollY = useRef(0);
 
   // ----- Scroll background / shadow
   useEffect(() => {
-    const onScroll = () => {
-      const y = window.scrollY || document.documentElement.scrollTop || 0;
-      setScrolled(y > 8);
-      lastScrollY.current = y;
-    };
+    const onScroll = () => setScrolled((window.scrollY || 0) > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // ----- Active section highlighting
+  // ----- 실제 DOM 순서로 메뉴 재구성 (로드/리사이즈에 반응)
   useEffect(() => {
-    const ids = NAV_ITEMS.map((n) => n.id);
+    let timer: number | undefined;
+
+    const recalc = () => {
+      const existing = CANDIDATE_IDS
+        .map((id) => ({ id, el: document.getElementById(id) }))
+        .filter((x): x is { id: string; el: HTMLElement } => !!x.el)
+        .sort((a, b) => getDocTop(a.el) - getDocTop(b.el))
+        .map(({ id }) => ({ id, label: LABELS[id] || id }));
+
+      setNavItems(existing);
+    };
+
+    // 초기 + load(이미지 로드 후 레이아웃 안정) + resize 디바운스
+    recalc();
+    window.addEventListener("load", recalc);
+    const onResize = () => {
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(recalc, 120);
+    };
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      window.removeEventListener("load", recalc);
+      window.removeEventListener("resize", onResize);
+      if (timer) window.clearTimeout(timer);
+    };
+  }, []);
+
+  // ----- Active section highlighting (동적 navItems 기준)
+  useEffect(() => {
+    if (!navItems.length) return;
+
     const io = new IntersectionObserver(
       (entries) => {
-        // Pick the entry closest to the top that is intersecting
         const visible = entries
           .filter((e) => e.isIntersecting)
           .sort((a, b) => Math.abs(a.boundingClientRect.top) - Math.abs(b.boundingClientRect.top));
         if (visible.length) setActive(visible[0].target.id);
       },
       {
-        // account for header height; highlight when the top of a section passes ~30% viewport
         root: null,
         rootMargin: "-25% 0px -65% 0px",
         threshold: [0, 0.25, 0.5, 1],
       }
     );
-    ids.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) io.observe(el);
+
+    const targets: HTMLElement[] = [];
+    navItems.forEach((n) => {
+      const el = document.getElementById(n.id);
+      if (el) {
+        io.observe(el);
+        targets.push(el);
+      }
     });
+
     return () => io.disconnect();
-  }, []);
+  }, [navItems]);
 
   // ----- Lock body scroll when mobile menu open
   useEffect(() => {
@@ -84,7 +142,6 @@ export default function Header() {
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
-      // Update hash without jump
       history.pushState({}, "", `#${id}`);
     }
   }, []);
@@ -106,7 +163,6 @@ export default function Header() {
         className="inline-flex items-center gap-2 font-extrabold tracking-tight text-lg lg:text-xl"
         aria-label="APRO Home"
       >
-        {/* 텍스트 로고 (이미지 로고가 있다면 교체: <img src="/logo.svg" alt="APRO" className="h-6" /> ) */}
         <span>APRO</span>
       </a>
     ),
@@ -127,7 +183,7 @@ export default function Header() {
         className={[
           "fixed inset-x-0 top-0 z-50 transition-all",
           scrolled
-            ? "bg-white/75 dark:bg-black/50 backdrop-blur-md shadow-sm"
+            ? "bg-white/80 dark:bg-black/60 backdrop-blur-md shadow-sm"
             : "bg-transparent dark:bg-transparent backdrop-blur-0",
         ].join(" ")}
         role="banner"
@@ -140,7 +196,7 @@ export default function Header() {
             {/* Center: Desktop Nav (no wrap, only on lg+) */}
             <nav className="hidden lg:flex items-center justify-center flex-none">
               <ul className="flex items-center gap-1 whitespace-nowrap">
-                {NAV_ITEMS.map((item) => {
+                {navItems.map((item) => {
                   const isActive = active === item.id;
                   return (
                     <li key={item.id}>
@@ -167,11 +223,12 @@ export default function Header() {
 
             {/* Right: CTA + Hamburger */}
             <div className="flex items-center gap-2 flex-none">
-              {/* CTA on md+ to keep header single-line; mobile CTA lives in drawer */}
+              {/* CTA on md+; 모바일은 드로어 내부에 배치 */}
               <button
                 type="button"
                 onClick={onTalkToSales}
-                className="hidden md:inline-flex shrink-0 items-center justify-center px-4 py-2 rounded-full text-sm font-semibold bg-black text-white dark:bg-white dark:text-black hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
+                className="hidden md:inline-flex shrink-0 items-center justify-center px-4 py-2 rounded-full text-sm font-semibold bg-black text-white dark:bg-white dark:text-black hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20 whitespace-nowrap"
+                title="Talk to Sales"
               >
                 Talk to Sales
               </button>
@@ -181,21 +238,15 @@ export default function Header() {
                 className="inline-flex lg:hidden items-center justify-center w-10 h-10 rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
                 aria-label="Open menu"
                 aria-expanded={mobileOpen}
+                aria-controls="mobile-drawer"
                 onClick={() => {
                   setMobileOpen((v) => !v);
-                  // 다음 프레임에 포커스 이동
                   setTimeout(() => firstMobileLinkRef.current?.focus(), 60);
                 }}
               >
                 <span className="sr-only">Menu</span>
-                {/* Hamburger icon */}
                 <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M4 7h16M4 12h16M4 17h16"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
+                  <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </button>
             </div>
@@ -211,12 +262,16 @@ export default function Header() {
           aria-hidden={!mobileOpen}
           onClick={() => setMobileOpen(false)}
         >
-          <div className="absolute inset-0 bg-black/50" />
+          {/* ✅ 더 진한 스크림으로 가독성 향상 */}
+          <div className="absolute inset-0 bg-black/70" />
 
           <div
+            id="mobile-drawer"
             className={[
               "absolute right-0 top-0 h-full w-[86%] max-w-sm",
-              "bg-white dark:bg-zinc-950 shadow-xl",
+              // ✅ 거의 불투명 + 강한 블러로 배경 간섭 제거
+              "bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl",
+              "border-l border-zinc-200 dark:border-zinc-800 shadow-xl",
               "transition-transform duration-200",
               mobileOpen ? "translate-x-0" : "translate-x-full",
             ].join(" ")}
@@ -239,6 +294,7 @@ export default function Header() {
             </div>
 
             <div className="px-4 pb-6 overflow-y-auto">
+              {/* CTA */}
               <div className="py-3">
                 <button
                   ref={firstMobileLinkRef}
@@ -247,14 +303,15 @@ export default function Header() {
                     onTalkToSales();
                     setMobileOpen(false);
                   }}
-                  className="w-full inline-flex items-center justify-center px-4 py-3 rounded-xl text-sm font-semibold bg-black text-white dark:bg-white dark:text-black hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
+                  className="w-full inline-flex items-center justify-center px-4 py-3 rounded-xl text-sm font-semibold bg-black text-white dark:bg-white dark:text-black hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20 whitespace-nowrap"
                 >
                   Talk to Sales
                 </button>
               </div>
 
+              {/* ✅ 실제 DOM 순서를 그대로 반영한 메뉴 */}
               <ul className="space-y-1">
-                {NAV_ITEMS.map((item) => {
+                {navItems.map((item) => {
                   const isActive = active === item.id;
                   return (
                     <li key={item.id}>
@@ -263,7 +320,7 @@ export default function Header() {
                         onClick={() => onNavClick(item.id)}
                         className={[
                           "w-full text-left px-4 py-3 rounded-lg text-[15px] font-medium transition",
-                          "hover:bg-zinc-100/80 dark:hover:bg-zinc-800/80",
+                          "hover:bg-zinc-100/90 dark:hover:bg-zinc-800/90",
                           isActive ? "bg-zinc-100 dark:bg-zinc-800" : "",
                         ].join(" ")}
                         aria-current={isActive ? "page" : undefined}
