@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { trackEvent } from "../services/analytics";
 import { openLead } from "./LeadModal";
 
@@ -38,14 +38,11 @@ const CANDIDATE_IDS = [
 ];
 
 /** -------------------------------
- *  Theme
- *  - 기본값: 시간대 자동(light/daytime, dark/night)
- *  - 사용자 토글 시: 라이트/다크 2-상태 고정(로컬 저장)
+ *  Theme (시간대 자동 + 사용자가 Light/Dark 둘 중 하나만 고정)
  * --------------------------------*/
 type UserPref = "light" | "dark" | null;
 const USER_KEY = "theme_user_pref";
 
-/** 밤 시간 정의(원하면 조정) — 19:00~06:59 는 다크 */
 function isNightNow(d: Date = new Date()) {
   const h = d.getHours();
   return h >= 19 || h < 7;
@@ -55,7 +52,6 @@ function applyThemeClass(isDark: boolean) {
   root.classList.toggle("dark", isDark);
   root.style.colorScheme = isDark ? "dark" : "light";
 }
-
 function useTheme2State() {
   const [userPref, setUserPref] = useState<UserPref>(() => {
     const raw = localStorage.getItem(USER_KEY);
@@ -67,12 +63,10 @@ function useTheme2State() {
     return isNightNow() ? "dark" : "light";
   });
 
-  // 적용
   useEffect(() => {
     applyThemeClass(theme === "dark");
   }, [theme]);
 
-  // 자동(시간대) 갱신 — 사용자 고정이 없을 때만 주기적으로 확인
   useEffect(() => {
     if (userPref) return;
     const tick = () => {
@@ -80,11 +74,10 @@ function useTheme2State() {
       setTheme((cur) => (cur !== want ? want : cur));
     };
     tick();
-    const id = window.setInterval(tick, 5 * 60 * 1000); // 5분마다 체크
+    const id = window.setInterval(tick, 5 * 60 * 1000);
     return () => window.clearInterval(id);
   }, [userPref]);
 
-  // 토글: 2-상태만
   const toggle = useCallback(() => {
     setTheme((cur) => {
       const next = cur === "light" ? "dark" : "light";
@@ -95,10 +88,8 @@ function useTheme2State() {
     });
   }, []);
 
-  // 아이콘/라벨
   const icon = theme === "dark" ? "🌙" : "☀️";
   const label = theme === "dark" ? "Theme: dark" : "Theme: light";
-
   return { theme, toggle, icon, label };
 }
 
@@ -109,6 +100,12 @@ function getDocTop(el: Element) {
   const rect = el.getBoundingClientRect();
   const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
   return rect.top + scrollY;
+}
+
+/** Header 높이를 CSS 변수로 반영 */
+function setHeaderVar(px: number) {
+  const r = document.documentElement;
+  r.style.setProperty("--header-h", `${px}px`);
 }
 
 /** -------------------------------
@@ -123,6 +120,24 @@ export default function Header() {
 
   const firstMobileLinkRef = useRef<HTMLButtonElement | null>(null);
   const desktopScrollRef = useRef<HTMLDivElement | null>(null);
+  const headerRef = useRef<HTMLElement | null>(null);
+
+  /** Header 높이 → CSS 변수 */
+  useLayoutEffect(() => {
+    if (!headerRef.current) return;
+    const el = headerRef.current;
+
+    const apply = () => setHeaderVar(el.offsetHeight);
+    apply();
+
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    window.addEventListener("resize", apply);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", apply);
+    };
+  }, []);
 
   /** Shadow / bg */
   useEffect(() => {
@@ -258,9 +273,11 @@ export default function Header() {
       </a>
 
       <header
+        ref={headerRef}
         className={[
           "fixed inset-x-0 top-0 z-50 transition-all",
           scrolled ? "bg-white/90 dark:bg-black/70 backdrop-blur-md shadow-sm" : "bg-transparent dark:bg-transparent",
+          "border-b border-transparent",
         ].join(" ")}
         role="banner"
       >
@@ -269,11 +286,18 @@ export default function Header() {
             {/* Left: Brand */}
             <div className="flex-none">{Brand}</div>
 
-            {/* Center: Desktop Nav (scrollable) */}
+            {/* Center: Desktop Nav (scrollable, 중앙 고정 & 로고 겹침 방지) */}
             <div className="relative hidden lg:flex flex-1 min-w-0 items-center justify-center px-2">
               <div className="pointer-events-none absolute left-0 top-0 h-full w-6 bg-gradient-to-r from-white/90 dark:from-black/70 to-transparent" />
               <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-white/90 dark:from-black/70 to-transparent" />
-              <div ref={desktopScrollRef} className="mx-auto max-w-[760px] overflow-x-auto overscroll-x-contain" style={{ scrollbarWidth: "thin" }}>
+              <div
+                ref={desktopScrollRef}
+                className="mx-auto overflow-x-auto overscroll-x-contain"
+                style={{
+                  scrollbarWidth: "thin",
+                  maxWidth: "min(760px, calc(100vw - 280px))", // 좌우(로고/우측버튼) 공간 고려
+                }}
+              >
                 <ul className="flex items-center gap-1 whitespace-nowrap pr-6">
                   {navItems.map((item) => {
                     const isActive = active === item.id;
@@ -301,7 +325,7 @@ export default function Header() {
               </div>
             </div>
 
-            {/* Right: Theme + CTA + Hamburger (모바일 우측 정렬 보장) */}
+            {/* Right: Theme + CTA + Hamburger */}
             <div className="flex items-center gap-2 flex-none ml-auto">
               {/* Theme (2-state toggle only) */}
               <button
@@ -318,7 +342,7 @@ export default function Header() {
               <button
                 type="button"
                 onClick={onTalkToSales}
-                className="hidden md:inline-flex shrink-0 items-center justify-center px-4 py-2 rounded-full text-sm font-semibold bg-black text-white dark:bg-white dark:text-black hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20 whitespace-nowrap"
+                className="hidden md:inline-flex h-10 shrink-0 items-center justify-center px-4 rounded-full text-sm font-semibold bg-black text-white dark:bg-white dark:text-black hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20 whitespace-nowrap"
                 title="Talk to Sales"
               >
                 Talk to Sales
@@ -355,7 +379,7 @@ export default function Header() {
         >
           <div className="absolute inset-0 bg-black/70" />
 
-          {/* Drawer (no theme button inside to avoid duplication) */}
+          {/* Drawer */}
           <div
             id="mobile-drawer"
             className={[
@@ -386,7 +410,7 @@ export default function Header() {
             </div>
 
             {/* Scrollable content */}
-            <div className="px-4 pb-6 overflow-y-auto" style={{ maxHeight: "calc(100dvh - 64px)" }}>
+            <div className="px-4 pb-6 overflow-y-auto flex-1">
               {/* CTA */}
               <div className="py-3">
                 <button
@@ -430,9 +454,7 @@ export default function Header() {
           </div>
         </div>
       </header>
-
-      {/* Spacer */}
-      <div aria-hidden className="h-16 lg:h-20" />
+      {/* ✅ Spacer 제거 (헤더 높이는 CSS 변수로 보정) */}
     </>
   );
 }
