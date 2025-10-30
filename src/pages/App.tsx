@@ -6,14 +6,6 @@ import CompareTable from "../components/CompareTable";
 import TechSection from "../components/TechSection";
 import FleetSection from "../components/FleetSection";
 import SupportSection from "../components/SupportSection";
-import LeadModal, { openLead } from "../components/LeadModal";// src/pages/App.tsx
-import React, { useEffect, useMemo, useState } from "react";
-import Header from "../components/Header";
-import ModelGrid from "../components/ModelGrid";
-import CompareTable from "../components/CompareTable";
-import TechSection from "../components/TechSection";
-import FleetSection from "../components/FleetSection";
-import SupportSection from "../components/SupportSection";
 import LeadModal, { openLead } from "../components/LeadModal";
 import ModelDetail from "../components/ModelDetail";
 import { getVariant } from "../utils/ab";
@@ -231,7 +223,7 @@ export default function App() {
                   openLead("Contact CTA");
                   trackEvent("contactOpen", { where: "contact_section", label: "Talk to Sales" });
                 }}
-                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
+                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg白 dark:text-black"
               >
                 Talk to Sales
               </button>
