@@ -1,12 +1,13 @@
+// src/components/ServiceWarrantySection.tsx
 import React from "react";
 
 export default function ServiceWarrantySection() {
   return (
-    <section id="service" className="py-20 bg-zinc-50 text-black dark:bg-zinc-900 dark:text-white">
+    <section id="service" className="py-20 bg-zinc-50 text-black dark:bg-zinc-900 dark:text-white scroll-mt-24 md:scroll-mt-28">
       <div className="max-w-6xl mx-auto px-5">
         <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Service & Warranty</h2>
 
-        <div className="mt-6 grid md:grid-cols-3 gap-4">
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <article className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6">
             <h3 className="font-semibold">Coverage & Response</h3>
             <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">

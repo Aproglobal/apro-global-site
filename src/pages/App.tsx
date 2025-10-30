@@ -1,3 +1,4 @@
+// src/pages/App.tsx
 import React, { useEffect, useMemo } from "react";
 import Header from "../components/Header";
 import ModelGrid from "../components/ModelGrid";
@@ -50,12 +51,14 @@ export default function App() {
 
       <main className="pt-16">
         {/* HERO */}
-        <section id="home" className="relative">
-          <div className="relative h-[70vh] md:h-[80vh] w-full">
+        <section id="home" className="relative scroll-mt-24" aria-label="Hero">
+          <div className="relative h-[72vh] md:h-[84vh] w-full">
             <img
               src="/assets/hero.jpg"
-              className="absolute inset-0 w-full h-full object-cover"
               alt="APRO Golf Carts"
+              className="absolute inset-0 w-full h-full object-cover"
+              loading="eager"
+              fetchPriority="high"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-white via-white/30 to-transparent dark:from-black dark:via-black/30 dark:to-transparent" />
             <div className="relative z-10 max-w-6xl mx-auto px-5 h-full flex flex-col justify-end pb-14">
@@ -66,13 +69,14 @@ export default function App() {
                 Smart guidance, flexible seating, and global after-sales support.
               </p>
 
-              <div className="mt-6 flex gap-3">
+              <div className="mt-6 flex flex-wrap gap-3">
                 <button
                   onClick={() => {
                     openLead("Hero CTA");
                     trackEvent("heroCtaClick", { where: "hero", label: primaryCta, ab_variant: variant });
                   }}
                   className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
+                  aria-label="Open sales contact form"
                 >
                   {primaryCta}
                 </button>
@@ -84,6 +88,7 @@ export default function App() {
                       trackEvent("modelExploreClick", { where: "hero", label: secondaryCta, ab_variant: variant })
                     }
                     className="px-5 py-3 rounded-full border border-black/40 text-black dark:border-white/60 dark:text-white"
+                    aria-label="Jump to models section"
                   >
                     {secondaryCta}
                   </a>
@@ -94,6 +99,7 @@ export default function App() {
                       trackEvent("brochureDownload", { file: "/brochure.pdf", where: "hero", ab_variant: variant })
                     }
                     className="px-5 py-3 rounded-full border border-black/40 text-black dark:border-white/60 dark:text-white"
+                    aria-label="Download brochure"
                   >
                     {secondaryCta}
                   </a>
@@ -103,42 +109,79 @@ export default function App() {
           </div>
         </section>
 
-        {/* Products */}
-        <ModelGrid />
-        <CompareTable />
+        {/* MODELS + COMPARE */}
+        <section id="models" className="scroll-mt-24" aria-label="Models">
+          <ModelGrid />
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <CompareTable />
+        </section>
 
-        {/* Technology */}
-        <TechSection copy={techCopy} />
+        {/* TECHNOLOGY */}
+        <section id="technology" className="scroll-mt-24" aria-label="Technology">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <TechSection copy={techCopy} />
+        </section>
 
-        {/* Industries */}
-        <IndustriesSection />
+        {/* INDUSTRIES */}
+        <section id="industries" className="scroll-mt-24" aria-label="Industries">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <IndustriesSection />
+        </section>
 
-        {/* Production Timeline (Domestic standard) */}
-        <ProductionTimeline steps={TIMELINE_STEPS} />
+        {/* PRODUCTION TIMELINE */}
+        <section id="timeline" className="scroll-mt-24" aria-label="Production timeline">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <ProductionTimeline steps={TIMELINE_STEPS} />
+        </section>
 
-        {/* Service & Warranty */}
-        <ServiceWarrantySection />
+        {/* SERVICE & WARRANTY */}
+        <section id="service" className="scroll-mt-24" aria-label="Service and warranty">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <ServiceWarrantySection />
+        </section>
 
-        {/* Charging & Power */}
-        <ChargingPowerSection />
+        {/* CHARGING & POWER */}
+        <section id="charging" className="scroll-mt-24" aria-label="Charging and power">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <ChargingPowerSection />
+        </section>
 
-        {/* Resources */}
-        <ResourcesSection />
+        {/* RESOURCES */}
+        <section id="resources" className="scroll-mt-24" aria-label="Resources">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <ResourcesSection />
+        </section>
 
-        {/* TCO / ROI (coming soon) */}
-        <TcoCalculator />
+        {/* TCO / ROI */}
+        <section id="tco" className="scroll-mt-24" aria-label="Total cost of ownership">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <TcoCalculator />
+        </section>
 
-        {/* Configurator (coming soon) */}
-        <ConfiguratorSection />
+        {/* CONFIGURATOR */}
+        <section id="configurator" className="scroll-mt-24" aria-label="Configurator">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <ConfiguratorSection />
+        </section>
 
-        {/* Fleet */}
-        <FleetSection />
+        {/* FLEET */}
+        <section id="fleet" className="scroll-mt-24" aria-label="Fleet">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <FleetSection />
+        </section>
 
-        {/* Support */}
-        <SupportSection />
+        {/* SUPPORT */}
+        <section id="support" className="scroll-mt-24" aria-label="Support">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <SupportSection />
+        </section>
 
-        {/* Contact */}
-        <section id="contact" className="py-20 bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white">
+        {/* CONTACT */}
+        <section
+          id="contact"
+          className="scroll-mt-24 py-20 bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white"
+          aria-label="Contact"
+        >
           <div className="max-w-6xl mx-auto px-5">
             <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Contact</h2>
             <p className="mt-2 text-zinc-700 max-w-2xl dark:text-zinc-200">
@@ -158,7 +201,7 @@ export default function App() {
                   openLead("Contact CTA");
                   trackEvent("contactOpen", { where: "contact_section", label: "Talk to Sales" });
                 }}
-                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
+                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black dark:bg-white"
               >
                 Talk to Sales
               </button>
