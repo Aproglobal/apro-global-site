@@ -1,5 +1,5 @@
 // src/pages/App.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import Header from "../components/Header";
 import ModelGrid from "../components/ModelGrid";
 import CompareTable from "../components/CompareTable";
@@ -26,24 +26,8 @@ import ResourcesSection from "../components/ResourcesSection";
 import TcoCalculator from "../components/TcoCalculator";
 import ConfiguratorSection from "../components/ConfiguratorSection";
 
-const NAV_LINKS = [
-  { id: "models", label: "Models" },
-  { id: "technology", label: "Technology" },
-  { id: "industries", label: "Industries" },
-  { id: "timeline", label: "Production" },
-  { id: "service", label: "Service" },
-  { id: "charging", label: "Charging" },
-  { id: "resources", label: "Resources" },
-  { id: "tco", label: "TCO" },
-  { id: "configurator", label: "Configurator" },
-  { id: "fleet", label: "Fleet" },
-  { id: "support", label: "Support" },
-  { id: "contact", label: "Contact" },
-] as const;
-
 export default function App() {
   const variant = getVariant();
-  const [activeSection, setActiveSection] = useState<string>("");
 
   useEffect(() => {
     initAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
@@ -53,34 +37,6 @@ export default function App() {
     // Preload reCAPTCHA v3
     const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
     if (siteKey) loadRecaptcha(siteKey);
-  }, []);
-
-  // IntersectionObserver to highlight active section in subnav
-  useEffect(() => {
-    const targets = NAV_LINKS.map((l) => document.getElementById(l.id)).filter(
-      (el): el is HTMLElement => !!el
-    );
-    if (targets.length === 0) return;
-
-    const io = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-        if (visible[0]?.target?.id) {
-          setActiveSection(visible[0].target.id);
-        }
-      },
-      {
-        // 중앙을 지날 때 섹션 활성화
-        root: null,
-        rootMargin: "-45% 0px -45% 0px",
-        threshold: [0, 0.1, 0.25, 0.5, 0.75, 1],
-      }
-    );
-
-    targets.forEach((t) => io.observe(t));
-    return () => io.disconnect();
   }, []);
 
   const primaryCta = "Talk to Sales";
@@ -152,11 +108,7 @@ export default function App() {
 
               {/* USP chips */}
               <div className="mt-6 flex flex-wrap gap-2">
-                {[
-                  "Electronic guidance",
-                  "Flexible seating (2–8)",
-                  "After-sales across APAC",
-                ].map((chip) => (
+                {["Electronic guidance", "Flexible seating (2–8)", "After-sales across APAC"].map((chip) => (
                   <span
                     key={chip}
                     className="text-sm px-3 py-1 rounded-full bg-white/80 text-black border border-black/10 backdrop-blur dark:bg-black/60 dark:text-white dark:border-white/10"
@@ -169,36 +121,7 @@ export default function App() {
           </div>
         </section>
 
-        {/* STICKY SUBNAV */}
-        <nav
-          role="navigation"
-          aria-label="Section navigation"
-          className="sticky top-16 z-30 backdrop-blur bg-white/70 dark:bg-black/50 supports-[backdrop-filter]:bg-white/50 border-b border-zinc-200 dark:border-zinc-800"
-        >
-          <div className="max-w-6xl mx-auto px-5 overflow-x-auto scrollbar-none">
-            <ul className="flex gap-3 py-3 min-w-max">
-              {NAV_LINKS.map((l) => {
-                const active = activeSection === l.id;
-                return (
-                  <li key={l.id}>
-                    <a
-                      href={`#${l.id}`}
-                      onClick={() => trackEvent("subnavClick", { target: l.id })}
-                      className={[
-                        "inline-flex items-center rounded-full px-3 py-1 text-sm border transition-colors",
-                        active
-                          ? "bg-black text-white border-black dark:bg-white dark:text-black dark:border-white"
-                          : "text-zinc-700 border-zinc-300 hover:border-zinc-800 dark:text-zinc-300 dark:border-zinc-700 dark:hover:border-white",
-                      ].join(" ")}
-                    >
-                      {l.label}
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </nav>
+        {/* ↓↓↓ 여기 있던 'STICKY SUBNAV' 블록을 완전히 제거했습니다. */}
 
         {/* MODELS + COMPARE */}
         <section id="models" className="scroll-mt-24" aria-label="Models">
@@ -277,10 +200,7 @@ export default function App() {
             <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Contact</h2>
             <p className="mt-2 text-zinc-700 max-w-2xl dark:text-zinc-200">
               Email us at{" "}
-              <a
-                href={`mailto:${import.meta.env.VITE_SALES_EMAIL || "sales@example.com"}`}
-                className="underline"
-              >
+              <a href={`mailto:${import.meta.env.VITE_SALES_EMAIL || "sales@example.com"}`} className="underline">
                 {import.meta.env.VITE_SALES_EMAIL || "sales@example.com"}
               </a>{" "}
               or open the form above.
@@ -299,9 +219,7 @@ export default function App() {
 
               <a
                 href="/brochure.pdf"
-                onClick={() =>
-                  trackEvent("brochureDownload", { file: "/brochure.pdf", where: "contact_section" })
-                }
+                onClick={() => trackEvent("brochureDownload", { file: "/brochure.pdf", where: "contact_section" })}
                 className="px-5 py-3 rounded-full border border-black/30 dark:border-white/40"
               >
                 Download brochure (PDF)
