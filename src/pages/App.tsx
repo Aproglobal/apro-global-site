@@ -8,6 +8,16 @@ import FleetSection from "../components/FleetSection";
 import SupportSection from "../components/SupportSection";
 import LeadModal, { openLead } from "../components/LeadModal";
 import ModelDetail from "../components/ModelDetail";
+import { getVariant } from "../utils/ab";// src/pages/App.tsx
+import React, { useEffect, useMemo, useState } from "react";
+import Header from "../components/Header";
+import ModelGrid from "../components/ModelGrid";
+import CompareTable from "../components/CompareTable";
+import TechSection from "../components/TechSection";
+import FleetSection from "../components/FleetSection";
+import SupportSection from "../components/SupportSection";
+import LeadModal, { openLead } from "../components/LeadModal";
+import ModelDetail from "../components/ModelDetail";
 import { getVariant } from "../utils/ab";
 import { setupScrollDepth, trackEvent, initAnalytics } from "../services/analytics";
 import { initThemeWatcher } from "../utils/theme";
@@ -34,6 +44,7 @@ export default function App() {
     setupScrollDepth();
     initThemeWatcher();
 
+    // reCAPTCHA v3 preload
     const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
     if (siteKey) loadRecaptcha(siteKey);
   }, []);
@@ -43,7 +54,7 @@ export default function App() {
 
   const techCopy = useMemo(() => getTechCopy(), []);
 
-  // CompareTable → 하단 점유 상태 수신해서 플로팅 CTA 자동 숨김
+  // CompareTable가 하단을 차지할 때 플로팅 CTA 자동 숨김
   const [bottomBlocked, setBottomBlocked] = useState(false);
   useEffect(() => {
     let pinnedCount = 0;
@@ -235,6 +246,29 @@ export default function App() {
                 Download brochure (PDF)
               </a>
             </div>
+
+            {/* ✅ reCAPTCHA v3 공식 문구 (모바일에서 배지 숨길 때 필수) */}
+            <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+              This site is protected by reCAPTCHA and the Google{" "}
+              <a
+                href="https://policies.google.com/privacy"
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                Privacy Policy
+              </a>{" "}
+              and{" "}
+              <a
+                href="https://policies.google.com/terms"
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                Terms of Service
+              </a>{" "}
+              apply.
+            </p>
           </div>
         </section>
       </main>
@@ -247,7 +281,7 @@ export default function App() {
             trackEvent("contactOpen", { where: "sticky_cta", label: "Talk to Sales" });
           }}
           aria-label="Talk to Sales"
-          className="fixed bottom-[96px] right-6 px-5 py-3 rounded-full bg-black text-white font-semibold shadow-lg dark:bg-white dark:text-black z-40"
+          className="fixed bottom-[calc(env(safe-area-inset-bottom)+88px)] right-6 px-5 py-3 rounded-full bg-black text-white font-semibold shadow-lg dark:bg-white dark:text-black z-40"
         >
           Talk to Sales
         </button>
@@ -263,6 +297,29 @@ export default function App() {
             <p className="mt-1">KUKJE INTERTRADE Co., Ltd.</p>
             <p className="mt-1">
               Address: Floor 12, 124, Sagimakgol-ro, Jungwon-gu, Seongnam-si, Gyeonggi-do, Republic of Korea
+            </p>
+
+            {/* ✅ reCAPTCHA v3 공식 문구 (푸터에도 노출해두면 가장 안전) */}
+            <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-500">
+              This site is protected by reCAPTCHA and the Google{" "}
+              <a
+                href="https://policies.google.com/privacy"
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                Privacy Policy
+              </a>{" "}
+              and{" "}
+              <a
+                href="https://policies.google.com/terms"
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                Terms of Service
+              </a>{" "}
+              apply.
             </p>
           </div>
         </div>
