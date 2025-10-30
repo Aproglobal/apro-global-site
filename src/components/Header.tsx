@@ -1,8 +1,9 @@
-import React from "react";
-import { openLead } from "./LeadModal";
-import { getThemeMode, setThemeMode, subscribeTheme } from "../utils/theme";
+import React from 'react';
+import { openLead } from './LeadModal';
+import { getThemeMode, setThemeMode, subscribeTheme } from '../utils/theme';
+import { trackEvent } from '../services/analytics';
 
-type Mode = "light" | "dark" | "system";
+type Mode = 'light' | 'dark' | 'system';
 
 function ThemeToggle() {
   const [mode, setMode] = React.useState<Mode>(() => getThemeMode());
@@ -10,13 +11,12 @@ function ThemeToggle() {
     const unsub = subscribeTheme(() => setMode(getThemeMode()));
     return () => { unsub(); };
   }, []);
-
-  const OPTIONS = ["system", "light", "dark"] as const;
-  const LABEL: Record<Mode, string> = { system: "Auto", light: "Light", dark: "Dark" };
+  const OPTIONS = ['system', 'light', 'dark'] as const;
+  const LABEL: Record<Mode, string> = { system: 'Auto', light: 'Light', dark: 'Dark' };
 
   return (
     <div
-      className="hidden lg:flex rounded-full border border-black/20 dark:border-white/20 overflow-hidden text-sm h-9"
+      className="hidden lg:flex rounded-full border border-black/20 dark:border-white/20 overflow-hidden text-sm"
       role="group"
       aria-label="Theme"
     >
@@ -24,14 +24,15 @@ function ThemeToggle() {
         <button
           key={m}
           onClick={() => setThemeMode(m)}
+          onMouseDown={() => trackEvent('nav_click', { label: `Theme ${m}`, location: 'header' })}
           aria-pressed={mode === m}
-          title={m === "system" ? "Follow OS theme" : LABEL[m]}
+          title={m === 'system' ? 'Follow OS theme' : LABEL[m]}
           className={[
-            "px-3 py-1.5 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20",
+            'px-3 py-1.5 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20',
             mode === m
-              ? "bg-black text-white dark:bg-white dark:text-black"
-              : "text-black dark:text-white",
-          ].join(" ")}
+              ? 'bg-black text-white dark:bg-white dark:text-black'
+              : 'text-black dark:text-white',
+          ].join(' ')}
         >
           {LABEL[m]}
         </button>
@@ -46,21 +47,20 @@ function ThemeCycleButton() {
     const unsub = subscribeTheme(() => setMode(getThemeMode()));
     return () => { unsub(); };
   }, []);
-
-  const order: Mode[] = ["system", "light", "dark"];
+  const order: Mode[] = ['system', 'light', 'dark'];
   const next = () => {
     const idx = order.indexOf(mode);
     const to = order[(idx + 1) % order.length];
     setThemeMode(to);
+    trackEvent('nav_click', { label: `Theme ${to}`, location: 'header' });
   };
-
-  const label = mode === "system" ? "Auto" : mode === "light" ? "Light" : "Dark";
-  const icon = mode === "system" ? "A" : mode === "light" ? "☀️" : "🌙";
+  const label = mode === 'system' ? 'Auto' : mode === 'light' ? 'Light' : 'Dark';
+  const icon = mode === 'system' ? 'A' : mode === 'light' ? '☀️' : '🌙';
 
   return (
     <button
       onClick={next}
-      className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full border border-black/20 dark:border-white/20 text-xs lg:hidden"
+      className="lg:hidden inline-flex items-center gap-1.5 h-9 px-3 rounded-full border border-black/20 dark:border-white/20 text-xs"
       title="Theme"
       aria-label={`Theme: ${label}`}
     >
@@ -70,60 +70,64 @@ function ThemeCycleButton() {
   );
 }
 
-/** 작은/중간 화면에서 겹침 방지를 위한 “More” 콜랩스 */
-function MoreMenu() {
-  return (
-    <details className="relative md:flex lg:hidden">
-      <summary className="list-none cursor-pointer inline-flex items-center h-9 px-3 rounded-full border border-black/20 dark:border-white/20 text-sm">
-        Menu
-        <span className="ml-1">▾</span>
-      </summary>
-      <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl p-2 z-50">
-        <a href="#models" className="block px-3 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800">Models</a>
-        <a href="#technology" className="block px-3 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800">Technology</a>
-        <a href="#fleet" className="block px-3 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800">Fleet & Leasing</a>
-        <a href="#support" className="block px-3 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800">Support</a>
-        <a href="#timeline" className="block px-3 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800">Timeline</a>
-        <a href="#contact" className="block px-3 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800">Contact</a>
-      </div>
-    </details>
-  );
-}
-
 export default function Header() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/70 dark:bg-black/70 backdrop-blur border-b border-zinc-200 dark:border-zinc-800">
-      {/* 3열 그리드: 좌 로고 / 중앙 네비(정중앙) / 우 액션 */}
-      <div className="max-w-6xl mx-auto px-5 py-3 grid grid-cols-[1fr_auto_1fr] items-center">
-        {/* Left: Logo */}
+      <div className="max-w-6xl mx-auto px-5 py-3 flex items-center justify-between">
         <a
           href="#home"
-          className="text-black dark:text-white text-xl tracking-wide font-semibold justify-self-start"
+          onClick={() => trackEvent('nav_click', { label: 'Home', location: 'header' })}
+          className="text-black dark:text-white text-xl tracking-wide font-semibold"
         >
           APRO
         </a>
 
-        {/* Center: Nav (가운데 정렬, 큰 화면에서만 전체 표시) */}
-        <nav className="hidden lg:flex items-center justify-center gap-7 text-sm h-9 whitespace-nowrap">
-          <a href="#models" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Models</a>
-          <a href="#technology" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Technology</a>
-          <a href="#fleet" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Fleet &amp; Leasing</a>
-          <a href="#support" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Support</a>
-          <a href="#timeline" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Timeline</a>
-          <a href="#contact" className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Contact</a>
+        {/* 메인 내비게이션 (중앙 정렬/한 줄 유지) */}
+        <nav className="hidden md:flex items-center gap-6 text-sm">
+          <a href="#models" onClick={() => trackEvent('nav_click', { label: 'Models', location: 'header' })}
+             className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Models</a>
+          <a href="#technology" onClick={() => trackEvent('nav_click', { label: 'Technology', location: 'header' })}
+             className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Technology</a>
+          <a href="#fleet" onClick={() => trackEvent('nav_click', { label: 'Fleet & Leasing', location: 'header' })}
+             className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Fleet &amp; Leasing</a>
+          <a href="#support" onClick={() => trackEvent('nav_click', { label: 'Support', location: 'header' })}
+             className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Support</a>
+          <a href="#timeline" onClick={() => trackEvent('nav_click', { label: 'Timeline', location: 'header' })}
+             className="text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white">Timeline</a>
+
+          {/* More 드롭다운: 겹침 방지용 */}
+          <details className="relative group">
+            <summary
+              className="list-none cursor-pointer text-zinc-700 hover:text-black dark:text-zinc-200 dark:hover:text-white"
+              onClick={() => trackEvent('nav_click', { label: 'More', location: 'header' })}
+            >
+              More ▾
+            </summary>
+            <div className="absolute mt-3 right-0 w-64 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl p-2">
+              <a href="#industries" onClick={() => trackEvent('nav_click', { label: 'Industries', location: 'header' })}
+                 className="block px-3 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800">Industries</a>
+              <a href="#downloads" onClick={() => trackEvent('nav_click', { label: 'Downloads', location: 'header' })}
+                 className="block px-3 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800">Downloads</a>
+              <a href="#certs" onClick={() => trackEvent('nav_click', { label: 'Certifications', location: 'header' })}
+                 className="block px-3 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800">Certifications</a>
+              <a href="#cases" onClick={() => trackEvent('nav_click', { label: 'Case Studies', location: 'header' })}
+                 className="block px-3 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800">Case Studies <span className="ml-1 text-xs text-zinc-500">(Coming soon)</span></a>
+              <a href="#export" onClick={() => trackEvent('nav_click', { label: 'Export & Logistics', location: 'header' })}
+                 className="block px-3 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800">Export &amp; Logistics <span className="ml-1 text-xs text-zinc-500">(Coming soon)</span></a>
+              <a href="#sustainability" onClick={() => trackEvent('nav_click', { label: 'Sustainability', location: 'header' })}
+                 className="block px-3 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800">Sustainability <span className="ml-1 text-xs text-zinc-500">(Coming soon)</span></a>
+              <a href="#partners" onClick={() => trackEvent('nav_click', { label: 'Partner Program', location: 'header' })}
+                 className="block px-3 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800">Partner Program <span className="ml-1 text-xs text-zinc-500">(Coming soon)</span></a>
+            </div>
+          </details>
         </nav>
 
-        {/* Right: Actions */}
-        <div className="flex items-center justify-self-end gap-2">
-          {/* md~lg: 메뉴가 좁으면 More로 수납 */}
-          <MoreMenu />
+        <div className="flex items-center gap-3">
           <ThemeCycleButton />
           <ThemeToggle />
-
-          {/* CTA: 좁은 화면에서 짧게, 큰 화면에서 정규 크기 */}
           <button
-            onClick={() => openLead("Header CTA")}
-            className="ml-1 h-9 px-3 rounded-full bg-black text-white text-xs font-semibold hover:opacity-90 dark:bg-white dark:text-black transition md:text-sm md:px-4"
+            onClick={() => { openLead('Header CTA'); trackEvent('cta_click', { label: 'Talk to Sales', where: 'header' }); }}
+            className="ml-1 px-4 py-2 rounded-full bg-black text-white text-sm font-semibold hover:opacity-90 dark:bg-white dark:text-black transition"
             aria-label="Talk to Sales"
           >
             Talk to Sales
