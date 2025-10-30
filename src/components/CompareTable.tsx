@@ -111,13 +111,13 @@ function getCellValue(m: any, key: FieldKey): string {
   }
 }
 
-function findDiffColumns(headers: FieldKey[], list: any[]): Set<string> {
-  const diffs = new Set<string>();
+function findDiffColumns(headers: ReadonlyArray<FieldKey>, list: any[]): Set<FieldKey> {
+  const diffs = new Set<FieldKey>();
   headers.forEach((h) => {
     if (h === 'model') return;
     const values = list.map((m) => getCellValue(m, h));
     const allSame = values.every((v) => v === values[0]);
-    if (!allSame) diffs.add(String(h));
+    if (!allSame) diffs.add(h);
   });
   return diffs;
 }
@@ -135,9 +135,13 @@ export default function CompareTable() {
 
   // ✅ 데스크탑: 차이만 보기
   const [showDiffOnly, setShowDiffOnly] = useState(false);
-  const diffCols = useMemo(() => findDiffColumns(DESKTOP_HEADERS as FieldKey[], models), [models]);
-  const visibleHeaders = useMemo<FieldKey[]>(
-    () => (showDiffOnly ? (DESKTOP_HEADERS as FieldKey[]).filter((h) => h === 'model' || diffCols.has(h)) : (DESKTOP_HEADERS as FieldKey[])),
+  const diffCols = useMemo(() => findDiffColumns(DESKTOP_HEADERS, models), [models]);
+
+  const visibleHeaders = useMemo<ReadonlyArray<FieldKey>>(
+    () =>
+      showDiffOnly
+        ? DESKTOP_HEADERS.filter((h) => h === 'model' || diffCols.has(h))
+        : DESKTOP_HEADERS,
     [showDiffOnly, diffCols]
   );
 
