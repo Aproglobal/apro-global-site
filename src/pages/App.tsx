@@ -261,7 +261,7 @@ export default function App() {
             trackEvent("contactOpen", { where: "sticky_cta", label: "Talk to Sales" });
           }}
           aria-label="Talk to Sales"
-          className="fixed bottom-[calc(env(safe-area-inset-bottom)+88px)] right-6 px-5 py-3 rounded-full bg-black text-white font-semibold shadow-lg dark:bg-white dark:text-black z-40"
+          className="fixed right-4 md:right-6 bottom-[max(env(safe-area-inset-bottom),14px)] md:bottom-6 px-5 py-3 rounded-full bg-black text-white font-semibold shadow-lg dark:bg-white dark:text-black z-40"
         >
           Talk to Sales
         </button>
