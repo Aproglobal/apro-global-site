@@ -4,22 +4,21 @@
 
 html, body, #root { height: 100%; }
 
-/* 헤더 높이 기본값(첫 페인트 폴백) */
-:root {
-  --header-h: 64px; /* h-16 기준, 데스크탑은 JS로 즉시 갱신 */
-}
-
-/* 섹션 앵커 점프 시 헤더에 가리지 않도록 */
-section[id] {
-  scroll-margin-top: var(--header-h);
-}
-
-/* ✅ reCAPTCHA v3 기본: 우하단 표시 (Google 기본 권장) */
+/* ✅ reCAPTCHA v3 배지 처리
+   - 데스크탑/태블릿: 좌하단 고정(CTA는 우하단이라 충돌 없음)
+   - 모바일(≤640px): 배지 숨김, 대신 페이지에 공식 문구를 표시 (App.tsx에 추가)
+*/
 .grecaptcha-badge {
   position: fixed !important;
-  right: 16px !important;
+  left: 16px !important;
+  right: auto !important;
   bottom: 16px !important;
-  left: auto !important;
-  z-index: 2147483647 !important;
+  z-index: 30 !important; /* CTA(z-40)와 겹치지 않게 낮춤 */
   transform: translateZ(0);
+}
+
+@media (max-width: 640px) {
+  .grecaptcha-badge {
+    display: none !important; /* 모바일은 공식 문구로 대체(아래 2번) */
+  }
 }
