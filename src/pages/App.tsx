@@ -1,4 +1,3 @@
-// src/pages/App.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import Header from "../components/Header";
 import ModelGrid from "../components/ModelGrid";
@@ -26,6 +25,12 @@ import ResourcesSection from "../components/ResourcesSection";
 import TcoCalculator from "../components/TcoCalculator";
 import ConfiguratorSection from "../components/ConfiguratorSection";
 
+// Company sections
+import CompanyAboutSection from "../components/CompanyAboutSection";
+import CompanyHistorySection from "../components/CompanyHistorySection";
+import OrganizationSection from "../components/OrganizationSection";
+import PartnersSection from "../components/PartnersSection";
+
 export default function App() {
   const variant = getVariant();
 
@@ -44,7 +49,7 @@ export default function App() {
 
   const techCopy = useMemo(() => getTechCopy(), []);
 
-  // CompareTable가 하단을 차지할 때 플로팅 CTA 자동 숨김
+  // Hide floating CTA when CompareTable's bottom UI is visible
   const [bottomBlocked, setBottomBlocked] = useState(false);
   useEffect(() => {
     let pinnedCount = 0;
@@ -70,9 +75,30 @@ export default function App() {
     };
   }, []);
 
+  // JSON-LD for SiteNavigation
+  const navJson = {
+    "@context": "https://schema.org",
+    "@type": "SiteNavigationElement",
+    name: [
+      "Models","Technology","Industries","Compare","Charging","Resources","Support","Timeline",
+      "Configurator","Fleet","Service","Contact","About","History","Organization","Partners"
+    ],
+    url: [
+      "#models","#technology","#industries","#compare","#charging","#resources","#support","#timeline",
+      "#configurator","#fleet","#service","#contact","#about","#history","#organization","#partners"
+    ]
+  };
+
   return (
     <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
       <Header />
+
+      {/* JSON-LD (navigation) */}
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(navJson) }}
+      />
 
       <main id="main" className="pt-16">
         {/* HERO */}
@@ -177,6 +203,30 @@ export default function App() {
           <ResourcesSection />
         </section>
 
+        {/* ABOUT */}
+        <section id="about" className="scroll-mt-24" aria-label="About">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <CompanyAboutSection />
+        </section>
+
+        {/* HISTORY */}
+        <section id="history" className="scroll-mt-24" aria-label="History">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <CompanyHistorySection />
+        </section>
+
+        {/* ORGANIZATION */}
+        <section id="organization" className="scroll-mt-24" aria-label="Organization">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <OrganizationSection />
+        </section>
+
+        {/* PARTNERS */}
+        <section id="partners" className="scroll-mt-24" aria-label="Partners">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <PartnersSection />
+        </section>
+
         {/* TCO / ROI */}
         <section id="tco" className="scroll-mt-24" aria-label="Total cost of ownership">
           <div className="border-t border-zinc-200 dark:border-zinc-800" />
@@ -223,7 +273,7 @@ export default function App() {
                   openLead("Contact CTA");
                   trackEvent("contactOpen", { where: "contact_section", label: "Talk to Sales" });
                 }}
-                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg白 dark:text-black"
+                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
               >
                 Talk to Sales
               </button>
@@ -237,7 +287,7 @@ export default function App() {
               </a>
             </div>
 
-            {/* reCAPTCHA 정책 고지 (모바일 배지 숨김시 필수) */}
+            {/* reCAPTCHA policy notice */}
             <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
               This site is protected by reCAPTCHA and the Google{" "}
               <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">
@@ -253,7 +303,7 @@ export default function App() {
         </section>
       </main>
 
-      {/* Sticky CTA — compare가 하단을 점유할 때는 자동 숨김 */}
+      {/* Sticky CTA — auto-hidden when compare UI occupies bottom */}
       {!bottomBlocked && (
         <button
           onClick={() => {
@@ -276,10 +326,10 @@ export default function App() {
             </h3>
             <p className="mt-1">KUKJE INTERTRADE Co., Ltd.</p>
             <p className="mt-1">
-              Address: Floor 12, 124, Sagimakgol-ro, Jungwon-gu, Seongnam-si, Gyeonggi-do, Republic of Korea
+              Address: Room 1208, Biz Center, SKn Techno Park, 124 Sagimakgol-ro, Jungwon-gu,
+              Seongnam-si, Gyeonggi-do, Republic of Korea
             </p>
 
-            {/* 고지 문구를 푸터에도 한 번 더 표기해두면 정책상 가장 안전 */}
             <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-500">
               This site is protected by reCAPTCHA and the Google{" "}
               <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">
