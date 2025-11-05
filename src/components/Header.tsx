@@ -20,6 +20,10 @@ const LABELS: Record<string, string> = {
   fleet: "Fleet",
   service: "Service",
   contact: "Contact",
+  about: "About",
+  history: "History",
+  organization: "Organization",
+  partners: "Partners",
 };
 
 const CANDIDATE_IDS = [
@@ -29,16 +33,20 @@ const CANDIDATE_IDS = [
   "compare",
   "charging",
   "resources",
-  "support",
   "timeline",
+  "service",
   "configurator",
   "fleet",
-  "service",
+  "support",
+  "about",
+  "history",
+  "organization",
+  "partners",
   "contact",
 ];
 
 /** -------------------------------
- *  Theme (시간대 자동 + 사용자가 Light/Dark 둘 중 하나만 고정)
+ *  Theme (auto by time + user Light/Dark two-state)
  * --------------------------------*/
 type UserPref = "light" | "dark" | null;
 const USER_KEY = "theme_user_pref";
@@ -102,7 +110,7 @@ function getDocTop(el: Element) {
   return rect.top + scrollY;
 }
 
-/** Header 높이를 CSS 변수로 반영 */
+/** Header height → CSS var */
 function setHeaderVar(px: number) {
   const r = document.documentElement;
   r.style.setProperty("--header-h", `${px}px`);
@@ -122,7 +130,7 @@ export default function Header() {
   const desktopScrollRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
 
-  /** Header 높이 → CSS 변수 */
+  /** Header height → CSS var to avoid mysterious gaps */
   useLayoutEffect(() => {
     if (!headerRef.current) return;
     const el = headerRef.current;
@@ -259,9 +267,6 @@ export default function Header() {
     []
   );
 
-  /** -------------------------------
-   *  Render
-   * --------------------------------*/
   return (
     <>
       {/* Skip link */}
@@ -286,7 +291,7 @@ export default function Header() {
             {/* Left: Brand */}
             <div className="flex-none">{Brand}</div>
 
-            {/* Center: Desktop Nav (scrollable, 중앙 고정 & 로고 겹침 방지) */}
+            {/* Center: Desktop Nav (scrollable, no overlap with logo) */}
             <div className="relative hidden lg:flex flex-1 min-w-0 items-center justify-center px-2">
               <div className="pointer-events-none absolute left-0 top-0 h-full w-6 bg-gradient-to-r from-white/90 dark:from-black/70 to-transparent" />
               <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-white/90 dark:from-black/70 to-transparent" />
@@ -295,7 +300,7 @@ export default function Header() {
                 className="mx-auto overflow-x-auto overscroll-x-contain"
                 style={{
                   scrollbarWidth: "thin",
-                  maxWidth: "min(760px, calc(100vw - 280px))", // 좌우(로고/우측버튼) 공간 고려
+                  maxWidth: "min(760px, calc(100vw - 280px))",
                 }}
               >
                 <ul className="flex items-center gap-1 whitespace-nowrap pr-6">
@@ -327,7 +332,6 @@ export default function Header() {
 
             {/* Right: Theme + CTA + Hamburger */}
             <div className="flex items-center gap-2 flex-none ml-auto">
-              {/* Theme (2-state toggle only) */}
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -338,7 +342,6 @@ export default function Header() {
                 <span aria-hidden="true" className="text-base leading-none">{themeIcon}</span>
               </button>
 
-              {/* CTA on md+; 모바일은 드로어 내부 */}
               <button
                 type="button"
                 onClick={onTalkToSales}
@@ -348,7 +351,7 @@ export default function Header() {
                 Talk to Sales
               </button>
 
-              {/* Hamburger (mobile only) — 항상 우측 고정 */}
+              {/* Hamburger (mobile only) */}
               <button
                 type="button"
                 className="inline-flex lg:hidden items-center justify-center w-10 h-10 rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
@@ -426,7 +429,7 @@ export default function Header() {
                 </button>
               </div>
 
-              {/* Menu — DOM 순서 반영 */}
+              {/* Menu — DOM order */}
               <ul className="space-y-1">
                 {navItems.map((item) => {
                   const isActive = active === item.id;
@@ -454,7 +457,7 @@ export default function Header() {
           </div>
         </div>
       </header>
-      {/* ✅ Spacer 제거 (헤더 높이는 CSS 변수로 보정) */}
+      {/* No spacer div — header height handled by CSS var */}
     </>
   );
 }
