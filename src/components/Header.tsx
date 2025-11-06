@@ -1,203 +1,319 @@
-// src/components/Header.tsx
-import { Link, NavLink } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { NavLink, Link, useLocation } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
 
-type NavItem =
-  | { label: string; to: string }
-  | { label: string; children: { label: string; to: string }[] };
+function cx(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(" ");
+}
 
-const nav: NavItem[] = [
-  { label: "Home", to: "/" },
-  {
-    label: "Models",
-    children: [
-      { label: "All Models", to: "/models" },
-      { label: "Compare", to: "/models/compare" },
-      { label: "Configurator", to: "/models/configurator" },
-      { label: "Technology", to: "/models/technology" },      // ⬅️ 이동
-      { label: "Service & Warranty", to: "/models/service" },  // ⬅️ 이동
-      { label: "Case Studies", to: "/models/cases" },          // ⬅️ 이동
-    ],
-  },
-  {
-    label: "Company",
-    children: [
-      { label: "About", to: "/company/about" },
-      { label: "Resources", to: "/company/resources" },
-    ],
-  },
-  {
-    label: "Partners",
-    children: [
-      { label: "Partner Program", to: "/partners" },
-      { label: "Become a Partner", to: "/partners/apply" },
-    ],
-  },
-  { label: "Contact", to: "/contact" },
-];
-
-export default function Header() {
-  const [openIdx, setOpenIdx] = useState<number | null>(null);
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  // ESC/외부클릭 닫기
+function useClickOutside<T extends HTMLElement>(onClose: () => void) {
+  const ref = useRef<T | null>(null);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpenIdx(null);
-    const onClick = (e: MouseEvent) => {
-      const t = e.target as HTMLElement;
-      if (!t.closest?.("[data-nav-root]")) setOpenIdx(null);
-    };
-    window.addEventListener("keydown", onKey);
-    window.addEventListener("click", onClick);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("click", onClick);
-    };
-  }, []);
+    function handler(e: MouseEvent) {
+      if (!ref.current) return;
+      if (!ref.current.contains(e.target as Node)) onClose();
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [onClose]);
+  return ref;
+}
 
-  const linkBase =
-    "px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-neutral-800";
-  const active =
-    "text-black dark:text-white";
-  const inactive =
-    "text-neutral-600 dark:text-neutral-300";
+function ThemeToggle() {
+  const [isDark, setIsDark] = useState<boolean>(() =>
+    document.documentElement.classList.contains("dark")
+  );
+
+  const toggle = () => {
+    const next = !isDark;
+    setIsDark(next);
+    const root = document.documentElement;
+    root.classList.toggle("dark", next);
+    localStorage.setItem("theme", next ? "dark" : "light");
+  };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/80 dark:bg-neutral-950/70 backdrop-blur border-b border-neutral-200 dark:border-neutral-800">
-      <div className="mx-auto max-w-6xl px-4 md:px-6" data-nav-root>
-        <div className="flex h-14 items-center justify-between">
-          <Link to="/" className="font-extrabold tracking-tight text-lg">
+    <button
+      onClick={toggle}
+      className="rounded-md border border-neutral-200 px-3 py-1.5 text-sm hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
+      aria-label="Toggle dark mode"
+    >
+      {isDark ? "Dark" : "Light"}
+    </button>
+  );
+}
+
+export default function Header() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [modelsOpen, setModelsOpen] = useState(false);
+  const [companyOpen, setCompanyOpen] = useState(false);
+  const [partnersOpen, setPartnersOpen] = useState(false);
+  const location = useLocation();
+
+  // 라우트가 바뀌면 드롭다운/모바일 메뉴 닫기
+  useEffect(() => {
+    setMobileOpen(false);
+    setModelsOpen(false);
+    setCompanyOpen(false);
+    setPartnersOpen(false);
+  }, [location.pathname]);
+
+  const modelsRef = useClickOutside<HTMLDivElement>(() => setModelsOpen(false));
+  const companyRef = useClickOutside<HTMLDivElement>(() => setCompanyOpen(false));
+  const partnersRef = useClickOutside<HTMLDivElement>(() => setPartnersOpen(false));
+
+  const linkBase =
+    "inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800";
+  const activeBase =
+    "text-black dark:text-white";
+  const inactiveBase =
+    "text-neutral-700 dark:text-neutral-300";
+
+  return (
+    <header className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:border-neutral-800 dark:bg-neutral-950/80">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+        {/* Left: Logo */}
+        <div className="flex items-center gap-3">
+          <Link to="/" className="text-xl font-extrabold tracking-tight">
             APRO
           </Link>
-
-          {/* Desktop */}
-          <nav className="hidden md:flex items-center gap-1">
-            {nav.map((item, i) => {
-              if ("to" in item) {
-                return (
-                  <NavLink
-                    key={i}
-                    to={item.to}
-                    className={({ isActive }) =>
-                      `${linkBase} ${isActive ? active : inactive}`
-                    }
-                  >
-                    {item.label}
-                  </NavLink>
-                );
-              }
-              return (
-                <div key={i} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setOpenIdx(openIdx === i ? null : i)}
-                    className={`${linkBase} ${inactive} inline-flex items-center gap-1`}
-                  >
-                    {item.label}
-                    <svg width="14" height="14" viewBox="0 0 20 20" className="opacity-70">
-                      <path d="M5 7l5 6 5-6H5z" fill="currentColor" />
-                    </svg>
-                  </button>
-                  {openIdx === i && (
-                    <div className="absolute left-0 mt-2 min-w-56 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg p-1">
-                      {item.children.map((c) => (
-                        <NavLink
-                          key={c.to}
-                          to={c.to}
-                          onClick={() => setOpenIdx(null)}
-                          className={({ isActive }) =>
-                            `block px-3 py-2 rounded-lg text-sm ${
-                              isActive ? "bg-gray-100 dark:bg-neutral-800" : "hover:bg-gray-50 dark:hover:bg-neutral-800/60"
-                            }`
-                          }
-                        >
-                          {c.label}
-                        </NavLink>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            <Link
-              to="/contact"
-              className="ml-2 inline-flex items-center rounded-xl px-3 py-2 text-sm font-semibold bg-black text-white dark:bg-white dark:text-black hover:opacity-90"
-            >
-              Talk to Sales
-            </Link>
-          </nav>
-
-          {/* Mobile */}
-          <button
-            className="md:hidden inline-flex items-center justify-center rounded-lg px-2 py-2 border border-neutral-200 dark:border-neutral-800"
-            onClick={() => setMobileOpen((v) => !v)}
-            aria-label="Open Menu"
-          >
-            ☰
-          </button>
         </div>
 
-        {/* Mobile panel */}
-        {mobileOpen && (
-          <div className="md:hidden pb-3">
-            <div className="mt-2 rounded-xl border border-neutral-200 dark:border-neutral-800 p-2">
-              {nav.map((item, i) => {
-                if ("to" in item) {
-                  return (
+        {/* Desktop nav */}
+        <nav className="hidden items-center gap-1 md:flex">
+          <NavLink
+            to="/"
+            className={({ isActive }) =>
+              cx(linkBase, isActive ? activeBase : inactiveBase)
+            }
+            end
+          >
+            Home
+          </NavLink>
+
+          {/* Models (dropdown) */}
+          <div className="relative" ref={modelsRef}>
+            <button
+              className={cx(linkBase, inactiveBase)}
+              onClick={() => {
+                setModelsOpen((v) => !v);
+                setCompanyOpen(false);
+                setPartnersOpen(false);
+              }}
+              aria-expanded={modelsOpen}
+            >
+              Models
+              <span aria-hidden>▾</span>
+            </button>
+            {modelsOpen && (
+              <div className="absolute left-0 mt-2 w-64 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-800 dark:bg-neutral-900">
+                <ul className="p-2 text-sm">
+                  <li>
                     <NavLink
-                      key={i}
-                      to={item.to}
-                      onClick={() => setMobileOpen(false)}
+                      to="/models"
                       className={({ isActive }) =>
-                        `block px-3 py-2 rounded-lg text-sm ${
-                          isActive
-                            ? "bg-gray-100 dark:bg-neutral-800"
-                            : "hover:bg-gray-50 dark:hover:bg-neutral-800/60"
-                        }`
+                        cx(
+                          "block rounded-lg px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800",
+                          isActive ? "font-semibold" : ""
+                        )
                       }
                     >
-                      {item.label}
+                      All Models
                     </NavLink>
-                  );
-                }
-                return (
-                  <details key={i} className="group">
-                    <summary className="cursor-pointer list-none px-3 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-neutral-800/60">
-                      {item.label}
-                    </summary>
-                    <div className="mt-1 pl-2">
-                      {item.children.map((c) => (
-                        <NavLink
-                          key={c.to}
-                          to={c.to}
-                          onClick={() => setMobileOpen(false)}
-                          className={({ isActive }) =>
-                            `block px-3 py-2 rounded-lg text-sm ${
-                              isActive
-                                ? "bg-gray-100 dark:bg-neutral-800"
-                                : "hover:bg-gray-50 dark:hover:bg-neutral-800/60"
-                            }`
-                          }
-                        >
-                          {c.label}
-                        </NavLink>
-                      ))}
-                    </div>
-                  </details>
-                );
-              })}
-              <Link
-                to="/contact"
-                onClick={() => setMobileOpen(false)}
-                className="mt-2 block text-center rounded-xl px-3 py-2 text-sm font-semibold bg-black text-white dark:bg-white dark:text-black hover:opacity-90"
-              >
-                Talk to Sales
-              </Link>
+                  </li>
+                  <li className="my-1 h-px bg-neutral-200 dark:bg-neutral-800" />
+                  <li>
+                    <NavLink
+                      to="/models/technology"
+                      className="block rounded-lg px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                    >
+                      Technology
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/models/service-warranty"
+                      className="block rounded-lg px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                    >
+                      Service &amp; Warranty
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/models/cases"
+                      className="block rounded-lg px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                    >
+                      Case Studies
+                    </NavLink>
+                  </li>
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Company (dropdown) */}
+          <div className="relative" ref={companyRef}>
+            <button
+              className={cx(linkBase, inactiveBase)}
+              onClick={() => {
+                setCompanyOpen((v) => !v);
+                setModelsOpen(false);
+                setPartnersOpen(false);
+              }}
+              aria-expanded={companyOpen}
+            >
+              Company <span aria-hidden>▾</span>
+            </button>
+            {companyOpen && (
+              <div className="absolute left-0 mt-2 w-56 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-800 dark:bg-neutral-900">
+                <ul className="p-2 text-sm">
+                  <li>
+                    <NavLink
+                      to="/company/about"
+                      className="block rounded-lg px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                    >
+                      About
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/company/resources"
+                      className="block rounded-lg px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                    >
+                      Resources
+                    </NavLink>
+                  </li>
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Partners (dropdown) */}
+          <div className="relative" ref={partnersRef}>
+            <button
+              className={cx(linkBase, inactiveBase)}
+              onClick={() => {
+                setPartnersOpen((v) => !v);
+                setModelsOpen(false);
+                setCompanyOpen(false);
+              }}
+              aria-expanded={partnersOpen}
+            >
+              Partners <span aria-hidden>▾</span>
+            </button>
+            {partnersOpen && (
+              <div className="absolute left-0 mt-2 w-56 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-800 dark:bg-neutral-900">
+                <ul className="p-2 text-sm">
+                  <li>
+                    <NavLink
+                      to="/partners"
+                      className="block rounded-lg px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                    >
+                      Overview
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/partners/apply"
+                      className="block rounded-lg px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                    >
+                      Apply
+                    </NavLink>
+                  </li>
+                </ul>
+              </div>
+            )}
+          </div>
+
+          <NavLink
+            to="/contact"
+            className={({ isActive }) =>
+              cx(linkBase, isActive ? activeBase : inactiveBase)
+            }
+          >
+            Contact
+          </NavLink>
+
+          <div className="ml-2">
+            <ThemeToggle />
+          </div>
+        </nav>
+
+        {/* Mobile hamburger */}
+        <button
+          className="inline-flex items-center rounded-md border border-neutral-200 p-2 md:hidden dark:border-neutral-800"
+          onClick={() => setMobileOpen((v) => !v)}
+          aria-label="Toggle menu"
+        >
+          ☰
+        </button>
+      </div>
+
+      {/* Mobile drawer */}
+      {mobileOpen && (
+        <div className="border-t border-neutral-200 bg-white px-4 py-3 md:hidden dark:border-neutral-800 dark:bg-neutral-950">
+          <div className="flex flex-col gap-1">
+            <NavLink to="/" className="rounded-md px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800" end>
+              Home
+            </NavLink>
+
+            <details>
+              <summary className="cursor-pointer rounded-md px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                Models
+              </summary>
+              <div className="ml-3 mt-1 flex flex-col">
+                <NavLink to="/models" className="rounded-md px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                  All Models
+                </NavLink>
+                <NavLink to="/models/technology" className="rounded-md px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                  Technology
+                </NavLink>
+                <NavLink to="/models/service-warranty" className="rounded-md px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                  Service &amp; Warranty
+                </NavLink>
+                <NavLink to="/models/cases" className="rounded-md px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                  Case Studies
+                </NavLink>
+              </div>
+            </details>
+
+            <details>
+              <summary className="cursor-pointer rounded-md px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                Company
+              </summary>
+              <div className="ml-3 mt-1 flex flex-col">
+                <NavLink to="/company/about" className="rounded-md px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                  About
+                </NavLink>
+                <NavLink to="/company/resources" className="rounded-md px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                  Resources
+                </NavLink>
+              </div>
+            </details>
+
+            <details>
+              <summary className="cursor-pointer rounded-md px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                Partners
+              </summary>
+              <div className="ml-3 mt-1 flex flex-col">
+                <NavLink to="/partners" className="rounded-md px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                  Overview
+                </NavLink>
+                <NavLink to="/partners/apply" className="rounded-md px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                  Apply
+                </NavLink>
+              </div>
+            </details>
+
+            <NavLink to="/contact" className="rounded-md px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+              Contact
+            </NavLink>
+
+            <div className="mt-2">
+              <ThemeToggle />
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </header>
   );
 }
