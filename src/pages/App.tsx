@@ -13,6 +13,20 @@ import { setupScrollDepth, trackEvent, initAnalytics } from "../services/analyti
 import { initThemeWatcher } from "../utils/theme";
 import { loadRecaptcha } from "../lib/recaptcha";
 import { getTechCopy } from "../data/technology";
+import React, { useEffect, useMemo, useState } from "react";
+import Header from "../components/Header";
+import ModelGrid from "../components/ModelGrid";
+import CompareTable from "../components/CompareTable";
+import TechSection from "../components/TechSection";
+import FleetSection from "../components/FleetSection";
+import SupportSection from "../components/SupportSection";
+import LeadModal, { openLead } from "../components/LeadModal";
+import ModelDetail from "../components/ModelDetail";
+import { getVariant } from "../utils/ab";
+import { setupScrollDepth, trackEvent, initAnalytics } from "../services/analytics";
+import { initThemeWatcher } from "../utils/theme";
+import { loadRecaptcha } from "../lib/recaptcha";
+import { getTechCopy } from "../data/technology";
 
 // Production timeline
 import ProductionTimeline from "../components/ProductionTimeline";
@@ -74,7 +88,7 @@ export default function App() {
     <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
       <Header />
 
-      <main id="main" className="pt-16">
+      <main id="main" style={{ paddingTop: "var(--header-h, 4rem)" }}>
         {/* HERO */}
         <section id="home" className="relative scroll-mt-24" aria-label="Hero">
           <div className="relative h-[72vh] md:h-[84vh] w-full">
@@ -88,10 +102,10 @@ export default function App() {
             <div className="absolute inset-0 bg-gradient-to-t from-white via-white/30 to-transparent dark:from-black dark:via-black/30 dark:to-transparent" />
             <div className="relative z-10 max-w-6xl mx-auto px-5 h-full flex flex-col justify-end pb-14">
               <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
-                Electric Golf Carts, Built for Courses, Resorts & Venues Worldwide
+                APRO Golf Carts for Global Fleets
               </h1>
               <p className="mt-3 max-w-2xl text-zinc-700 dark:text-zinc-200">
-                Smart guidance, flexible seating, and global after-sales support.
+                Lithium efficiency, robust chassis, and fleet-ready reliability for courses, resorts, and venues.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
@@ -148,7 +162,7 @@ export default function App() {
         </section>
 
         {/* INDUSTRIES */}
-        <section id="industries" className="scroll-mt-24" aria-label="Industries">
+        <section id="industries" className="scroll-mt-24" aria-label="Use cases">
           <div className="border-t border-zinc-200 dark:border-zinc-800" />
           <IndustriesSection />
         </section>
@@ -160,7 +174,7 @@ export default function App() {
         </section>
 
         {/* SERVICE & WARRANTY */}
-        <section id="service" className="scroll-mt-24" aria-label="Service and warranty">
+        <section id="service" className="scroll-mt-24" aria-label="Warranty & service">
           <div className="border-t border-zinc-200 dark:border-zinc-800" />
           <ServiceWarrantySection />
         </section>
@@ -196,7 +210,7 @@ export default function App() {
         </section>
 
         {/* SUPPORT */}
-        <section id="support" className="scroll-mt-24" aria-label="Support">
+        <section id="support" className="scroll-mt-24" aria-label="Support / FAQ">
           <div className="border-t border-zinc-200 dark:border-zinc-800" />
           <SupportSection />
         </section>
@@ -214,7 +228,7 @@ export default function App() {
               <a href={`mailto:${import.meta.env.VITE_SALES_EMAIL || "sales@example.com"}`} className="underline">
                 {import.meta.env.VITE_SALES_EMAIL || "sales@example.com"}
               </a>{" "}
-              or open the form above.
+              or open the form below.
             </p>
 
             <div className="mt-6 flex gap-3">
@@ -223,7 +237,7 @@ export default function App() {
                   openLead("Contact CTA");
                   trackEvent("contactOpen", { where: "contact_section", label: "Talk to Sales" });
                 }}
-                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg白 dark:text-black"
+                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
               >
                 Talk to Sales
               </button>
@@ -237,7 +251,7 @@ export default function App() {
               </a>
             </div>
 
-            {/* reCAPTCHA 정책 고지 (모바일 배지 숨김시 필수) */}
+            {/* reCAPTCHA policy notice */}
             <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
               This site is protected by reCAPTCHA and the Google{" "}
               <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">
@@ -253,7 +267,7 @@ export default function App() {
         </section>
       </main>
 
-      {/* Sticky CTA — compare가 하단을 점유할 때는 자동 숨김 */}
+      {/* Sticky CTA — hidden when compare is pinned/mini */}
       {!bottomBlocked && (
         <button
           onClick={() => {
@@ -279,7 +293,6 @@ export default function App() {
               Address: Floor 12, 124, Sagimakgol-ro, Jungwon-gu, Seongnam-si, Gyeonggi-do, Republic of Korea
             </p>
 
-            {/* 고지 문구를 푸터에도 한 번 더 표기해두면 정책상 가장 안전 */}
             <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-500">
               This site is protected by reCAPTCHA and the Google{" "}
               <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">
