@@ -1,8 +1,4 @@
 {
-  "functions": {
-    "source": "functions",
-    "runtime": "nodejs20"
-  },
   "hosting": {
     "public": "dist",
     "ignore": [
@@ -11,7 +7,6 @@
       "**/node_modules/**"
     ],
     "rewrites": [
-      { "source": "/api/lead", "function": "lead" },
       { "source": "**", "destination": "/index.html" }
     ],
     "headers": [
