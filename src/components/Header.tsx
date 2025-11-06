@@ -7,24 +7,11 @@ import { openLead } from "./LeadModal";
  * --------------------------------*/
 const LABELS = {// src/components/Header.tsx
 import React, { useEffect, useRef, useState } from "react";
+import { trackEvent } from "../services/analytics";// src/components/Header.tsx
+import React, { useEffect, useRef, useState } from "react";
 import { trackEvent } from "../services/analytics";
 
-type SectionId =
-  | "home"
-  | "models"
-  | "technology"
-  | "industries"
-  | "timeline"
-  | "service"
-  | "charging"
-  | "resources"
-  | "tco"
-  | "configurator"
-  | "fleet"
-  | "support"
-  | "contact";
-
-type NavItem = { id: SectionId; label: string; href: `#${SectionId}` };
+type NavItem = { id: string; label: string; href: string };
 
 const NAV: NavItem[] = [
   { id: "models", label: "Models", href: "#models" },
@@ -41,20 +28,17 @@ const NAV: NavItem[] = [
   { id: "contact", label: "Contact", href: "#contact" },
 ];
 
-function toggleDarkClass(nextIsDark: boolean): void {
-  const root = document.documentElement;
-  root.classList.toggle("dark", nextIsDark);
-  // Optional: keep a CSS var for header height consumers
-  document.body.style.setProperty("--header-h", getComputedStyle(root).getPropertyValue("--header-h") || "4rem");
-}
-
 export default function Header(): JSX.Element {
-  const [menuOpen, setMenuOpen] = useState<boolean>(false);
-  const [isDark, setIsDark] = useState<boolean>(() => document.documentElement.classList.contains("dark"));
-  const headerRef = useRef<HTMLElement | null>(null);
-  const linkRefs = useRef<(HTMLAnchorElement | null)[]>([]); // typed, no 'never'
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [isDark, setIsDark] = useState<boolean>(() =>
+    typeof document !== "undefined"
+      ? document.documentElement.classList.contains("dark")
+      : false
+  );
 
-  // Keep a CSS variable of header height for padding-top users
+  const headerRef = useRef<HTMLElement | null>(null);
+
+  // Keep a CSS var with header height for padding-top consumers
   useEffect(() => {
     const updateHeaderHeight = () => {
       const h = headerRef.current?.offsetHeight ?? 64;
@@ -65,7 +49,7 @@ export default function Header(): JSX.Element {
     return () => window.removeEventListener("resize", updateHeaderHeight);
   }, []);
 
-  // Close mobile menu on route hash change or when clicking outside
+  // Close mobile menu on hash change
   useEffect(() => {
     const onHash = () => setMenuOpen(false);
     window.addEventListener("hashchange", onHash);
@@ -73,13 +57,13 @@ export default function Header(): JSX.Element {
   }, []);
 
   const handleThemeToggle = () => {
-    const nextIsDark = !isDark;
-    setIsDark(nextIsDark);
-    toggleDarkClass(nextIsDark);
-    trackEvent("themeToggle", { to: nextIsDark ? "dark" : "light" });
+    const next = !isDark;
+    setIsDark(next);
+    document.documentElement.classList.toggle("dark", next);
+    trackEvent("themeToggle", { to: next ? "dark" : "light" });
   };
 
-  const onNavClick = (id: SectionId) => {
+  const onNavClick = (id: string) => {
     setMenuOpen(false);
     trackEvent("navClick", { id });
   };
@@ -97,10 +81,9 @@ export default function Header(): JSX.Element {
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex gap-5 items-center">
-          {NAV.map((item, idx) => (
+          {NAV.map((item) => (
             <a
               key={item.id}
-              ref={(el) => (linkRefs.current[idx] = el)}
               href={item.href}
               onClick={() => onNavClick(item.id)}
               className="text-sm text-zinc-700 hover:text-black dark:text-zinc-300 dark:hover:text-white"
