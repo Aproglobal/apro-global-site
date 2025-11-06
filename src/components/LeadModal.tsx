@@ -1,4 +1,3 @@
-// src/components/LeadModal.tsx
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { MODELS } from "../data/models";
@@ -43,7 +42,7 @@ export default function LeadModal() {
     if (e.key === "Escape") setOpen(false);
   }, []);
 
-  // 모달 열릴 때 reCAPTCHA 선로드(+ ready 보장) → 첫 클릭 딜레이 제거
+  // Preload reCAPTCHA when modal opens (removes first-click delay)
   useEffect(() => {
     if (!open) return;
     const key = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
@@ -52,12 +51,12 @@ export default function LeadModal() {
       try {
         await loadRecaptcha(key);
       } catch {
-        /* 캡차 미사용 환경에서도 동작 */
+        /* If reCAPTCHA isn't configured, allow submission flow to handle missing token gracefully */
       }
     })();
   }, [open]);
 
-  // 모달 오픈 이벤트 (GA4)
+  // GA: modal opened
   useEffect(() => {
     if (!open) return;
     window.gtag?.("event", "lead_open", {
@@ -67,6 +66,7 @@ export default function LeadModal() {
     });
   }, [open, source, modelCode]);
 
+  // Wire open/close events
   useEffect(() => {
     const handleOpen = (e: Event) => {
       const ce = e as CustomEvent<LeadOpenDetail>;
@@ -84,6 +84,7 @@ export default function LeadModal() {
     };
   }, []);
 
+  // Body scroll lock + ESC close
   useEffect(() => {
     if (!open) return;
     document.addEventListener("keydown", onEsc);
@@ -103,37 +104,37 @@ export default function LeadModal() {
 
     setStatusMsg(null);
 
-    // 항상 실제 form 엘리먼트에서 FormData 생성
+    // Always read from the actual form node
     const formEl = formRef.current ?? e.currentTarget;
     const fd = new FormData(formEl);
 
-    // 값 안전 처리
+    // Values
     const firstName = String(fd.get("firstName") || "").trim();
-    const lastName = String(fd.get("lastName") || "").trim();
-    const email = String(fd.get("email") || "").trim();
-    const phone = String((fd.get("phone") ?? "") as string).trim();
-    const company = String(fd.get("company") || "").trim();
-    const message = String(fd.get("message") || "").trim();
+    const lastName  = String(fd.get("lastName") || "").trim();
+    const email     = String(fd.get("email") || "").trim();
+    const phone     = String((fd.get("phone") ?? "") as string).trim();
+    const company   = String(fd.get("company") || "").trim();
+    const message   = String(fd.get("message") || "").trim();
     const selModelCode = String(fd.get("modelCode") || "");
-    const src = String(fd.get("source") || source || "Unknown");
-    const website = String(fd.get("website") || ""); // 허니팟(있으면 서버에서 400)
+    const src       = String(fd.get("source") || source || "Unknown");
+    const website   = String(fd.get("website") || ""); // honeypot (server will 400 if present)
 
-    // 프론트 1차 유효성
+    // Client-side required checks
     if (!firstName || !lastName || !email || !company) {
-      setStatusMsg("필수 항목을 확인해주세요.");
+      setStatusMsg("Please check the required fields.");
       return;
     }
 
-    // 제출 직전 reCAPTCHA 토큰 (lib/recaptcha가 로드/ready/재시도까지 케어)
+    // reCAPTCHA token (best-effort; server should still reject if missing/invalid)
     let recaptchaToken = "";
     try {
-      recaptchaToken = await getRecaptchaToken("lead_email");
+      recaptchaToken = await getRecaptchaToken("lead_submit");
     } catch {
-      // no-op — 서버에서 누락 시 400
+      // no-op — submit anyway; server decides
     }
 
     const payload = {
-      // 서버 필수
+      // Server-friendly keys
       firstName,
       lastName,
       name: [firstName, lastName].filter(Boolean).join(" "),
@@ -143,8 +144,10 @@ export default function LeadModal() {
       message,
       modelCode: selModelCode,
       source: src,
-      website, // 허니팟
+      website, // honeypot
       type: "lead",
+
+      // Helpful extras for server/logs
       site: location.hostname,
       country: "KR",
       privacyAgree: true,
@@ -156,28 +159,31 @@ export default function LeadModal() {
       locale: navigator.language,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       recaptchaToken,
-      requestId: crypto.randomUUID(), // (서버 중복 방지)
+      requestId: crypto.randomUUID(),
+
+      // Compatibility with a simple `/api/lead` that expects "interest"
+      interest: selModelCode || (selectedModel?.name ?? ""),
     };
 
     try {
       setLoading(true);
       await submitLead(payload);
 
-      // ✅ GA4 전환용 이벤트 (권장 스키마)
+      // GA4: recommended conversion event
       window.gtag?.("event", "generate_lead", {
         event_category: "lead",
         source: payload.source || "(unknown)",
         model_code: payload.modelCode || "(none)",
       });
 
-      // 보조 성공 이벤트(분석용)
+      // Supplemental success event
       window.gtag?.("event", "lead_submit_success", {
         event_category: "lead",
         source: payload.source || "(unknown)",
         model_code: payload.modelCode || "(none)",
       });
 
-      setStatusMsg("제출이 완료되었습니다. 감사합니다.");
+      setStatusMsg("Submitted successfully. Thank you!");
       formEl.reset();
       setOpen(false);
     } catch (err: any) {
@@ -185,10 +191,10 @@ export default function LeadModal() {
       const msg =
         err?.body?.data?.message ||
         err?.message ||
-        "제출 중 오류가 발생했습니다.";
+        "An error occurred while submitting. Please try again.";
       setStatusMsg(msg);
 
-      // GA4 에러 이벤트
+      // GA4 error event
       window.gtag?.("event", "lead_submit_error", {
         event_category: "lead",
         source: src || "(unknown)",
@@ -222,7 +228,7 @@ export default function LeadModal() {
               Talk to Sales
             </h3>
             <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-              Share your details and your request. We&apos;ll get back with pricing, lead time, and demos.
+              Share your details and request. We’ll get back with pricing, lead time, and demo options.
             </p>
 
             {/* Close (X) */}
@@ -248,7 +254,7 @@ export default function LeadModal() {
           {/* Form */}
           <form ref={formRef} className="p-6" onSubmit={handleSubmit}>
             <div className="grid gap-3">
-              {/* 이름 */}
+              {/* Name */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <input
                   name="firstName"
@@ -265,7 +271,7 @@ export default function LeadModal() {
                 />
               </div>
 
-              {/* 회사/이메일/전화 */}
+              {/* Company / Email / Phone */}
               <input
                 name="company"
                 placeholder="Company"
@@ -287,7 +293,7 @@ export default function LeadModal() {
                 className="w-full rounded-xl border border-zinc-200 px-3.5 py-3 text-sm outline-none focus:ring-2 focus:ring-black/10 dark:bg-zinc-900 dark:border-zinc-700 dark:placeholder-zinc-400 dark:focus:ring-white/10"
               />
 
-              {/* 문의 대상 모델 */}
+              {/* Inquiry target */}
               <label className="text-xs font-medium text-zinc-600 dark:text-zinc-300 mt-1">
                 Inquiry about
               </label>
@@ -309,16 +315,16 @@ export default function LeadModal() {
                 name="message"
                 placeholder={
                   modelCode
-                    ? `Inquiry about ${selectedModel?.name || modelCode}: models, quantity, timeline, site location...`
-                    : "Models, quantity, timeline, site location..."
+                    ? `Inquiry about ${selectedModel?.name || modelCode}: model, quantity, timeline, site location...`
+                    : "Model, quantity, timeline, site location..."
                 }
                 className="min-h-[100px] w-full resize-y rounded-xl border border-zinc-200 px-3.5 py-3 text-sm outline-none focus:ring-2 focus:ring-black/10 dark:bg-zinc-900 dark:border-zinc-700 dark:placeholder-zinc-400 dark:focus:ring-white/10"
               />
 
-              {/* 허니팟(봇 차단용) — 서버에서 값 있으면 400 처리 */}
+              {/* Honeypot for bots — server will 400 if filled */}
               <input name="website" className="hidden" tabIndex={-1} autoComplete="off" />
 
-              {/* 추적용 hidden */}
+              {/* Tracking */}
               <input type="hidden" name="source" value={source || "Unknown"} />
             </div>
 
@@ -329,7 +335,7 @@ export default function LeadModal() {
                 disabled={loading}
                 className="px-5 py-3 rounded-full bg-black text-white font-semibold disabled:opacity-60 dark:bg-white dark:text-black"
               >
-                {loading ? "Submitting..." : "Continue in email"}
+                {loading ? "Submitting..." : "Send request"}
               </button>
               <button
                 type="button"
@@ -342,7 +348,7 @@ export default function LeadModal() {
             </div>
 
             {statusMsg && (
-              <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="mt-3 text-xs text-zinc-600 dark:text-zinc-400" aria-live="polite">
                 {statusMsg}
               </p>
             )}
