@@ -9,11 +9,7 @@ import SupportSection from "../components/SupportSection";
 import LeadModal, { openLead } from "../components/LeadModal";
 import ModelDetail from "../components/ModelDetail";
 import { getVariant } from "../utils/ab";
-import { setupScrollDepth, trackEvent, initAnalytics } from "../services/analytics";
-import { initThemeWatcher } from "../utils/theme";
-import { loadRecaptcha } from "../lib/recaptcha";
-import { getTechCopy } from "../data/technology";
-import React, { useEffect, useMemo, useState } from "react";
+import { setupScrollDepth, trackEvent, initAnalytics } from "../services/analytics";import React, { useEffect, useMemo, useState } from "react";
 import Header from "../components/Header";
 import ModelGrid from "../components/ModelGrid";
 import CompareTable from "../components/CompareTable";
@@ -39,6 +35,9 @@ import ChargingPowerSection from "../components/ChargingPowerSection";
 import ResourcesSection from "../components/ResourcesSection";
 import TcoCalculator from "../components/TcoCalculator";
 import ConfiguratorSection from "../components/ConfiguratorSection";
+
+// JSON-LD (products)
+import ProductsJsonLd from "../seo/ProductsJsonLd";
 
 export default function App() {
   const variant = getVariant();
@@ -87,6 +86,9 @@ export default function App() {
   return (
     <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
       <Header />
+
+      {/* Product JSON-LD for all APRO models */}
+      <ProductsJsonLd />
 
       <main id="main" style={{ paddingTop: "var(--header-h, 4rem)" }}>
         {/* HERO */}
