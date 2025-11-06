@@ -1,3 +1,4 @@
+// src/components/LeadModal.tsx
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { MODELS } from "../data/models";
@@ -30,6 +31,9 @@ export default function LeadModal() {
 
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
+
+  // ✅ reCAPTCHA 토큰은 null 가능
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
 
   const formRef = useRef<HTMLFormElement | null>(null);
 
@@ -126,9 +130,10 @@ export default function LeadModal() {
     }
 
     // reCAPTCHA token (best-effort; server should still reject if missing/invalid)
-    let recaptchaToken = "";
+    let token: string | null = null;
     try {
-      recaptchaToken = await getRecaptchaToken("lead_submit");
+      token = await getRecaptchaToken("lead_submit");
+      setRecaptchaToken(token);
     } catch {
       // no-op — submit anyway; server decides
     }
@@ -158,7 +163,7 @@ export default function LeadModal() {
       userAgent: navigator.userAgent,
       locale: navigator.language,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      recaptchaToken,
+      recaptchaToken: token ?? undefined, // ✅ null이면 필드 생략
       requestId: crypto.randomUUID(),
 
       // Compatibility with a simple `/api/lead` that expects "interest"
@@ -326,6 +331,9 @@ export default function LeadModal() {
 
               {/* Tracking */}
               <input type="hidden" name="source" value={source || "Unknown"} />
+
+              {/* ✅ reCAPTCHA hidden field: string만 허용하므로 null-safe */}
+              <input type="hidden" name="recaptchaToken" value={recaptchaToken ?? ""} />
             </div>
 
             {/* Actions */}
