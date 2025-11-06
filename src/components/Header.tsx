@@ -45,6 +45,54 @@ const USER_KEY = "theme_user_pref";
 
 function isNightNow(d: Date = new Date()) {
   const h = d.getHours();
+  return h >= 19 || h < 7;import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { trackEvent } from "../services/analytics";
+import { openLead } from "./LeadModal";
+
+/** -------------------------------
+ *  Config
+ * --------------------------------*/
+type NavItem = { id: string; label: string };
+
+const LABELS: Record<string, string> = {
+  models: "Models",
+  technology: "Technology",
+  industries: "Use Cases",
+  compare: "Compare",
+  charging: "Charging",
+  resources: "Resources",
+  support: "Support",
+  timeline: "Timeline",
+  configurator: "Configurator",
+  fleet: "Fleet",
+  service: "Warranty",
+  tco: "TCO",
+  contact: "Contact",
+};
+
+const CANDIDATE_IDS = [
+  "models",
+  "technology",
+  "industries",
+  "timeline",
+  "service",
+  "charging",
+  "resources",
+  "tco",
+  "configurator",
+  "fleet",
+  "support",
+  "contact",
+];
+
+/** -------------------------------
+ *  Theme (2-state or auto by time)
+ * --------------------------------*/
+type UserPref = "light" | "dark" | null;
+const USER_KEY = "theme_user_pref";
+
+function isNightNow(d: Date = new Date()) {
+  const h = d.getHours();
   return h >= 19 || h < 7;
 }
 function applyThemeClass(isDark: boolean) {
@@ -244,11 +292,17 @@ export default function Header() {
   const Brand = useMemo(
     () => (
       <a
-        href="#top"
+        href="#home"
         onClick={(e) => {
           e.preventDefault();
-          window.scrollTo({ top: 0, behavior: "smooth" });
-          history.pushState({}, "", "#top");
+          const el = document.getElementById("home");
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "start" });
+            history.pushState({}, "", "#home");
+          } else {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            history.pushState({}, "", "#top");
+          }
         }}
         className="inline-flex items-center gap-2 font-extrabold tracking-tight text-lg lg:text-xl whitespace-nowrap"
         aria-label="APRO Home"
@@ -286,17 +340,14 @@ export default function Header() {
             {/* Left: Brand */}
             <div className="flex-none">{Brand}</div>
 
-            {/* Center: Desktop Nav (scrollable, 중앙 고정 & 로고 겹침 방지) */}
+            {/* Center: Desktop Nav */}
             <div className="relative hidden lg:flex flex-1 min-w-0 items-center justify-center px-2">
               <div className="pointer-events-none absolute left-0 top-0 h-full w-6 bg-gradient-to-r from-white/90 dark:from-black/70 to-transparent" />
               <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-white/90 dark:from-black/70 to-transparent" />
               <div
                 ref={desktopScrollRef}
                 className="mx-auto overflow-x-auto overscroll-x-contain"
-                style={{
-                  scrollbarWidth: "thin",
-                  maxWidth: "min(760px, calc(100vw - 280px))", // 좌우(로고/우측버튼) 공간 고려
-                }}
+                style={{ scrollbarWidth: "thin", maxWidth: "min(760px, calc(100vw - 280px))" }}
               >
                 <ul className="flex items-center gap-1 whitespace-nowrap pr-6">
                   {navItems.map((item) => {
@@ -327,7 +378,7 @@ export default function Header() {
 
             {/* Right: Theme + CTA + Hamburger */}
             <div className="flex items-center gap-2 flex-none ml-auto">
-              {/* Theme (2-state toggle only) */}
+              {/* Theme */}
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -338,7 +389,7 @@ export default function Header() {
                 <span aria-hidden="true" className="text-base leading-none">{themeIcon}</span>
               </button>
 
-              {/* CTA on md+; 모바일은 드로어 내부 */}
+              {/* CTA on md+ */}
               <button
                 type="button"
                 onClick={onTalkToSales}
@@ -348,7 +399,7 @@ export default function Header() {
                 Talk to Sales
               </button>
 
-              {/* Hamburger (mobile only) — 항상 우측 고정 */}
+              {/* Hamburger (mobile only) */}
               <button
                 type="button"
                 className="inline-flex lg:hidden items-center justify-center w-10 h-10 rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
@@ -370,10 +421,7 @@ export default function Header() {
 
         {/* Mobile Drawer Overlay */}
         <div
-          className={[
-            "lg:hidden fixed inset-0 z-40 transition-opacity",
-            mobileOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
-          ].join(" ")}
+          className={["lg:hidden fixed inset-0 z-40 transition-opacity", mobileOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"].join(" ")}
           aria-hidden={!mobileOpen}
           onClick={() => setMobileOpen(false)}
         >
@@ -454,7 +502,6 @@ export default function Header() {
           </div>
         </div>
       </header>
-      {/* ✅ Spacer 제거 (헤더 높이는 CSS 변수로 보정) */}
     </>
   );
 }
