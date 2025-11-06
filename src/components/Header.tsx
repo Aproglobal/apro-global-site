@@ -150,479 +150,243 @@ export default function Header() {
     ro.observe(el);
     window.addEventListener("resize", apply);
     return () => {
-      ro.disconnect();import React, {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { trackEvent } from "../services/analytics";
+      ro.disconnect();import React, {import React, { useEffect, useMemo, useState } from "react";
 import { openLead } from "./LeadModal";
 
-/** -------------------------------
- *  Config
- * --------------------------------*/
-type NavItem = { id: string; label: string };
+type NavItem = { label: string; href: string; external?: boolean };
 
-const LABELS: Record<string, string> = {import React, {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { trackEvent } from "../services/analytics";
-import { openLead } from "./LeadModal";
+const NAV_LINKS: NavItem[] = [
+  { label: "Home", href: "/" },
+  { label: "Models", href: "/models" },
+  { label: "Company", href: "/company" },
+  { label: "Partners", href: "/partners" },
+  { label: "Contact", href: "/contact" },
+];
 
-/** --------------------------------
- * Labels & Candidate Section IDs
- * --------------------------------*/
-const LABELS = {
-  models: "Models",
-  technology: "Technology",
-  industries: "Industries",
-  compare: "Compare",
-  charging: "Charging",
-  resources: "Resources",
-  support: "Support",
-  timeline: "Timeline",
-  configurator: "Configurator",
-  fleet: "Fleet",
-  service: "Service",
-  contact: "Contact",
-} as const;
-
-const CANDIDATE_IDS = Object.keys(LABELS) as Array<keyof typeof LABELS>;
-type NavItem = { id: string; label: string };
-
-/** --------------------------------
- * Theme (auto day/night + user lock)
- * --------------------------------*/
-type UserPref = "light" | "dark" | null;
-const USER_KEY = "theme_user_pref";
-
-function isNight(d = new Date()) {
-  const h = d.getHours();
-  return h >= 19 || h < 7;
-}
-function applyTheme(isDark: boolean) {
-  const root = document.documentElement;
-  root.classList.toggle("dark", isDark);
-  root.style.colorScheme = isDark ? "dark" : "light";
+function cx(...parts: Array<string | false | null | undefined>) {
+  return parts.filter(Boolean).join(" ");
 }
 
-function useTheme() {
-  const [userPref, setUserPref] = useState<UserPref>(() => {
-    const raw = localStorage.getItem(USER_KEY);
-    return raw === "dark" || raw === "light" ? raw : null;
-  });
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
-    const raw = localStorage.getItem(USER_KEY) as UserPref;
-    return raw ?? (isNight() ? "dark" : "light");
-  });
-
-  useEffect(() => applyTheme(theme === "dark"), [theme]);
-
-  // Auto switch only when there is no user lock
-  useEffect(() => {
-    if (userPref) return;
-    const tick = () => {
-      const want = isNight() ? "dark" : "light";
-      setTheme((cur) => (cur === want ? cur : want));
-    };
-    tick();
-    const id = window.setInterval(tick, 5 * 60 * 1000);
-    return () => window.clearInterval(id);
-  }, [userPref]);
-
-  const toggle = useCallback(() => {
-    setTheme((cur) => {
-      const next = cur === "light" ? "dark" : "light";
-      localStorage.setItem(USER_KEY, next);
-      setUserPref(next);
-      trackEvent?.("theme_toggle_click", { to: next });
-      return next;
-    });
-  }, []);
-
-  return {
-    theme,
-    toggle,
-    icon: theme === "dark" ? "🌙" : "☀️",
-    label: theme === "dark" ? "Theme: dark" : "Theme: light",
-  };
-}
-
-/** --------------------------------
- * Utils
- * --------------------------------*/
-function docTop(el: Element) {
-  const rect = el.getBoundingClientRect();
-  const y = window.scrollY || document.documentElement.scrollTop || 0;
-  return rect.top + y;
-}
-
-function setHeaderH(px: number) {
-  document.documentElement.style.setProperty("--header-h", `${px}px`);
-}
-
-/** --------------------------------
- * Header
- * --------------------------------*/
-export default function Header() {
+function useScrolled(threshold = 4) {
   const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [active, setActive] = useState<string>("");
-  const [navItems, setNavItems] = useState<NavItem[]>([]);
-  const { toggle: toggleTheme, icon: themeIcon, label: themeLabel } = useTheme();
-
-  const headerRef = useRef<HTMLElement | null>(null);
-  const firstMobileLinkRef = useRef<HTMLButtonElement | null>(null);
-  const desktopScrollRef = useRef<HTMLDivElement | null>(null);
-
-  /** keep CSS var with header height */
-  useLayoutEffect(() => {
-    if (!headerRef.current) return;
-    const el = headerRef.current;
-    const apply = () => setHeaderH(el.offsetHeight);
-    apply();
-    const ro = new ResizeObserver(apply);
-    ro.observe(el);
-    window.addEventListener("resize", apply);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", apply);
-    };
-  }, []);
-
-  /** navbar shadow by scroll */
   useEffect(() => {
-    const onScroll = () => setScrolled((window.scrollY || 0) > 8);
+    const onScroll = () => setScrolled(window.scrollY > threshold);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [threshold]);
+  return scrolled;
+}
 
-  /** build nav list by actual DOM order */
+function applyTheme(next: "light" | "dark") {
+  try {
+    const root = document.documentElement;
+    localStorage.setItem("theme", next);
+    if (next === "dark") root.classList.add("dark");
+    else root.classList.remove("dark");
+  } catch {
+    // no-op
+  }
+}
+
+function getInitialTheme(): "light" | "dark" {
+  try {
+    const saved = localStorage.getItem("theme");
+    if (saved === "light" || saved === "dark") return saved;
+    // fallback to system
+    const mql = window.matchMedia("(prefers-color-scheme: dark)");
+    return mql.matches ? "dark" : "light";
+  } catch {
+    return "light";
+  }
+}
+
+export default function Header() {
+  const scrolled = useScrolled();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">(getInitialTheme());
+
   useEffect(() => {
-    let t: number | undefined;
-    const build = () => {
-      const found = CANDIDATE_IDS
-        .map((id) => ({ id, el: document.getElementById(id) }))
-        .filter((x): x is { id: string; el: HTMLElement } => !!x.el)
-        .sort((a, b) => docTop(a.el) - docTop(b.el))
-        .map(({ id }) => ({ id, label: LABELS[id] || id }));
-      setNavItems(found);
-    };
-    build();
-    window.addEventListener("load", build);
-    const onResize = () => {
-      if (t) window.clearTimeout(t);
-      t = window.setTimeout(build, 120);
-    };
-    window.addEventListener("resize", onResize);
-    return () => {
-      window.removeEventListener("load", build);
-      window.removeEventListener("resize", onResize);
-      if (t) window.clearTimeout(t);
-    };
-  }, []);
+    applyTheme(theme);
+  }, [theme]);
 
-  /** active highlight with IntersectionObserver */
+  // 닫기: 라우팅 없이 해시/경로가 바뀌어도 닫히도록 처리
   useEffect(() => {
-    if (!navItems.length) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort(
-            (a, b) =>
-              Math.abs(a.boundingClientRect.top) - Math.abs(b.boundingClientRect.top)
-          );
-        if (visible.length) setActive(visible[0].target.id);
-      },
-      { root: null, rootMargin: "-30% 0px -30% 0px", threshold: [0, 0.2, 0.6] }
-    );
-
-    const targets: HTMLElement[] = [];
-    navItems.forEach((n) => {
-      const el = document.getElementById(n.id);
-      if (el) {
-        io.observe(el);
-        targets.push(el);
-      }
-    });
-
-    const bottomFallback = () => {
-      const atBottom =
-        window.innerHeight + (window.scrollY || 0) >=
-        (document.scrollingElement?.scrollHeight || document.body.scrollHeight) - 2;
-      if (atBottom && navItems.length) setActive(navItems[navItems.length - 1].id);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
     };
-    window.addEventListener("scroll", bottomFallback, { passive: true });
-
-    return () => {
-      io.disconnect();
-      window.removeEventListener("scroll", bottomFallback);
-    };
-  }, [navItems]);
-
-  /** lock body on mobile drawer */
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = mobileOpen ? "hidden" : prev || "";
-    return () => {
-      document.body.style.overflow = prev || "";
-    };
-  }, [mobileOpen]);
-
-  /** close mobile drawer by ESC */
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMobileOpen(false);
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const onNavClick = useCallback((id: string) => {
-    setMobileOpen(false);
-    trackEvent?.("nav_click", { id, where: "header" });
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-      try {
-        window.history.pushState({}, "", `#${id}`);
-      } catch {
-        /* no-op */
-      }
+  const themeLabel = useMemo(() => (theme === "dark" ? "Light" : "Dark"), [theme]);
+
+  const onClickCTA = () => {
+    try {
+      window.gtag?.("event", "lead_open_click", {
+        event_category: "lead",
+        source: "header_cta",
+      });
+    } catch {
+      // no-op
     }
-  }, []);
+    openLead("header_cta");
+    setMobileOpen(false);
+  };
 
-  const onTalkToSales = useCallback(() => {
-    openLead("Header CTA");
-    trackEvent?.("cta_click", { where: "header", label: "Talk to Sales" });
-  }, []);
+  const desktopNav = (
+    <nav aria-label="Primary" className="hidden lg:flex items-center gap-6">
+      {NAV_LINKS.map((item) => (
+        <a
+          key={item.label}
+          href={item.href}
+          rel={item.external ? "noopener noreferrer" : undefined}
+          target={item.external ? "_blank" : undefined}
+          className="text-sm text-zinc-700 hover:text-black dark:text-zinc-300 dark:hover:text-white transition-colors"
+        >
+          {item.label}
+        </a>
+      ))}
+    </nav>
+  );
 
-  const Brand = useMemo(
-    () => (
-      <a
-        href="#top"
-        onClick={(e) => {
-          e.preventDefault();
-          window.scrollTo({ top: 0, behavior: "smooth" });
-          try {
-            window.history.pushState({}, "", "#top");
-          } catch {
-            /* no-op */
-          }
-        }}
-        className="inline-flex items-center gap-2 font-extrabold tracking-tight text-lg lg:text-xl whitespace-nowrap"
-        aria-label="APRO Home"
-      >
-        <span>APRO</span>
-      </a>
-    ),
-    []
+  const ThemeButton = (
+    <button
+      type="button"
+      aria-label="Toggle theme"
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      className="inline-flex h-10 items-center rounded-full border border-zinc-300 px-3 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+    >
+      {themeLabel} mode
+    </button>
+  );
+
+  const CtaButton = (
+    <button
+      type="button"
+      onClick={onClickCTA}
+      className="inline-flex h-10 items-center rounded-full bg-black px-4 text-sm font-semibold text-white hover:bg-zinc-900 dark:bg-white dark:text-black dark:hover:bg-zinc-100"
+    >
+      Talk to Sales
+    </button>
   );
 
   return (
-    <>
-      {/* Skip Link */}
-      <a
-        href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-md focus:bg-black focus:text-white"
-      >
-        Skip to content
-      </a>
+    <header
+      className={cx(
+        "fixed inset-x-0 top-0 z-50",
+        "transition-shadow",
+        scrolled ? "shadow-md/50 backdrop-blur bg-white/80 dark:bg-zinc-900/80" : "bg-transparent"
+      )}
+      role="banner"
+    >
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Row */}
+        <div className="flex h-16 items-center justify-between">
+          {/* Left: Logo */}
+          <a
+            href="/"
+            className="flex items-center gap-2 rounded-lg px-2 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
+            aria-label="APRO Home"
+          >
+            {/* Simple text logo to avoid asset coupling */}
+            <span className="text-lg font-extrabold tracking-tight text-black dark:text-white">
+              APRO
+            </span>
+          </a>
 
-      {/* Header */}
-      <header
-        ref={headerRef}
-        className={[
-          "fixed inset-x-0 top-0 z-50 transition-all",
-          scrolled
-            ? "bg-white/90 dark:bg-black/70 backdrop-blur-md shadow-sm"
-            : "bg-transparent dark:bg-transparent",
-        ].join(" ")}
-        role="banner"
-      >
-        <div className="max-w-6xl mx-auto px-5">
-          <div className="flex items-center gap-3 h-16 lg:h-20">
-            {/* Left: Brand */}
-            <div className="flex-none">{Brand}</div>
+          {/* Center: Desktop nav */}
+          {desktopNav}
 
-            {/* Center: Desktop Nav */}
-            <div className="relative hidden lg:flex flex-1 min-w-0 items-center justify-center px-2">
-              <div className="pointer-events-none absolute left-0 top-0 h-full w-6 bg-gradient-to-r from-white/90 dark:from-black/70 to-transparent" />
-              <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-white/90 dark:from-black/70 to-transparent" />
-              <div
-                ref={desktopScrollRef}
-                className="mx-auto overflow-x-auto overscroll-x-contain"
-                style={{
-                  scrollbarWidth: "thin",
-                  maxWidth: "min(760px, calc(100vw - 280px))",
-                }}
-              >
-                <ul className="flex items-center gap-1 whitespace-nowrap pr-6">
-                  {navItems.map((item) => {
-                    const isActive = active === item.id;
-                    return (
-                      <li key={item.id}>
-                        <button
-                          type="button"
-                          onClick={() => onNavClick(item.id)}
-                          className={[
-                            "px-3 py-2 rounded-full text-sm font-medium transition-all",
-                            "hover:-translate-y-0.5 hover:shadow-sm",
-                            isActive
-                              ? "bg-black text-white dark:bg-white dark:text-black"
-                              : "text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70",
-                            "focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20",
-                          ].join(" ")}
-                          aria-current={isActive ? "page" : undefined}
-                        >
-                          {item.label}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            </div>
-
-            {/* Right: Theme + CTA + Hamburger */}
-            <div className="flex items-center gap-2 flex-none ml-auto">
-              {/* Theme toggle */}
-              <button
-                type="button"
-                onClick={toggleTheme}
-                title={themeLabel}
-                aria-label={themeLabel}
-                className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
-              >
-                <span aria-hidden className="text-base leading-none">
-                  {themeIcon}
-                </span>
-              </button>
-
-              {/* CTA (md+) */}
-              <button
-                type="button"
-                onClick={onTalkToSales}
-                className="hidden md:inline-flex h-10 shrink-0 items-center justify-center px-4 rounded-full text-sm font-semibold bg-black text-white dark:bg-white dark:text-black hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20 whitespace-nowrap"
-                title="Talk to Sales"
-              >
-                Talk to Sales
-              </button>
-
-              {/* Hamburger (mobile only) */}
-              <button
-                type="button"
-                className="inline-flex lg:hidden items-center justify-center w-10 h-10 rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
-                aria-label="Open menu"
-                aria-expanded={mobileOpen}
-                aria-controls="mobile-drawer"
-                onClick={() => {
-                  setMobileOpen((v) => !v);
-                  window.setTimeout(() => firstMobileLinkRef.current?.focus(), 60);
-                }}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>
-                  <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </button>
-            </div>
+          {/* Right: actions */}
+          <div className="hidden lg:flex items-center gap-3">
+            {ThemeButton}
+            {CtaButton}
           </div>
-        </div>
-      </header>
 
-      {/* Mobile Drawer Overlay (outside header for stacking) */}
-      <div
-        className={[
-          "lg:hidden fixed inset-0 z-40 transition-opacity",
-          mobileOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
-        ].join(" ")}
-        aria-hidden={!mobileOpen}
-        onClick={() => setMobileOpen(false)}
-      >
-        <div className="absolute inset-0 bg-black/70" />
-
-        {/* Drawer Panel */}
-        <div
-          id="mobile-drawer"
-          className={[
-            "absolute right-0 top-0 h-[100dvh] w-[86%] max-w-sm",
-            "bg-white dark:bg-zinc-950",
-            "border-l border-zinc-200 dark:border-zinc-800 shadow-xl",
-            "transition-transform duration-200",
-            mobileOpen ? "translate-x-0" : "translate-x-full",
-            "flex flex-col",
-          ].join(" ")}
-          role="dialog"
-          aria-modal="true"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Drawer header */}
-          <div className="flex items-center justify-between h-16 px-4">
-            <div className="font-extrabold">APRO</div>
+          {/* Mobile burger */}
+          <div className="lg:hidden">
             <button
               type="button"
-              className="w-10 h-10 inline-flex items-center justify-center rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
+              aria-label="Open menu"
+              aria-expanded={mobileOpen}
+              onClick={() => setMobileOpen(true)}
+              className="inline-grid h-10 w-10 place-items-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M4 7h16M4 12h16M4 17h16"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile drawer */}
+      <div
+        className={cx(
+          "lg:hidden fixed inset-0 z-[60]",
+          mobileOpen ? "block" : "hidden"
+        )}
+        aria-hidden={!mobileOpen}
+      >
+        <div
+          className="absolute inset-0 bg-black/60"
+          onClick={() => setMobileOpen(false)}
+        />
+        <div
+          className="absolute right-0 top-0 h-full w-[85%] max-w-sm bg-white shadow-xl dark:bg-zinc-900"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
+            <span className="text-base font-semibold text-black dark:text-white">Menu</span>
+            <button
+              type="button"
               aria-label="Close menu"
               onClick={() => setMobileOpen(false)}
+              className="inline-grid h-10 w-10 place-items-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
-                <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M18 6L6 18M6 6l12 12"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
               </svg>
             </button>
           </div>
 
-          {/* Scrollable content */}
-          <div className="px-4 pb-6 overflow-y-auto flex-1">
-            {/* CTA */}
-            <div className="py-3">
-              <button
-                ref={firstMobileLinkRef}
-                type="button"
-                onClick={() => {
-                  onTalkToSales();
-                  setMobileOpen(false);
-                }}
-                className="w-full inline-flex items-center justify-center px-4 py-3 rounded-xl text-sm font-semibold bg-black text-white dark:bg-white dark:text-black hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20 whitespace-nowrap"
+          <nav aria-label="Mobile" className="px-2 py-2">
+            {NAV_LINKS.map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                rel={item.external ? "noopener noreferrer" : undefined}
+                target={item.external ? "_blank" : undefined}
+                onClick={() => setMobileOpen(false)}
+                className="block rounded-xl px-4 py-3 text-base text-zinc-800 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
               >
-                Talk to Sales
-              </button>
-            </div>
+                {item.label}
+              </a>
+            ))}
+          </nav>
 
-            {/* Menu */}
-            <ul className="space-y-1">
-              {navItems.map((item) => {
-                const isActive = active === item.id;
-                return (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      onClick={() => onNavClick(item.id)}
-                      className={[
-                        "w-full text-left px-4 py-3 rounded-lg text-[15px] font-medium transition",
-                        "hover:bg-zinc-100 dark:hover:bg-zinc-800",
-                        isActive ? "bg-zinc-100 dark:bg-zinc-800" : "",
-                      ].join(" ")}
-                      aria-current={isActive ? "page" : undefined}
-                    >
-                      {item.label}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+          <div className="px-4 py-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center gap-2">
+            <div className="flex-1">{ThemeButton}</div>
+            {CtaButton}
+          </div>
 
-            <div className="h-6" />
+          <div className="px-4 pb-6 pt-2 text-xs text-zinc-500 dark:text-zinc-400">
+            © {new Date().getFullYear()} APRO. All rights reserved.
           </div>
         </div>
       </div>
-    </>
+    </header>
   );
 }
