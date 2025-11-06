@@ -3,24 +3,9 @@ import { trackEvent } from "../services/analytics";
 import { openLead } from "./LeadModal";
 
 /** -------------------------------
- *  Config
+ *  Config (no TS types to avoid parser issues)
  * --------------------------------*/
-type NavItem = { id: string; label: string };
-
-const LABELS: Record<string, string> = {
-  models: "Models",
-  technology: "Technology",
-  industries: "Industries",
-  compare: "Compare",import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { trackEvent } from "../services/analytics";
-import { openLead } from "./LeadModal";
-
-/** -------------------------------
- *  Config
- * --------------------------------*/
-type NavItem = { id: string; label: string };
-
-const LABELS: Record<string, string> = {
+const LABELS = {
   models: "Models",
   technology: "Technology",
   industries: "Industries",
@@ -51,28 +36,27 @@ const CANDIDATE_IDS = [
 ];
 
 /** -------------------------------
- *  Theme (시간대 자동 + 사용자가 Light/Dark 둘 중 하나만 고정)
+ *  Theme (auto by time + user lock)
  * --------------------------------*/
-type UserPref = "light" | "dark" | null;
 const USER_KEY = "theme_user_pref";
 
-function isNightNow(d: Date = new Date()) {
+function isNightNow(d = new Date()) {
   const h = d.getHours();
   return h >= 19 || h < 7;
 }
-function applyThemeClass(isDark: boolean) {
+function applyThemeClass(isDark) {
   const root = document.documentElement;
   root.classList.toggle("dark", isDark);
   root.style.colorScheme = isDark ? "dark" : "light";
 }
 function useTheme2State() {
-  const [userPref, setUserPref] = useState<UserPref>(() => {
+  const [userPref, setUserPref] = useState(() => {
     const raw = localStorage.getItem(USER_KEY);
-    return raw === "light" || raw === "dark" ? (raw as UserPref) : null;
+    return raw === "light" || raw === "dark" ? raw : null;
   });
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
-    const saved = localStorage.getItem(USER_KEY) as UserPref;
-    if (saved) return saved;
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem(USER_KEY);
+    if (saved === "light" || saved === "dark") return saved;
     return isNightNow() ? "dark" : "light";
   });
 
@@ -109,14 +93,14 @@ function useTheme2State() {
 /** -------------------------------
  *  Utils
  * --------------------------------*/
-function getDocTop(el: Element) {
+function getDocTop(el) {
   const rect = el.getBoundingClientRect();
   const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
   return rect.top + scrollY;
 }
 
-/** Header 높이를 CSS 변수로 반영 */
-function setHeaderVar(px: number) {
+/** Header height → CSS var */
+function setHeaderVar(px) {
   const r = document.documentElement;
   r.style.setProperty("--header-h", `${px}px`);
 }
@@ -127,15 +111,15 @@ function setHeaderVar(px: number) {
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [active, setActive] = useState<string>("");
-  const [navItems, setNavItems] = useState<NavItem[]>([]);
+  const [active, setActive] = useState("");
+  const [navItems, setNavItems] = useState([]);
   const { toggle: toggleTheme, icon: themeIcon, label: themeLabel } = useTheme2State();
 
-  const firstMobileLinkRef = useRef<HTMLButtonElement | null>(null);
-  const desktopScrollRef = useRef<HTMLDivElement | null>(null);
-  const headerRef = useRef<HTMLElement | null>(null);
+  const firstMobileLinkRef = useRef(null);
+  const desktopScrollRef = useRef(null);
+  const headerRef = useRef(null);
 
-  /** Header 높이 → CSS 변수 */
+  /** Header height → CSS var */
   useLayoutEffect(() => {
     if (!headerRef.current) return;
     const el = headerRef.current;
@@ -162,11 +146,11 @@ export default function Header() {
 
   /** Build nav by actual DOM order */
   useEffect(() => {
-    let t: number | undefined;
+    let t;
     const recalc = () => {
       const existing = CANDIDATE_IDS
         .map((id) => ({ id, el: document.getElementById(id) }))
-        .filter((x): x is { id: string; el: HTMLElement } => !!x.el)
+        .filter((x) => !!x.el)
         .sort((a, b) => getDocTop(a.el) - getDocTop(b.el))
         .map(({ id }) => ({ id, label: LABELS[id] || id }));
       setNavItems(existing);
@@ -198,7 +182,7 @@ export default function Header() {
       { root: null, rootMargin: "-30% 0px -30% 0px", threshold: [0, 0.2, 0.5, 1] }
     );
 
-    const targets: HTMLElement[] = [];
+    const targets = [];
     navItems.forEach((n) => {
       const el = document.getElementById(n.id);
       if (el) {
@@ -232,14 +216,14 @@ export default function Header() {
 
   /** Close on ESC */
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
+    const onKey = (e) => {
       if (e.key === "Escape") setMobileOpen(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const onNavClick = useCallback((id: string) => {
+  const onNavClick = useCallback((id) => {
     setMobileOpen(false);
     trackEvent("nav_click", { id, where: "header" });
     const el = document.getElementById(id);
@@ -299,17 +283,14 @@ export default function Header() {
             {/* Left: Brand */}
             <div className="flex-none">{Brand}</div>
 
-            {/* Center: Desktop Nav (scrollable, 중앙 고정 & 로고 겹침 방지) */}
+            {/* Center: Desktop Nav */}
             <div className="relative hidden lg:flex flex-1 min-w-0 items-center justify-center px-2">
               <div className="pointer-events-none absolute left-0 top-0 h-full w-6 bg-gradient-to-r from-white/90 dark:from-black/70 to-transparent" />
               <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-white/90 dark:from-black/70 to-transparent" />
               <div
                 ref={desktopScrollRef}
                 className="mx-auto overflow-x-auto overscroll-x-contain"
-                style={{
-                  scrollbarWidth: "thin",
-                  maxWidth: "min(760px, calc(100vw - 280px))",
-                }}
+                style={{ scrollbarWidth: "thin", maxWidth: "min(760px, calc(100vw - 280px))" }}
               >
                 <ul className="flex items-center gap-1 whitespace-nowrap pr-6">
                   {navItems.map((item) => {
@@ -340,7 +321,7 @@ export default function Header() {
 
             {/* Right: Theme + CTA + Hamburger */}
             <div className="flex items-center gap-2 flex-none ml-auto">
-              {/* Theme (2-state toggle only) */}
+              {/* Theme */}
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -351,7 +332,7 @@ export default function Header() {
                 <span aria-hidden="true" className="text-base leading-none">{themeIcon}</span>
               </button>
 
-              {/* CTA on md+; 모바일은 드로어 내부 */}
+              {/* CTA on md+; mobile has drawer CTA */}
               <button
                 type="button"
                 onClick={onTalkToSales}
@@ -361,7 +342,7 @@ export default function Header() {
                 Talk to Sales
               </button>
 
-              {/* Hamburger (mobile only) — 항상 우측 고정 */}
+              {/* Hamburger */}
               <button
                 type="button"
                 className="inline-flex lg:hidden items-center justify-center w-10 h-10 rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
@@ -439,7 +420,7 @@ export default function Header() {
                 </button>
               </div>
 
-              {/* Menu — DOM 순서 반영 */}
+              {/* Menu */}
               <ul className="space-y-1">
                 {navItems.map((item) => {
                   const isActive = active === item.id;
@@ -467,7 +448,7 @@ export default function Header() {
           </div>
         </div>
       </header>
-      {/* ✅ Spacer 제거 (헤더 높이는 CSS 변수로 보정) */}
+      {/* ✅ Spacer removed (height handled via CSS var) */}
     </>
   );
 }
