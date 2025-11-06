@@ -2,10 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
       content="APRO — Electric carts for modern golf courses. Electronic guidance, flexible seating, and dependable service across APAC."
@@ -38,19 +35,17 @@
           var mql = window.matchMedia('(prefers-color-scheme: dark)');
           var isDark = saved === 'dark' || (saved === 'system' && mql.matches);
           document.documentElement.classList.toggle('dark', isDark);
-        } catch (e) { /* no-op */ }
+        } catch (e) {}
       })();
     </script>
 
-    <!-- ✅ Canonical + Non-prod noindex -->
+    <!-- Canonical + Non-prod noindex -->
     <link id="canonical-link" rel="canonical" href="https://apro.kukjeint.com/">
     <script>
       (function () {
         var isProd = location.hostname === 'apro.kukjeint.com';
-        // canonical 동적 갱신
         var canon = document.getElementById('canonical-link');
         if (canon) canon.href = 'https://apro.kukjeint.com' + location.pathname;
-        // 프리뷰/비프로덕션은 noindex
         if (!isProd) {
           var m = document.createElement('meta');
           m.name = 'robots';
@@ -93,7 +88,7 @@
     }
     </script>
 
-    <!-- Structured Data: FAQ (AI/LLM 친화) -->
+    <!-- Structured Data: FAQ -->
     <script type="application/ld+json">
     {
       "@context":"https://schema.org",
@@ -129,7 +124,7 @@
       (function () {
         if (location.hostname !== 'apro.kukjeint.com') return;
 
-        var GA_ID = '%VITE_GA_MEASUREMENT_ID%'; // Vite가 치환
+        var GA_ID = '%VITE_GA_MEASUREMENT_ID%';
         var s = document.createElement('script');
         s.async = true;
         s.src = 'https://www.googletagmanager.com/gtag/js?id=%VITE_GA_MEASUREMENT_ID%';
@@ -139,7 +134,6 @@
         function gtag(){ dataLayer.push(arguments); }
         window.gtag = gtag;
 
-        // (선택) Consent 기본값
         gtag('consent', 'default', {
           ad_user_data: 'denied',
           ad_personalization: 'denied',
