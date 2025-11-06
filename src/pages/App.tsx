@@ -8,8 +8,8 @@ import FleetSection from "../components/FleetSection";
 import SupportSection from "../components/SupportSection";
 import LeadModal, { openLead } from "../components/LeadModal";
 import ModelDetail from "../components/ModelDetail";
-import { getVariant } from "../utils/ab";
-import { setupScrollDepth, trackEvent, initAnalytics } from "../services/analytics";import React, { useEffect, useMemo, useState } from "react";
+import { getVariant } from "../utils/ab";// src/pages/App.tsx
+import React, { useEffect, useMemo, useState } from "react";
 import Header from "../components/Header";
 import ModelGrid from "../components/ModelGrid";
 import CompareTable from "../components/CompareTable";
@@ -39,16 +39,23 @@ import ConfiguratorSection from "../components/ConfiguratorSection";
 // JSON-LD (products)
 import ProductsJsonLd from "../seo/ProductsJsonLd";
 
-export default function App() {
+/** Custom event payloads used by CompareTable floating UI */
+type ComparePinnedDetail = { count: number };
+type CompareMiniDetail = { open: boolean };
+
+export default function App(): JSX.Element {
   const variant = getVariant();
 
   useEffect(() => {
+    // Analytics + scroll depth
     initAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
     setupScrollDepth();
+
+    // Theme auto-switch (with user override respected in Header)
     initThemeWatcher();
 
     // reCAPTCHA v3 preload
-    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
+    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
     if (siteKey) loadRecaptcha(siteKey);
   }, []);
 
@@ -57,29 +64,31 @@ export default function App() {
 
   const techCopy = useMemo(() => getTechCopy(), []);
 
-  // CompareTable가 하단을 차지할 때 플로팅 CTA 자동 숨김
-  const [bottomBlocked, setBottomBlocked] = useState(false);
+  // Hide sticky CTA if compare table is "pinned" or mini panel is open
+  const [bottomBlocked, setBottomBlocked] = useState<boolean>(false);
   useEffect(() => {
     let pinnedCount = 0;
     let miniOpen = false;
+
     const recompute = () => setBottomBlocked(miniOpen || pinnedCount > 0);
 
     const onPinned = (e: Event) => {
-      const ce = e as CustomEvent<{ count: number }>;
-      pinnedCount = Number(ce?.detail?.count ?? 0);
-      recompute();
-    };
-    const onMini = (e: Event) => {
-      const ce = e as CustomEvent<{ open: boolean }>;
-      miniOpen = Boolean(ce?.detail?.open ?? false);
+      const ce = e as CustomEvent<ComparePinnedDetail>;
+      pinnedCount = Number(ce.detail?.count ?? 0);
       recompute();
     };
 
-    window.addEventListener("compare:pinned" as any, onPinned as any);
-    window.addEventListener("compare:mini" as any, onMini as any);
+    const onMini = (e: Event) => {
+      const ce = e as CustomEvent<CompareMiniDetail>;
+      miniOpen = Boolean(ce.detail?.open ?? false);
+      recompute();
+    };
+
+    window.addEventListener("compare:pinned", onPinned as EventListener);
+    window.addEventListener("compare:mini", onMini as EventListener);
     return () => {
-      window.removeEventListener("compare:pinned" as any, onPinned as any);
-      window.removeEventListener("compare:mini" as any, onMini as any);
+      window.removeEventListener("compare:pinned", onPinned as EventListener);
+      window.removeEventListener("compare:mini", onMini as EventListener);
     };
   }, []);
 
