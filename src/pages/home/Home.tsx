@@ -1,69 +1,72 @@
-// src/pages/home/Home.tsx
-import MarketingHero from "../../components/hero/MarketingHero";
+import { Hero } from "../../components/Hero";
+import { SectionTitle } from "../../components/Section";
+import { MODELS } from "../../content/models";
+import { LeadCtaBar } from "../../components/LeadCtaBar";
+import { SeoHead } from "../../utils/SeoHead";
 import { Link } from "react-router-dom";
-import { getABVariant } from "../../services/ab";
 
 export default function Home() {
-  const variant = getABVariant();
-
   return (
-    <main className="mx-auto max-w-6xl px-4 md:px-6 py-6 md:py-10 space-y-10">
-      {/* HERO */}
-      <MarketingHero variant={variant} />
+    <>
+      <SeoHead
+        title="APRO — Electric Golf Carts"
+        description="Electronic guidance, flexible seating, dependable service."
+        image="/assets/hero.jpg"
+      />
+      <Hero
+        title="Electronic Guidance. Flexible Seating. Proven in APAC."
+        subtitle="Modern electric carts, backed by local partners and measurable outcomes."
+      />
 
-      {/* 핵심 가치 3그리드 */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {[
-          {
-            t: "Electronic Guidance",
-            d: "Geofencing, pace, and course rules that keep play flowing.",
-            to: "/models/technology",
-          },
-          {
-            t: "Battery & Power",
-            d: "Long-life packs, safe BMS, and predictable TCO across lifecycle.",
-            to: "/models/technology",
-          },
-          {
-            t: "Service & Warranty",
-            d: "Parts coverage and fast turnaround, optimized for APAC.",
-            to: "/models/service",
-          },
-        ].map((x) => (
-          <article
-            key={x.t}
-            className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-5 hover:shadow-sm transition"
-          >
-            <h3 className="font-semibold">{x.t}</h3>
-            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">{x.d}</p>
-            <Link to={x.to} className="inline-block mt-3 text-sm underline underline-offset-2">
-              Learn more
+      <main className="container-xl section-pad">
+        <SectionTitle
+          eyebrow="Models"
+          title="Popular selections"
+          desc="Pick a model and request lead time & pricing."
+        />
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {MODELS.slice(0,3).map(m => (
+            <Link key={m.slug} to={`/models/${m.slug}`} className="card overflow-hidden hover:shadow-md transition">
+              <img src={m.thumbnail} alt="" className="w-full aspect-video object-cover" loading="lazy" />
+              <div className="p-5">
+                <div className="text-sm text-gray-500">{m.tagline}</div>
+                <div className="mt-1 font-semibold">{m.name}</div>
+                <div className="mt-2 text-xs text-gray-500">
+                  {m.seats} seats · {m.power} · {m.guidance}
+                </div>
+              </div>
             </Link>
-          </article>
-        ))}
-      </section>
-
-      {/* 콜아웃 (세일즈 유도) */}
-      <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 p-6 md:p-8">
-        <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">Ready to plan your fleet?</h2>
-        <p className="mt-2 text-neutral-600 dark:text-neutral-300">
-          Tell us your course size, terrain, and seating mix. We’ll propose the right model set, delivery plan, and TCO.
-        </p>
-        <div className="mt-4 flex gap-3">
-          <Link
-            to="/models"
-            className="rounded-xl px-4 py-2 border border-neutral-300 dark:border-neutral-700"
-          >
-            Explore Models
-          </Link>
-          <Link
-            to="/contact"
-            className="rounded-xl px-4 py-2 bg-black text-white dark:bg-white dark:text-black font-semibold"
-          >
-            Talk to Sales
-          </Link>
+          ))}
         </div>
-      </section>
-    </main>
+
+        <SectionTitle
+          eyebrow="Why APRO"
+          title="Designed for real courses"
+          desc="Field-proven guidance, battery telemetry, and service playbooks."
+        />
+        <ul className="grid sm:grid-cols-3 gap-6">
+          <li className="card p-5">
+            <div className="font-semibold">Electronic Guidance</div>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+              Stable routing on varied terrain with OTA parameter tuning.
+            </p>
+          </li>
+          <li className="card p-5">
+            <div className="font-semibold">Lithium Platform</div>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+              Predictable runtime, cycle longevity, and safer charge strategy.
+            </p>
+          </li>
+          <li className="card p-5">
+            <div className="font-semibold">Service & Warranty</div>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+              Local partner support with clear SLAs and parts stocking.
+            </p>
+          </li>
+        </ul>
+
+        <LeadCtaBar />
+      </main>
+    </>
   );
 }
