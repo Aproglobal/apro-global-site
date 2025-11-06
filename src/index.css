@@ -2,23 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body, #root { height: 100%; }
+:root { --header-h: 64px; }
 
-/* ✅ reCAPTCHA v3 배지 처리
-   - 데스크탑/태블릿: 좌하단 고정(CTA는 우하단이라 충돌 없음)
-   - 모바일(≤640px): 배지 숨김, 대신 페이지에 공식 문구를 표시 (App.tsx에 추가)
-*/
+html, body, #root { height: 100%; }
+html { scroll-behavior: smooth; }
+
+/* reCAPTCHA v3 badge */
 .grecaptcha-badge {
   position: fixed !important;
-  left: 16px !important;
-  right: auto !important;
+  right: 16px !important;
   bottom: 16px !important;
-  z-index: 30 !important; /* CTA(z-40)와 겹치지 않게 낮춤 */
+  left: auto !important;
+  z-index: 2147483647 !important;
   transform: translateZ(0);
-}
-
-@media (max-width: 640px) {
-  .grecaptcha-badge {
-    display: none !important; /* 모바일은 공식 문구로 대체(아래 2번) */
-  }
 }
