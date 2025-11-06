@@ -1,17 +1,20 @@
-// src/pages/company/CompanyResources.tsx
+import { DOWNLOADS } from "../../content/company";
+import { SeoHead } from "../../utils/SeoHead";
+import { SectionTitle } from "../../components/Section";
+
 export default function CompanyResources() {
-  const links = [
-    { t: "Brochure (PDF)", href: "#" },
-    { t: "Spec sheet (G2/G3)", href: "#" },
-    { t: "Operations checklist", href: "#" },
-  ];
   return (
-    <main className="mx-auto max-w-4xl px-4 md:px-6 py-10">
-      <h1 className="text-3xl font-extrabold tracking-tight mb-4">Resources</h1>
-      <ul className="list-disc pl-5 space-y-2">
-        {links.map((x) => (
-          <li key={x.t}>
-            <a className="underline underline-offset-2" href={x.href}>{x.t}</a>
+    <main className="container-xl section-pad">
+      <SeoHead title="Resources — APRO" description="Brochures, certifications, and guides." />
+      <SectionTitle title="Resources" desc="Download PDFs and official materials." />
+      <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {DOWNLOADS.map((d, i) => (
+          <li key={i} className="card p-5 flex items-center justify-between gap-4">
+            <div>
+              <div className="font-semibold">{d.title}</div>
+              <div className="text-xs text-gray-500">{d.type.toUpperCase()}</div>
+            </div>
+            <a className="btn btn-ghost" href={d.file} target="_blank" rel="noreferrer">Open</a>
           </li>
         ))}
       </ul>
