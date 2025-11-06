@@ -10,11 +10,32 @@
       name="description"
       content="APRO — Electric carts for modern golf courses. Electronic guidance, flexible seating, and dependable service across APAC."
     />
-    <meta property="og:title" content="APRO — Electric Golf Carts" />
-    <meta property="og:description" content="Electronic guidance, flexible seating, dependable service." />
+    <meta property="og:title" content="APRO — Electric Golf Carts" /><!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Global one-pager: concise, APRO-only -->
+    <meta
+      name="description"
+      content="APRO golf carts for global fleets. Lithium efficiency, robust chassis, and fleet-ready reliability."
+    />
+    <title>APRO — Golf Carts for Global Fleets</title>
+
+    <!-- Open Graph / Twitter -->
     <meta property="og:type" content="website" />
+    <meta property="og:title" content="APRO — Golf Carts for Global Fleets" />
+    <meta property="og:description" content="Lithium efficiency, robust chassis, and fleet-ready reliability." />
     <meta property="og:image" content="/assets/hero.jpg" />
-    <meta property="og:url" content="https://apro.kukjeint.com" />
+    <meta property="og:url" content="https://apro.kukjeint.com/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="APRO — Golf Carts for Global Fleets" />
+    <meta name="twitter:description" content="Lithium efficiency, robust chassis, and fleet-ready reliability." />
+    <meta name="twitter:image" content="/assets/hero.jpg" />
+    <meta name="twitter:url" content="https://apro.kukjeint.com/" />
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -22,7 +43,6 @@
       rel="stylesheet"
     />
     <link rel="icon" href="/favicon.ico" />
-    <title>APRO — Electric Golf Carts</title>
 
     <style>
       :root { --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; }
@@ -30,7 +50,7 @@
       :root { color-scheme: light dark; }
     </style>
 
-    <!-- (1) 테마 초기 적용 -->
+    <!-- (1) Initial theme apply -->
     <script>
       (function () {
         try {
@@ -42,15 +62,15 @@
       })();
     </script>
 
-    <!-- ✅ Canonical + Non-prod noindex -->
+    <!-- Canonical (prod only) + noindex for non-prod -->
     <link id="canonical-link" rel="canonical" href="https://apro.kukjeint.com/">
     <script>
       (function () {
         var isProd = location.hostname === 'apro.kukjeint.com';
-        // canonical 동적 갱신
+        // canonical update
         var canon = document.getElementById('canonical-link');
-        if (canon) canon.href = 'https://apro.kukjeint.com' + location.pathname;
-        // 프리뷰/비프로덕션은 noindex
+        if (canon) canon.href = 'https://apro.kukjeint.com' + (location.pathname.endsWith('/') ? location.pathname : location.pathname + '/').replace('//','/');
+        // noindex for non-prod
         if (!isProd) {
           var m = document.createElement('meta');
           m.name = 'robots';
@@ -60,7 +80,7 @@
       })();
     </script>
 
-    <!-- Structured Data: Organization -->
+    <!-- Structured Data: Organization (global) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -72,7 +92,7 @@
         "@type": "ContactPoint",
         "contactType": "sales",
         "email": "aproglobal@kukjeint.com",
-        "areaServed": "APAC",
+        "areaServed": "Worldwide",
         "availableLanguage": ["en","ko"]
       }]
     }
@@ -93,7 +113,7 @@
     }
     </script>
 
-    <!-- Structured Data: FAQ (AI/LLM 친화) -->
+    <!-- Structured Data: FAQ (keep concise) -->
     <script type="application/ld+json">
     {
       "@context":"https://schema.org",
@@ -101,35 +121,29 @@
       "mainEntity":[
         {
           "@type":"Question",
-          "name":"What is APRO golf cart?",
-          "acceptedAnswer":{"@type":"Answer","text":"APRO is a modern electric golf cart designed for APAC courses, featuring electronic guidance, flexible seating, and dependable service."}
+          "name":"Do you ship worldwide?",
+          "acceptedAnswer":{"@type":"Answer","text":"Yes. We support global shipping through our logistics partners. Lead time depends on order size and destination."}
         },
         {
           "@type":"Question",
-          "name":"Do you sell globally?",
-          "acceptedAnswer":{"@type":"Answer","text":"Yes. We ship and support across APAC and can coordinate deliveries globally via our partners."}
+          "name":"What charging power do APRO carts require?",
+          "acceptedAnswer":{"@type":"Answer","text":"Standard AC charging is supported. Exact specs depend on model and battery pack configuration."}
         },
         {
           "@type":"Question",
-          "name":"How do I request pricing and lead time?",
-          "acceptedAnswer":{"@type":"Answer","text":"Open the “Talk to Sales” form and share your model interest, quantity, and site location. Our team will reply with pricing, lead time, and demos."}
+          "name":"Can we customize seating or cargo?",
+          "acceptedAnswer":{"@type":"Answer","text":"Yes. Seating layout, cargo deck, and selected accessories can be customized for fleet needs."}
         }
       ]
     }
     </script>
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="APRO — Electric Golf Carts" />
-    <meta name="twitter:description" content="Electronic guidance, flexible seating, dependable service." />
-    <meta name="twitter:image" content="/assets/hero.jpg" />
-    <meta name="twitter:url" content="https://apro.kukjeint.com" />
-
-    <!-- (2) GA4 (운영 도메인에서만) -->
+    <!-- (2) GA4 (prod only) -->
     <script>
       (function () {
         if (location.hostname !== 'apro.kukjeint.com') return;
 
-        var GA_ID = '%VITE_GA_MEASUREMENT_ID%'; // Vite가 치환
+        var GA_ID = '%VITE_GA_MEASUREMENT_ID%';
         var s = document.createElement('script');
         s.async = true;
         s.src = 'https://www.googletagmanager.com/gtag/js?id=%VITE_GA_MEASUREMENT_ID%';
@@ -139,7 +153,6 @@
         function gtag(){ dataLayer.push(arguments); }
         window.gtag = gtag;
 
-        // (선택) Consent 기본값
         gtag('consent', 'default', {
           ad_user_data: 'denied',
           ad_personalization: 'denied',
