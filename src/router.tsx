@@ -1,61 +1,52 @@
-import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { lazy, Suspense } from "react";
+import { Route, Routes } from "react-router-dom";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
 
-import SiteLayout from "./layouts/SiteLayout";
+const Home = lazy(() => import("./pages/home/Home"));
+const ModelsIndex = lazy(() => import("./pages/models/ModelsIndex"));
+const ModelDetail = lazy(() => import("./pages/models/ModelDetail"));
+const ModelsTechnology = lazy(() => import("./pages/models/ModelsTechnology"));
+const ModelsServiceWarranty = lazy(() => import("./pages/models/ModelsServiceWarranty"));
+const ModelsCases = lazy(() => import("./pages/models/ModelsCases"));
 
-// Home
-import Home from "./pages/home/Home";
+const CompanyAbout = lazy(() => import("./pages/company/CompanyAbout"));
+const CompanyResources = lazy(() => import("./pages/company/CompanyResources"));
 
-// Models
-import ModelsIndex from "./pages/models/ModelsIndex";
-import ModelDetail from "./pages/models/ModelDetail";
-import ModelsTechnology from "./pages/models/ModelsTechnology";
-import ModelsService from "./pages/models/ModelsService";
-import ModelsCases from "./pages/models/ModelsCases";
+const Partners = lazy(() => import("./pages/partners/Partners"));
+const PartnersApply = lazy(() => import("./pages/partners/PartnersApply"));
 
-// Company
-import CompanyAbout from "./pages/company/CompanyAbout";
-import CompanyResources from "./pages/company/CompanyResources";
-
-// Partners
-import Partners from "./pages/partners/Partners";
-import PartnersApply from "./pages/partners/PartnersApply";
-
-// Support / Contact
-import Support from "./pages/support/Support";
-import Contact from "./pages/contact/Contact";
-
-// Not found
-import NotFound from "./pages/NotFound";
+const Contact = lazy(() => import("./pages/contact/Contact"));
+const Support = lazy(() => import("./pages/support/Support"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 export default function Router() {
   return (
-    <Routes>
-      <Route element={<SiteLayout />}>
-        <Route path="/" element={<Home />} />
+    <>
+      <Header />
+      <Suspense fallback={<div className="container-xl py-10">Loading…</div>}>
+        <Routes>
+          <Route path="/" element={<Home />} />
 
-        {/* Models */}
-        <Route path="/models" element={<ModelsIndex />} />
-        <Route path="/models/:slug" element={<ModelDetail />} />
-        <Route path="/models/technology" element={<ModelsTechnology />} />
-        <Route path="/models/service-warranty" element={<ModelsService />} />
-        <Route path="/models/cases" element={<ModelsCases />} />
+          <Route path="/models" element={<ModelsIndex />} />
+          <Route path="/models/technology" element={<ModelsTechnology />} />
+          <Route path="/models/service-warranty" element={<ModelsServiceWarranty />} />
+          <Route path="/models/cases" element={<ModelsCases />} />
+          <Route path="/models/:slug" element={<ModelDetail />} />
 
-        {/* Company */}
-        <Route path="/company/about" element={<CompanyAbout />} />
-        <Route path="/company/resources" element={<CompanyResources />} />
+          <Route path="/company/about" element={<CompanyAbout />} />
+          <Route path="/company/resources" element={<CompanyResources />} />
 
-        {/* Partners */}
-        <Route path="/partners" element={<Partners />} />
-        <Route path="/partners/apply" element={<PartnersApply />} />
+          <Route path="/partners" element={<Partners />} />
+          <Route path="/partners/apply" element={<PartnersApply />} />
 
-        {/* Support / Contact */}
-        <Route path="/support" element={<Support />} />
-        <Route path="/contact" element={<Contact />} />
+          <Route path="/support" element={<Support />} />
+          <Route path="/contact" element={<Contact />} />
 
-        {/* 404 */}
-        <Route path="*" element={<NotFound />} />
-      </Route>
-    </Routes>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
+      <Footer />
+    </>
   );
 }
