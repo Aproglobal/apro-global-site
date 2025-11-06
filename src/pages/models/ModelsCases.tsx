@@ -1,29 +1,37 @@
-// src/pages/models/ModelsCases.tsx
-type CaseItem = { name: string; region: string; highlight: string; link?: string; };
-
-const CASES: CaseItem[] = [
-  { name: "Sky Valley", region: "KR", highlight: "Electronic guidance roll-out across 18H" },
-  { name: "Rexfield", region: "KR", highlight: "VIP seating mix for member courses" },
-  { name: "LakeSide", region: "KR", highlight: "Battery lifecycle & TCO optimization" },
-];
+import { CASES } from "../../content/cases";
+import { MODELS } from "../../content/models";
+import { SeoHead } from "../../utils/SeoHead";
+import { SectionTitle } from "../../components/Section";
 
 export default function ModelsCases() {
+  const modelBySlug = Object.fromEntries(MODELS.map(m => [m.slug, m]));
   return (
-    <main className="mx-auto max-w-6xl px-4 md:px-6 py-10">
-      <h1 className="text-3xl font-extrabold tracking-tight mb-6">Case Studies</h1>
-      <p className="text-neutral-600 dark:text-neutral-300 mb-10">
-        Selected deployments and outcomes from courses using APRO carts.
-      </p>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {CASES.map((c) => (
-          <article key={c.name} className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-5 hover:shadow-sm transition">
-            <div className="text-sm text-neutral-500">{c.region}</div>
-            <h3 className="text-lg font-semibold mt-1">{c.name}</h3>
-            <p className="text-neutral-600 dark:text-neutral-300 mt-2">{c.highlight}</p>
-            {c.link && <a href={c.link} className="inline-flex items-center mt-3 text-sm underline underline-offset-2">View details</a>}
-          </article>
-        ))}
+    <main className="container-xl section-pad">
+      <SeoHead title="Case Studies — APRO" description="Measured outcomes from real courses." />
+      <SectionTitle title="Case Studies" desc="Selected deployments with before/after outcomes." />
+      <div className="grid sm:grid-cols-2 gap-6">
+        {CASES.map(cs => {
+          const m = modelBySlug[cs.modelSlug];
+          return (
+            <article key={cs.id} className="card overflow-hidden">
+              <img src={cs.cover} alt="" className="w-full aspect-[16/9] object-cover" loading="lazy" />
+              <div className="p-5">
+                <div className="text-xs text-gray-500">{cs.course} · {m?.name}</div>
+                <h3 className="mt-1 font-semibold">{cs.title}</h3>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  {cs.results.map((r, i) => (
+                    <div key={i} className="rounded-lg bg-gray-50 dark:bg-white/5 p-3">
+                      <div className="text-xs text-gray-500">{r.label}</div>
+                      <div className="kpi">{r.value}</div>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 text-sm text-gray-600 dark:text-gray-300"><b>Problem:</b> {cs.problem}</p>
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-300"><b>Solution:</b> {cs.solution}</p>
+              </div>
+            </article>
+          );
+        })}
       </div>
     </main>
   );
