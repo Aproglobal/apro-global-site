@@ -166,7 +166,21 @@ import { openLead } from "./LeadModal";
  * --------------------------------*/
 type NavItem = { id: string; label: string };
 
-const LABELS: Record<string, string> = {
+const LABELS: Record<string, string> = {import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { trackEvent } from "../services/analytics";
+import { openLead } from "./LeadModal";
+
+/** --------------------------------
+ * Labels & Candidate Section IDs
+ * --------------------------------*/
+const LABELS = {
   models: "Models",
   technology: "Technology",
   industries: "Industries",
@@ -179,58 +193,45 @@ const LABELS: Record<string, string> = {
   fleet: "Fleet",
   service: "Service",
   contact: "Contact",
-};
+} as const;
 
-const CANDIDATE_IDS = [
-  "models",
-  "technology",
-  "industries",
-  "compare",
-  "charging",
-  "resources",
-  "support",
-  "timeline",
-  "configurator",
-  "fleet",
-  "service",
-  "contact",
-] as const;
+const CANDIDATE_IDS = Object.keys(LABELS) as Array<keyof typeof LABELS>;
+type NavItem = { id: string; label: string };
 
-/** -------------------------------
- *  Theme (time-based default + user lock)
+/** --------------------------------
+ * Theme (auto day/night + user lock)
  * --------------------------------*/
 type UserPref = "light" | "dark" | null;
 const USER_KEY = "theme_user_pref";
 
-function isNightNow(d: Date = new Date()) {
+function isNight(d = new Date()) {
   const h = d.getHours();
   return h >= 19 || h < 7;
 }
-function applyThemeClass(isDark: boolean) {
+function applyTheme(isDark: boolean) {
   const root = document.documentElement;
   root.classList.toggle("dark", isDark);
   root.style.colorScheme = isDark ? "dark" : "light";
 }
-function useTheme2State() {
+
+function useTheme() {
   const [userPref, setUserPref] = useState<UserPref>(() => {
     const raw = localStorage.getItem(USER_KEY);
-    return raw === "light" || raw === "dark" ? (raw as UserPref) : null;
+    return raw === "dark" || raw === "light" ? raw : null;
   });
   const [theme, setTheme] = useState<"light" | "dark">(() => {
-    const saved = localStorage.getItem(USER_KEY) as UserPref;
-    if (saved) return saved;
-    return isNightNow() ? "dark" : "light";
+    const raw = localStorage.getItem(USER_KEY) as UserPref;
+    return raw ?? (isNight() ? "dark" : "light");
   });
 
-  useEffect(() => {
-    applyThemeClass(theme === "dark");
-  }, [theme]);
+  useEffect(() => applyTheme(theme === "dark"), [theme]);
 
+  // Auto switch only when there is no user lock
   useEffect(() => {
     if (userPref) return;
     const tick = () => {
-      const want = isNightNow() ? "dark" : "light";
-      setTheme((cur) => (cur !== want ? want : cur));
+      const want = isNight() ? "dark" : "light";
+      setTheme((cur) => (cur === want ? cur : want));
     };
     tick();
     const id = window.setInterval(tick, 5 * 60 * 1000);
@@ -242,53 +243,52 @@ function useTheme2State() {
       const next = cur === "light" ? "dark" : "light";
       localStorage.setItem(USER_KEY, next);
       setUserPref(next);
-      trackEvent("theme_toggle_click", { to: next });
+      trackEvent?.("theme_toggle_click", { to: next });
       return next;
     });
   }, []);
 
-  const icon = theme === "dark" ? "🌙" : "☀️";
-  const label = theme === "dark" ? "Theme: dark" : "Theme: light";
-  return { theme, toggle, icon, label };
+  return {
+    theme,
+    toggle,
+    icon: theme === "dark" ? "🌙" : "☀️",
+    label: theme === "dark" ? "Theme: dark" : "Theme: light",
+  };
 }
 
-/** -------------------------------
- *  Utils
+/** --------------------------------
+ * Utils
  * --------------------------------*/
-function getDocTop(el: Element) {
+function docTop(el: Element) {
   const rect = el.getBoundingClientRect();
-  const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
-  return rect.top + scrollY;
+  const y = window.scrollY || document.documentElement.scrollTop || 0;
+  return rect.top + y;
 }
 
-/** Header height → CSS var */
-function setHeaderVar(px: number) {
-  const r = document.documentElement;
-  r.style.setProperty("--header-h", `${px}px`);
+function setHeaderH(px: number) {
+  document.documentElement.style.setProperty("--header-h", `${px}px`);
 }
 
-/** -------------------------------
- *  Header
+/** --------------------------------
+ * Header
  * --------------------------------*/
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [active, setActive] = useState<string>("");
   const [navItems, setNavItems] = useState<NavItem[]>([]);
-  const { toggle: toggleTheme, icon: themeIcon, label: themeLabel } = useTheme2State();
+  const { toggle: toggleTheme, icon: themeIcon, label: themeLabel } = useTheme();
 
+  const headerRef = useRef<HTMLElement | null>(null);
   const firstMobileLinkRef = useRef<HTMLButtonElement | null>(null);
   const desktopScrollRef = useRef<HTMLDivElement | null>(null);
-  const headerRef = useRef<HTMLElement | null>(null);
 
-  /** Reflect header height as CSS var */
+  /** keep CSS var with header height */
   useLayoutEffect(() => {
     if (!headerRef.current) return;
     const el = headerRef.current;
-
-    const apply = () => setHeaderVar(el.offsetHeight);
+    const apply = () => setHeaderH(el.offsetHeight);
     apply();
-
     const ro = new ResizeObserver(apply);
     ro.observe(el);
     window.addEventListener("resize", apply);
@@ -298,7 +298,7 @@ export default function Header() {
     };
   }, []);
 
-  /** Shadow / bg toggle by scroll */
+  /** navbar shadow by scroll */
   useEffect(() => {
     const onScroll = () => setScrolled((window.scrollY || 0) > 8);
     onScroll();
@@ -306,32 +306,32 @@ export default function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  /** Build nav by actual DOM order */
+  /** build nav list by actual DOM order */
   useEffect(() => {
     let t: number | undefined;
-    const recalc = () => {
-      const existing = CANDIDATE_IDS
+    const build = () => {
+      const found = CANDIDATE_IDS
         .map((id) => ({ id, el: document.getElementById(id) }))
-        .filter((x): x is { id: string; el: HTMLElement } => !!x?.el)
-        .sort((a, b) => getDocTop(a.el) - getDocTop(b.el))
+        .filter((x): x is { id: string; el: HTMLElement } => !!x.el)
+        .sort((a, b) => docTop(a.el) - docTop(b.el))
         .map(({ id }) => ({ id, label: LABELS[id] || id }));
-      setNavItems(existing);
+      setNavItems(found);
     };
-    recalc();
-    window.addEventListener("load", recalc);
+    build();
+    window.addEventListener("load", build);
     const onResize = () => {
       if (t) window.clearTimeout(t);
-      t = window.setTimeout(recalc, 120);
+      t = window.setTimeout(build, 120);
     };
     window.addEventListener("resize", onResize);
     return () => {
-      window.removeEventListener("load", recalc);
+      window.removeEventListener("load", build);
       window.removeEventListener("resize", onResize);
       if (t) window.clearTimeout(t);
     };
   }, []);
 
-  /** Active section highlight + bottom fallback */
+  /** active highlight with IntersectionObserver */
   useEffect(() => {
     if (!navItems.length) return;
     const io = new IntersectionObserver(
@@ -344,7 +344,7 @@ export default function Header() {
           );
         if (visible.length) setActive(visible[0].target.id);
       },
-      { root: null, rootMargin: "-30% 0px -30% 0px", threshold: [0, 0.2, 0.5, 1] }
+      { root: null, rootMargin: "-30% 0px -30% 0px", threshold: [0, 0.2, 0.6] }
     );
 
     const targets: HTMLElement[] = [];
@@ -356,51 +356,53 @@ export default function Header() {
       }
     });
 
-    const onScrollBottomFallback = () => {
+    const bottomFallback = () => {
       const atBottom =
         window.innerHeight + (window.scrollY || 0) >=
         (document.scrollingElement?.scrollHeight || document.body.scrollHeight) - 2;
       if (atBottom && navItems.length) setActive(navItems[navItems.length - 1].id);
     };
-    window.addEventListener("scroll", onScrollBottomFallback, { passive: true });
+    window.addEventListener("scroll", bottomFallback, { passive: true });
 
     return () => {
       io.disconnect();
-      window.removeEventListener("scroll", onScrollBottomFallback);
+      window.removeEventListener("scroll", bottomFallback);
     };
   }, [navItems]);
 
-  /** Lock body when mobile drawer open */
+  /** lock body on mobile drawer */
   useEffect(() => {
-    const original = document.body.style.overflow;
-    document.body.style.overflow = mobileOpen ? "hidden" : original || "";
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = mobileOpen ? "hidden" : prev || "";
     return () => {
-      document.body.style.overflow = original || "";
+      document.body.style.overflow = prev || "";
     };
   }, [mobileOpen]);
 
-  /** Close on ESC */
+  /** close mobile drawer by ESC */
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMobileOpen(false);
-    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMobileOpen(false);
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   const onNavClick = useCallback((id: string) => {
     setMobileOpen(false);
-    trackEvent("nav_click", { id, where: "header" });
+    trackEvent?.("nav_click", { id, where: "header" });
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
-      window.history.pushState({}, "", `#${id}`);
+      try {
+        window.history.pushState({}, "", `#${id}`);
+      } catch {
+        /* no-op */
+      }
     }
   }, []);
 
   const onTalkToSales = useCallback(() => {
     openLead("Header CTA");
-    trackEvent("cta_click", { where: "header", label: "Talk to Sales" });
+    trackEvent?.("cta_click", { where: "header", label: "Talk to Sales" });
   }, []);
 
   const Brand = useMemo(
@@ -410,7 +412,11 @@ export default function Header() {
         onClick={(e) => {
           e.preventDefault();
           window.scrollTo({ top: 0, behavior: "smooth" });
-          window.history.pushState({}, "", "#top");
+          try {
+            window.history.pushState({}, "", "#top");
+          } catch {
+            /* no-op */
+          }
         }}
         className="inline-flex items-center gap-2 font-extrabold tracking-tight text-lg lg:text-xl whitespace-nowrap"
         aria-label="APRO Home"
@@ -421,12 +427,9 @@ export default function Header() {
     []
   );
 
-  /** -------------------------------
-   *  Render
-   * --------------------------------*/
   return (
     <>
-      {/* Skip link */}
+      {/* Skip Link */}
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-md focus:bg-black focus:text-white"
@@ -434,6 +437,7 @@ export default function Header() {
         Skip to content
       </a>
 
+      {/* Header */}
       <header
         ref={headerRef}
         className={[
@@ -441,7 +445,6 @@ export default function Header() {
           scrolled
             ? "bg-white/90 dark:bg-black/70 backdrop-blur-md shadow-sm"
             : "bg-transparent dark:bg-transparent",
-          "border-b border-transparent",
         ].join(" ")}
         role="banner"
       >
@@ -499,7 +502,7 @@ export default function Header() {
                 aria-label={themeLabel}
                 className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
               >
-                <span aria-hidden="true" className="text-base leading-none">
+                <span aria-hidden className="text-base leading-none">
                   {themeIcon}
                 </span>
               </button>
@@ -526,7 +529,7 @@ export default function Header() {
                   window.setTimeout(() => firstMobileLinkRef.current?.focus(), 60);
                 }}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>
                   <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </button>
@@ -535,7 +538,7 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Mobile Drawer Overlay + Panel (outside header for stacking) */}
+      {/* Mobile Drawer Overlay (outside header for stacking) */}
       <div
         className={[
           "lg:hidden fixed inset-0 z-40 transition-opacity",
@@ -546,7 +549,7 @@ export default function Header() {
       >
         <div className="absolute inset-0 bg-black/70" />
 
-        {/* Drawer */}
+        {/* Drawer Panel */}
         <div
           id="mobile-drawer"
           className={[
@@ -570,7 +573,7 @@ export default function Header() {
               aria-label="Close menu"
               onClick={() => setMobileOpen(false)}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
                 <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </button>
@@ -593,7 +596,7 @@ export default function Header() {
               </button>
             </div>
 
-            {/* Menu — DOM order based */}
+            {/* Menu */}
             <ul className="space-y-1">
               {navItems.map((item) => {
                 const isActive = active === item.id;
