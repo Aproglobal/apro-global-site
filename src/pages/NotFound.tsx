@@ -1,14 +1,13 @@
-// src/pages/NotFound.tsx
 import { Link } from "react-router-dom";
+import { SeoHead } from "../utils/SeoHead";
 
 export default function NotFound() {
   return (
-    <main className="mx-auto max-w-xl px-4 md:px-6 py-16 text-center">
-      <h1 className="text-4xl font-extrabold tracking-tight">404</h1>
-      <p className="mt-2 text-neutral-600 dark:text-neutral-300">Sorry, we couldn’t find that page.</p>
-      <Link to="/" className="inline-block mt-6 rounded-xl px-4 py-2 bg-black text-white dark:bg-white dark:text-black">
-        Go Home
-      </Link>
+    <main className="container-xl section-pad">
+      <SeoHead title="404 — APRO" />
+      <h1 className="text-2xl font-extrabold">Page not found</h1>
+      <p className="mt-2 text-gray-700 dark:text-gray-300">The page you’re looking for doesn’t exist.</p>
+      <Link to="/" className="btn btn-primary mt-6">Back to Home</Link>
     </main>
   );
 }
