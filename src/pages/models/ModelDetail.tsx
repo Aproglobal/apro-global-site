@@ -1,31 +1,86 @@
-// src/pages/models/ModelDetail.tsx
-import { useParams, Link } from "react-router-dom";
-
-const COPY: Record<string, { title: string; bullets: string[] }> = {
-  g2: { title: "G2", bullets: ["Electronic guidance ready", "Lithium / Lead-acid options", "4/5/6 seats"] },
-  g3: { title: "G3", bullets: ["VIP/Semi-VIP seating", "Premium trim", "Configured for member courses"] },
-  "eg-5": { title: "EG-5", bullets: ["5 seats", "Ops friendly", "Low TCO"] },
-};
+import { useParams } from "react-router-dom";
+import { MODELS } from "../../content/models";
+import { SeoHead } from "../../utils/SeoHead";
+import { LeadCtaBar } from "../../components/LeadCtaBar";
+import { SectionTitle } from "../../components/Section";
 
 export default function ModelDetail() {
-  const { slug } = useParams<{ slug: string }>();
-  const data = (slug && COPY[slug]) || { title: slug ?? "Model", bullets: [] };
+  const { slug } = useParams();
+  const model = MODELS.find(m => m.slug === slug);
+
+  if (!model) {
+    return (
+      <main className="container-xl section-pad">
+        <SeoHead title="Model not found — APRO" />
+        <h1 className="text-2xl font-bold">Model not found</h1>
+      </main>
+    );
+  }
 
   return (
-    <main className="mx-auto max-w-4xl px-4 md:px-6 py-10">
-      <Link to="/models" className="text-sm underline underline-offset-2">← Back to Models</Link>
-      <h1 className="text-3xl font-extrabold tracking-tight mt-3">{data.title}</h1>
+    <>
+      <SeoHead title={`${model.name} — APRO`} description={model.tagline} image={model.thumbnail} />
+      <section className="section-pad bg-gray-50 dark:bg-white/5 border-b border-gray-200/70 dark:border-white/10">
+        <div className="container-xl grid lg:grid-cols-2 gap-8 items-center">
+          <img src={model.thumbnail} alt="" className="w-full rounded-2xl border border-gray-200/70 dark:border-white/10" />
+          <div>
+            <h1 className="text-3xl font-extrabold">{model.name}</h1>
+            <p className="mt-2 text-gray-600 dark:text-gray-300">{model.tagline}</p>
+            <ul className="mt-4 text-sm text-gray-600 dark:text-gray-300">
+              <li>Seats: {model.seats}</li>
+              <li>Power: {model.power}</li>
+              <li>Guidance: {model.guidance}</li>
+            </ul>
+            <div className="mt-6 flex gap-3">
+              <a href="https://forms.gle/9z6Z-example" target="_blank" rel="noreferrer" className="btn btn-primary">Get Pricing</a>
+              {model.brochure && (
+                <a href={model.brochure} className="btn btn-ghost" target="_blank" rel="noreferrer"
+                  onClick={() => {
+                    // @ts-ignore
+                    if (typeof window.gtag === "function")
+                      window.gtag("event", "model_spec_download", { slug: model.slug });
+                  }}
+                >
+                  Brochure
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
 
-      <ul className="mt-6 space-y-2 list-disc pl-5">
-        {data.bullets.map((b) => <li key={b} className="text-neutral-700 dark:text-neutral-200">{b}</li>)}
-      </ul>
+      <main className="container-xl section-pad">
+        {model.highlights?.length ? (
+          <>
+            <SectionTitle title="Highlights" />
+            <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {model.highlights.map((h, i) => (
+                <li className="card p-5" key={i}>{h}</li>
+              ))}
+            </ul>
+          </>
+        ) : null}
 
-      <div className="mt-8 flex flex-wrap gap-2">
-        <Link to="/models/technology" className="px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700">Technology</Link>
-        <Link to="/models/service" className="px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700">Service & Warranty</Link>
-        <Link to="/models/cases" className="px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700">Case Studies</Link>
-        <Link to="/contact" className="px-3 py-2 rounded-lg bg-black text-white dark:bg-white dark:text-black">Talk to Sales</Link>
-      </div>
-    </main>
+        {model.specs && (
+          <>
+            <SectionTitle title="Specifications" />
+            <div className="overflow-x-auto card">
+              <table className="min-w-full text-sm">
+                <tbody>
+                  {Object.entries(model.specs).map(([k, v]) => (
+                    <tr key={k} className="border-b last:border-0 border-gray-200/70 dark:border-white/10">
+                      <td className="py-3 px-4 font-medium">{k}</td>
+                      <td className="py-3 px-4">{String(v)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+        <LeadCtaBar />
+      </main>
+    </>
   );
 }
