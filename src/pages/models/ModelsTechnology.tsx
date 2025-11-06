@@ -1,27 +1,21 @@
-// src/pages/models/ModelsTechnology.tsx
-// 내부 TechSection/TechFeatureGrid가 필수 props를 요구하므로, 우선 순수 JSX로 안전 구현
-export default function ModelsTechnology() {
-  const features = [
-    { t: "Guidance", d: "Geofencing, pace control, and course rules." },
-    { t: "Battery Systems", d: "Long-life packs, safe BMS, and charging workflows." },
-    { t: "Diagnostics", d: "Remote checks and quick fault isolation." },
-    { t: "Safety", d: "Speed limits by zone, roll warnings, emergency stop." },
-  ];
-  return (
-    <main className="mx-auto max-w-6xl px-4 md:px-6 py-10">
-      <h1 className="text-3xl font-extrabold tracking-tight mb-6">Technology</h1>
-      <p className="text-neutral-600 dark:text-neutral-300 mb-8">
-        Electronic guidance, power systems, diagnostics, and safety that power APRO carts.
-      </p>
+import { TECHNOLOGY } from "../../content/technology";
+import { SeoHead } from "../../utils/SeoHead";
+import { SectionTitle } from "../../components/Section";
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {features.map((f) => (
-          <article key={f.t} className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-5">
-            <h3 className="font-semibold">{f.t}</h3>
-            <p className="text-sm text-neutral-600 dark:text-neutral-300 mt-2">{f.d}</p>
-          </article>
+export default function ModelsTechnology() {
+  return (
+    <main className="container-xl section-pad">
+      <SeoHead title="Technology — APRO" description="Electronic guidance, battery platform, chassis & ride." />
+      <SectionTitle title="Technology" desc="Shared platform across APRO models." />
+      <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {TECHNOLOGY.map(t => (
+          <li key={t.id} className="card p-5">
+            <div className="font-semibold">{t.title}</div>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{t.summary}</p>
+            {t.details && <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t.details}</p>}
+          </li>
         ))}
-      </div>
+      </ul>
     </main>
   );
 }
