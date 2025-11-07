@@ -223,7 +223,7 @@ export default function App() {
                   openLead("Contact CTA");
                   trackEvent("contactOpen", { where: "contact_section", label: "Talk to Sales" });
                 }}
-                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg白 dark:text-black"
+                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
               >
                 Talk to Sales
               </button>
