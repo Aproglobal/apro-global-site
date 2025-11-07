@@ -1,34 +1,39 @@
+// src/pages/App.tsx
 import React, { useEffect, useMemo, useState } from "react";
+
+// Core UI
 import Header from "../components/Header";
+import SectionFrame from "../components/SectionFrame";
+import LeadModal, { openLead } from "../components/LeadModal";
+import ModelDetail from "../components/ModelDetail";
+
+// Content sections (keep your existing files)
 import ModelGrid from "../components/ModelGrid";
 import CompareTable from "../components/CompareTable";
 import TechSection from "../components/TechSection";
-import FleetSection from "../components/FleetSection";
-import SupportSection from "../components/SupportSection";
-import LeadModal, { openLead } from "../components/LeadModal";
-import ModelDetail from "../components/ModelDetail";
-import { getVariant } from "../utils/ab";
-import { setupScrollDepth, trackEvent, initAnalytics } from "../services/analytics";
-import { initThemeWatcher } from "../utils/theme";
-import { loadRecaptcha } from "../lib/recaptcha";
-import { getTechCopy } from "../data/technology";
-
-// Horizontal timeline rail
-import ProductionTimeline from "../components/ProductionTimeline";
-import { TIMELINE_STEPS } from "../data/timeline";
-
-// Horizontal sections (image-first)
 import IndustriesSection from "../components/IndustriesSection";
+import ProductionTimeline from "../components/ProductionTimeline";
 import ServiceWarrantySection from "../components/ServiceWarrantySection";
 import ChargingPowerSection from "../components/ChargingPowerSection";
 import ResourcesSection from "../components/ResourcesSection";
-
-// Frame + consolidated contact
-import SectionFrame from "../components/SectionFrame";
+import TcoCalculator from "../components/TcoCalculator";
+import ConfiguratorSection from "../components/ConfiguratorSection";
+import FleetSection from "../components/FleetSection";
+import SupportSection from "../components/SupportSection";
 import ContactCompany from "../components/ContactCompany";
+
+// Data
+import { TIMELINE_STEPS } from "../data/timeline";
+import { getTechCopy } from "../data/technology";
 
 // SEO
 import SEO from "../components/SEO";
+
+// Utilities / analytics
+import { getVariant } from "../utils/ab";
+import { initThemeWatcher } from "../utils/theme";
+import { loadRecaptcha } from "../lib/recaptcha";
+import { initAnalytics, setupScrollDepth, trackEvent } from "../services/analytics";
 
 export default function App() {
   const variant = getVariant();
@@ -45,7 +50,7 @@ export default function App() {
   const secondaryCta = variant === "A" ? "Explore models" : "Download brochure";
   const techCopy = useMemo(() => getTechCopy(), []);
 
-  // Hide sticky CTA when compare occupies the bottom
+  // Hide sticky CTA when compare section pins a mini view at bottom
   const [bottomBlocked, setBottomBlocked] = useState(false);
   useEffect(() => {
     let pinnedCount = 0;
@@ -111,6 +116,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
+      {/* SEO */}
       <SEO
         title="APRO Electric Golf Carts — Lithium, VIP & Fleet Solutions"
         description="APRO builds electric golf carts for courses, resorts, and venues worldwide—smart guidance, flexible seating, and global after-sales support."
@@ -122,13 +128,18 @@ export default function App() {
           image: "/assets/og.jpg",
           siteName: "APRO",
         }}
-        twitter={{ card: "summary_large_image", site: "@yourbrand", creator: "@yourteam", image: "/assets/og.jpg" }}
+        twitter={{
+          card: "summary_large_image",
+          site: "@yourbrand",
+          creator: "@yourteam",
+          image: "/assets/og.jpg",
+        }}
         jsonLd={jsonLd}
       />
 
       <Header />
 
-      {/* consume header height variable */}
+      {/* consume header height variable for safe anchor offsets */}
       <main id="main" style={{ paddingTop: "var(--header-h, 4rem)" }}>
         {/* HERO */}
         <section id="home" className="relative scroll-mt-24" aria-label="Hero">
@@ -164,7 +175,9 @@ export default function App() {
                 {secondaryCta === "Explore models" ? (
                   <a
                     href="#models"
-                    onClick={() => trackEvent("modelExploreClick", { where: "hero", label: secondaryCta, ab_variant: variant })}
+                    onClick={() =>
+                      trackEvent("modelExploreClick", { where: "hero", label: secondaryCta, ab_variant: variant })
+                    }
                     className="px-5 py-3 rounded-full border border-black/40 text-black dark:border-white/60 dark:text-white"
                     aria-label="Jump to models section"
                   >
@@ -173,7 +186,9 @@ export default function App() {
                 ) : (
                   <a
                     href="/brochure.pdf"
-                    onClick={() => trackEvent("brochureDownload", { file: "/brochure.pdf", where: "hero", ab_variant: variant })}
+                    onClick={() =>
+                      trackEvent("brochureDownload", { file: "/brochure.pdf", where: "hero", ab_variant: variant })
+                    }
                     className="px-5 py-3 rounded-full border border-black/40 text-black dark:border-white/60 dark:text-white"
                     aria-label="Download brochure"
                   >
@@ -185,34 +200,87 @@ export default function App() {
           </div>
         </section>
 
-        {/* MODELS + COMPARE (kept as is for clarity) */}
-        <SectionFrame id="models" title="Models & Compare">
+        {/* MODELS + COMPARE (inside a stereoscopic card) */}
+        <SectionFrame id="models">
           <div className="space-y-8">
             <ModelGrid />
+            {/* Anchor so header 'Compare' jumps correctly */}
+            <div id="compare" className="sr-only" aria-hidden="true" />
             <div className="border-t border-zinc-200 dark:border-zinc-800" />
             <CompareTable />
           </div>
         </SectionFrame>
 
-        {/* Horizontal, image-first sections */}
-        <SectionFrame id="technology" title="Technology"><TechSection copy={techCopy} /></SectionFrame>
-        <SectionFrame id="industries" title="Industries"><IndustriesSection /></SectionFrame>
-        <SectionFrame id="timeline" title="Production & Delivery"><ProductionTimeline steps={TIMELINE_STEPS} progressDay={30} /></SectionFrame>
-        <SectionFrame id="service" title="Service & Warranty"><ServiceWarrantySection /></SectionFrame>
-        <SectionFrame id="charging" title="Charging & Power"><ChargingPowerSection /></SectionFrame>
-        <SectionFrame id="resources" title="Resources"><ResourcesSection /></SectionFrame>
+        {/* TECHNOLOGY */}
+        <SectionFrame id="technology">
+          <TechSection copy={techCopy} />
+        </SectionFrame>
 
-        {/* Keep these if you’re using them (can be converted later) */}
-        <SectionFrame id="tco" title="TCO / ROI"><div className="not-prose"><!-- Keep your existing calculator component here --></div></SectionFrame>
-        <SectionFrame id="configurator" title="Configurator"><div className="not-prose"><!-- Keep your existing configurator component here --></div></SectionFrame>
-        <SectionFrame id="fleet" title="Fleet Solutions"><FleetSection /></SectionFrame>
-        <SectionFrame id="support" title="Support"><SupportSection /></SectionFrame>
+        {/* INDUSTRIES */}
+        <SectionFrame id="industries">
+          <IndustriesSection />
+        </SectionFrame>
 
-        {/* Consolidated “Contact & Company” */}
-        <ContactCompany />
+        {/* PRODUCTION & DELIVERY TIMELINE
+            Note: your component only shows an image when provided.
+            If you only have "Factory release" and "On-site delivery & installation" pictures,
+            keep others' img undefined in data/timeline.ts and it will render cleanly. */}
+        <SectionFrame id="timeline">
+          <ProductionTimeline
+            steps={TIMELINE_STEPS}
+            title="Production & Delivery Timeline"
+            note="Note: Domestic delivery flow. Export process may differ."
+            showSummary={true}
+          />
+        </SectionFrame>
+
+        {/* SERVICE & WARRANTY */}
+        <SectionFrame id="service">
+          <ServiceWarrantySection />
+        </SectionFrame>
+
+        {/* CHARGING & POWER */}
+        <SectionFrame id="charging">
+          <ChargingPowerSection />
+        </SectionFrame>
+
+        {/* RESOURCES */}
+        <SectionFrame id="resources">
+          <ResourcesSection />
+        </SectionFrame>
+
+        {/* TCO / ROI */}
+        <SectionFrame id="tco" title="TCO / ROI">
+          <div className="not-prose">
+            {/* Calculator is visible, no HTML comments */}
+            <TcoCalculator />
+          </div>
+        </SectionFrame>
+
+        {/* CONFIGURATOR */}
+        <SectionFrame id="configurator" title="Configurator">
+          <div className="not-prose">
+            <ConfiguratorSection />
+          </div>
+        </SectionFrame>
+
+        {/* FLEET */}
+        <SectionFrame id="fleet">
+          <FleetSection />
+        </SectionFrame>
+
+        {/* SUPPORT */}
+        <SectionFrame id="support">
+          <SupportSection />
+        </SectionFrame>
+
+        {/* CONTACT & COMPANY (wrap with an id so header anchor works) */}
+        <SectionFrame id="contact">
+          <ContactCompany />
+        </SectionFrame>
       </main>
 
-      {/* Sticky CTA — hidden when compare pins at bottom */}
+      {/* Sticky CTA — hidden when compare pins a bottom mini view */}
       {!bottomBlocked && (
         <button
           onClick={() => {
@@ -226,6 +294,7 @@ export default function App() {
         </button>
       )}
 
+      {/* Footer */}
       <footer className="border-t border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
         <div className="max-w-6xl mx-auto px-5 py-6 text-sm text-zinc-600 dark:text-zinc-400">
           © {new Date().getFullYear()} APRO. All rights reserved.
@@ -237,17 +306,23 @@ export default function App() {
             <p className="mt-1">
               Address: Floor 12, 124, Sagimakgol-ro, Jungwon-gu, Seongnam-si, Gyeonggi-do, Republic of Korea
             </p>
+
             <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-500">
               This site is protected by reCAPTCHA and the Google{" "}
-              <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">Privacy Policy</a>{" "}
+              <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">
+                Privacy Policy
+              </a>{" "}
               and{" "}
-              <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="underline">Terms of Service</a>{" "}
+              <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="underline">
+                Terms of Service
+              </a>{" "}
               apply.
             </p>
           </div>
         </div>
       </footer>
 
+      {/* Portals / modals */}
       <LeadModal />
       <ModelDetail />
     </div>
