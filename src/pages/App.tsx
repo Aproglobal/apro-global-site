@@ -35,7 +35,7 @@ export default function App() {
     initThemeWatcher();
 
     // reCAPTCHA v3 preload
-    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
+    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
     if (siteKey) loadRecaptcha(siteKey);
   }, []);
 
@@ -44,7 +44,7 @@ export default function App() {
 
   const techCopy = useMemo(() => getTechCopy(), []);
 
-  // CompareTable가 하단을 차지할 때 플로팅 CTA 자동 숨김
+  // When CompareTable occupies bottom area, auto-hide floating CTA
   const [bottomBlocked, setBottomBlocked] = useState(false);
   useEffect(() => {
     let pinnedCount = 0;
@@ -62,11 +62,11 @@ export default function App() {
       recompute();
     };
 
-    window.addEventListener("compare:pinned" as any, onPinned as any);
-    window.addEventListener("compare:mini" as any, onMini as any);
+    window.addEventListener("compare:pinned" as any, onPinned as EventListener);
+    window.addEventListener("compare:mini" as any, onMini as EventListener);
     return () => {
-      window.removeEventListener("compare:pinned" as any, onPinned as any);
-      window.removeEventListener("compare:mini" as any, onMini as any);
+      window.removeEventListener("compare:pinned" as any, onPinned as EventListener);
+      window.removeEventListener("compare:mini" as any, onMini as EventListener);
     };
   }, []);
 
@@ -74,7 +74,7 @@ export default function App() {
     <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
       <Header />
 
-      {/* Header가 설정하는 --header-h에 맞춰 상단 패딩 적용 (fallback 4rem) */}
+      {/* Header sets --header-h; fall back to 4rem */}
       <main id="main" style={{ paddingTop: "var(--header-h, 4rem)" }}>
         {/* HERO */}
         <section id="home" className="relative scroll-mt-24" aria-label="Hero">
@@ -238,7 +238,7 @@ export default function App() {
               </a>
             </div>
 
-            {/* reCAPTCHA 정책 고지 (모바일 배지 숨김시 필수) */}
+            {/* reCAPTCHA disclosure (important if the badge is hidden on mobile) */}
             <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
               This site is protected by reCAPTCHA and the Google{" "}
               <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">
@@ -254,7 +254,7 @@ export default function App() {
         </section>
       </main>
 
-      {/* Sticky CTA — compare가 하단을 점유할 때는 자동 숨김 */}
+      {/* Sticky CTA — hidden when compare occupies the bottom */}
       {!bottomBlocked && (
         <button
           onClick={() => {
@@ -280,28 +280,10 @@ export default function App() {
               Address: Floor 12, 124, Sagimakgol-ro, Jungwon-gu, Seongnam-si, Gyeonggi-do, Republic of Korea
             </p>
 
-            {/* 고지 문구를 푸터에도 한 번 더 표기해두면 정책상 가장 안전 */}
+            {/* Duplicate reCAPTCHA disclosure for policy safety */}
             <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-500">
               This site is protected by reCAPTCHA and the Google{" "}
               <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">
-                Privacy Policy
-              </a>{" "}
-              and{" "}
-              <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="underline">
-                Terms of Service
-              </a>{" "}
-              apply.
-            </p>
-          </div>
-        </div>
-      </footer>
-
-      <LeadModal />
-      <ModelDetail />
-    </div>
-  );
-}
-
                 Privacy Policy
               </a>{" "}
               and{" "}
