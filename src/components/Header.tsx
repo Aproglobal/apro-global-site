@@ -9,11 +9,8 @@ import React, {
 import { trackEvent } from "../services/analytics";
 import { openLead } from "./LeadModal";
 
-/** -------------------------------
- *  Config
- * --------------------------------*/
+/** Config */
 type NavItem = { id: string; label: string };
-
 const LABELS: Record<string, string> = {
   models: "Models",
   technology: "Technology",
@@ -26,9 +23,9 @@ const LABELS: Record<string, string> = {
   configurator: "Configurator",
   fleet: "Fleet",
   service: "Service",
+  company: "Company",
   contact: "Contact",
 };
-
 const CANDIDATE_IDS = [
   "models",
   "technology",
@@ -41,19 +38,17 @@ const CANDIDATE_IDS = [
   "configurator",
   "fleet",
   "service",
+  "company",
   "contact",
 ];
 
-/** -------------------------------
- *  Theme (2-state)
- * --------------------------------*/
+/** Theme (light/dark 2-state) */
 type UserPref = "light" | "dark" | null;
 const USER_KEY = "theme_user_pref";
-
-function isNightNow(d: Date = new Date()) {
+const isNightNow = (d: Date = new Date()) => {
   const h = d.getHours();
   return h >= 19 || h < 7;
-}
+};
 function applyThemeClass(isDark: boolean) {
   const root = document.documentElement;
   root.classList.toggle("dark", isDark);
@@ -70,9 +65,7 @@ function useTheme2State() {
     return isNightNow() ? "dark" : "light";
   });
 
-  useEffect(() => {
-    applyThemeClass(theme === "dark");
-  }, [theme]);
+  useEffect(() => applyThemeClass(theme === "dark"), [theme]);
 
   useEffect(() => {
     if (userPref) return;
@@ -100,29 +93,23 @@ function useTheme2State() {
   return { theme, toggle, icon, label };
 }
 
-/** -------------------------------
- *  Utils
- * --------------------------------*/
+/** Utils */
 function getDocTop(el: Element) {
   const rect = el.getBoundingClientRect();
   const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
   return rect.top + scrollY;
 }
 function setHeaderVar(px: number) {
-  const r = document.documentElement;
-  r.style.setProperty("--header-h", `${px}px`);
+  document.documentElement.style.setProperty("--header-h", `${px}px`);
 }
 
-/** -------------------------------
- *  Header
- * --------------------------------*/
+/** Header */
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [active, setActive] = useState<string>("");
   const [navItems, setNavItems] = useState<NavItem[]>([]);
-  const { toggle: toggleTheme, icon: themeIcon, label: themeLabel } =
-    useTheme2State();
+  const { toggle: toggleTheme, icon: themeIcon, label: themeLabel } = useTheme2State();
 
   const headerRef = useRef<HTMLElement | null>(null);
   const scrollWrapRef = useRef<HTMLDivElement | null>(null);
@@ -162,9 +149,7 @@ export default function Header() {
     const recalc = () => {
       const existing = CANDIDATE_IDS
         .map((id) => ({ id, el: document.getElementById(id) }))
-        .filter(
-          (x): x is { id: string; el: HTMLElement } => !!x && !!x.el
-        )
+        .filter((x): x is { id: string; el: HTMLElement } => !!x && !!x.el)
         .sort((a, b) => getDocTop(a.el) - getDocTop(b.el))
         .map(({ id }) => ({ id, label: LABELS[id] || id }));
       setNavItems(existing);
@@ -199,7 +184,6 @@ export default function Header() {
       },
       { root: null, rootMargin: "-30% 0px -30% 0px", threshold: [0, 0.2, 0.5, 1] }
     );
-
     navItems.forEach((n) => {
       const el = document.getElementById(n.id);
       if (el) io.observe(el);
@@ -208,8 +192,7 @@ export default function Header() {
     const onScrollBottomFallback = () => {
       const atBottom =
         window.innerHeight + (window.scrollY || 0) >=
-        (document.scrollingElement?.scrollHeight ||
-          document.body.scrollHeight) - 2;
+        (document.scrollingElement?.scrollHeight || document.body.scrollHeight) - 2;
       if (atBottom && navItems.length) setActive(navItems[navItems.length - 1].id);
     };
     window.addEventListener("scroll", onScrollBottomFallback, { passive: true });
@@ -220,7 +203,7 @@ export default function Header() {
     };
   }, [navItems]);
 
-  /** Ink bar positioner (not a real scrollbar) */
+  /** Ink bar (desktop) */
   const updateInk = useCallback(() => {
     const wrap = scrollWrapRef.current;
     const btn = active ? btnRefs.current[active] : null;
@@ -242,7 +225,6 @@ export default function Header() {
     return () => window.removeEventListener("resize", onResize);
   }, [updateInk, navItems.length]);
 
-  // keep ink aligned while user scrolls the nav horizontally
   useEffect(() => {
     const wrap = scrollWrapRef.current;
     if (!wrap) return;
@@ -251,7 +233,7 @@ export default function Header() {
     return () => wrap.removeEventListener("scroll", onScroll);
   }, [updateInk]);
 
-  /** Lock body when mobile drawer open */
+  /** Body lock on mobile drawer */
   useEffect(() => {
     const original = document.body.style.overflow;
     document.body.style.overflow = mobileOpen ? "hidden" : original || "";
@@ -259,15 +241,6 @@ export default function Header() {
       document.body.style.overflow = original || "";
     };
   }, [mobileOpen]);
-
-  /** Close on ESC */
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMobileOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
 
   const onNavClick = useCallback((id: string) => {
     setMobileOpen(false);
@@ -304,7 +277,6 @@ export default function Header() {
 
   return (
     <>
-      {/* Skip link */}
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-md focus:bg-black focus:text-white"
@@ -325,10 +297,9 @@ export default function Header() {
       >
         <div className="max-w-6xl mx-auto px-5">
           <div className="flex items-center gap-3 h-16 lg:h-20">
-            {/* Left: Brand */}
             <div className="flex-none">{Brand}</div>
 
-            {/* Center: Desktop Nav */}
+            {/* Desktop nav (ink bar only) */}
             <div className="relative hidden lg:flex flex-1 min-w-0 items-center justify-center px-2">
               <div className="pointer-events-none absolute left-0 top-0 h-full w-6 bg-gradient-to-r from-white/90 dark:from-black/70 to-transparent" />
               <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-white/90 dark:from-black/70 to-transparent" />
@@ -337,19 +308,16 @@ export default function Header() {
                 ref={scrollWrapRef}
                 data-nav-scroll
                 className="mx-auto overflow-x-auto overscroll-x-contain relative"
-                style={{ maxWidth: "min(760px, calc(100vw - 280px))" }}
+                style={{ maxWidth: "min(840px, calc(100vw - 320px))" }}
               >
-                {/* animated ink bar (not a real scrollbar) */}
+                {/* ink underbar */}
                 <span
                   aria-hidden="true"
                   className={[
-                    "absolute bottom-1 h-0.5 rounded-full bg-black/70 dark:bg-white/80 transition-all duration-300",
+                    "absolute bottom-1 h-0.5 rounded-full bg-black/80 dark:bg-white/80 transition-all duration-300",
                     ink.visible ? "opacity-100" : "opacity-0",
                   ].join(" ")}
-                  style={{
-                    left: `${ink.left}px`,
-                    width: `${ink.width}px`,
-                  }}
+                  style={{ left: `${ink.left}px`, width: `${ink.width}px` }}
                 />
 
                 <ul className="flex items-center gap-1 whitespace-nowrap pr-6 relative">
@@ -363,10 +331,11 @@ export default function Header() {
                           onClick={() => onNavClick(item.id)}
                           className={[
                             "px-3 py-2 rounded-full text-sm font-medium transition-all",
-                            "hover:-translate-y-0.5 hover:shadow-sm",
+                            // ✅ desktop: no filled pill on active; keep only stronger text color
                             isActive
-                              ? "bg-black text-white dark:bg-white dark:text-black"
-                              : "text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70",
+                              ? "text-black dark:text-white"
+                              : "text-zinc-700 dark:text-zinc-200",
+                            "hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70",
                             "focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20",
                           ].join(" ")}
                           aria-current={isActive ? "page" : undefined}
@@ -380,7 +349,7 @@ export default function Header() {
               </div>
             </div>
 
-            {/* Right: Theme + CTA + Hamburger */}
+            {/* Right tools */}
             <div className="flex items-center gap-2 flex-none ml-auto">
               <button
                 type="button"
@@ -403,6 +372,7 @@ export default function Header() {
                 Talk to Sales
               </button>
 
+              {/* Mobile trigger */}
               <button
                 type="button"
                 className="inline-flex lg:hidden items-center justify-center w-10 h-10 rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
@@ -412,19 +382,14 @@ export default function Header() {
                 onClick={() => setMobileOpen((v) => !v)}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M4 7h16M4 12h16M4 17h16"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
+                  <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Mobile Drawer */}
+        {/* Mobile Drawer (keeps pill highlight) */}
         <div
           className={[
             "lg:hidden fixed inset-0 z-40 transition-opacity",
@@ -434,7 +399,6 @@ export default function Header() {
           onClick={() => setMobileOpen(false)}
         >
           <div className="absolute inset-0 bg-black/70" />
-
           <div
             id="mobile-drawer"
             className={[
@@ -458,12 +422,7 @@ export default function Header() {
                 onClick={() => setMobileOpen(false)}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M6 6l12 12M18 6l-12 12"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
+                  <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </button>
             </div>
@@ -493,6 +452,7 @@ export default function Header() {
                         className={[
                           "w-full text-left px-4 py-3 rounded-lg text-[15px] font-medium transition",
                           "hover:bg-zinc-100 dark:hover:bg-zinc-800",
+                          // ✅ mobile: keep pill so users see a clear current section
                           isActive ? "bg-zinc-100 dark:bg-zinc-800" : "",
                         ].join(" ")}
                         aria-current={isActive ? "page" : undefined}
