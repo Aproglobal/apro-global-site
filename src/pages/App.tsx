@@ -8,6 +8,16 @@ import SupportSection from "../components/SupportSection";
 import LeadModal, { openLead } from "../components/LeadModal";
 import ModelDetail from "../components/ModelDetail";
 import { getVariant } from "../utils/ab";
+import { setupScrollDepth, trackEvent, initAnalytics } from "../services/analytics";import React, { useEffect, useMemo, useState } from "react";
+import Header from "../components/Header";
+import ModelGrid from "../components/ModelGrid";
+import CompareTable from "../components/CompareTable";
+import TechSection from "../components/TechSection";
+import FleetSection from "../components/FleetSection";
+import SupportSection from "../components/SupportSection";
+import LeadModal, { openLead } from "../components/LeadModal";
+import ModelDetail from "../components/ModelDetail";
+import { getVariant } from "../utils/ab";
 import { setupScrollDepth, trackEvent, initAnalytics } from "../services/analytics";
 import { initThemeWatcher } from "../utils/theme";
 import { loadRecaptcha } from "../lib/recaptcha";
@@ -21,6 +31,7 @@ import ChargingPowerSection from "../components/ChargingPowerSection";
 import ResourcesSection from "../components/ResourcesSection";
 import TcoCalculator from "../components/TcoCalculator";
 import ConfiguratorSection from "../components/ConfiguratorSection";
+import { MessageSquare } from "lucide-react";
 
 export default function App() {
   const variant = getVariant();
@@ -255,8 +266,11 @@ export default function App() {
             trackEvent("contactOpen", { where: "sticky_cta", label: "Talk to Sales" });
           }}
           aria-label="Talk to Sales"
-          className="fixed bottom-[calc(env(safe-area-inset-bottom)+88px)] right-6 z-40 rounded-full bg-black px-5 py-3 font-semibold text-white shadow-lg dark:bg-white dark:text-black"
+          className="fixed right-6 z-40 bottom-6 rounded-full bg-black px-5 py-3 font-semibold text-white shadow-xl
+                     hover:opacity-90 dark:bg-white dark:text-black inline-flex items-center gap-2"
+          style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)" }}
         >
+          <MessageSquare className="h-4 w-4" />
           Talk to Sales
         </button>
       )}
