@@ -15,6 +15,7 @@ import ServiceWarrantySection from "../components/ServiceWarrantySection";
 import ChargingPowerSection from "../components/ChargingPowerSection";
 import SupportSection from "../components/SupportSection";
 import ContactCompany from "../components/ContactCompany";
+import ConfiguratorSection from "../components/ConfiguratorSection";
 
 // SEO
 import SEO from "../components/SEO";
@@ -25,14 +26,14 @@ import { initThemeWatcher } from "../utils/theme";
 import { loadRecaptcha } from "../lib/recaptcha";
 import { initAnalytics, setupScrollDepth, trackEvent } from "../services/analytics";
 
-// -------------------------------------------------------------
-// Lightweight, accessible gallery with arrows + numbered dots
-// -------------------------------------------------------------
+/* ============================================================
+   Lightweight, accessible gallery with arrows + numbered dots
+   ============================================================ */
 type Slide = {
   id: string;
   title: string;
   subtitle?: string;
-  img: string; // /public path
+  img: string; // path under /public
   bullets?: string[];
   cta?: { label: string; href: string };
 };
@@ -144,12 +145,12 @@ function GalleryPager({
   );
 }
 
-// -------------------------------------------------------------
-// Content: Performance, Technology, Electronic & Voice Guidance
-// (Images are placeholders — point to your real assets)
-// -------------------------------------------------------------
+/* ============================================================
+   Content: Performance, Technology, Electronic & Voice Guidance
+   - Distributed “tech_features” details into proper slides.
+   ============================================================ */
 
-// PERFORMANCE — focus on powertrain, battery, chassis/ride
+// PERFORMANCE — powertrain, battery, chassis/ride
 const PERFORMANCE_SLIDES: ReadonlyArray<Slide> = [
   {
     id: "perf-powertrain",
@@ -157,8 +158,8 @@ const PERFORMANCE_SLIDES: ReadonlyArray<Slide> = [
     subtitle: "AC 48V 4.6 kW motor + SK Mobile Energy lithium pack",
     img: "/performance/powertrain.jpg",
     bullets: [
-      "AC 48V 4.6 kW motor tuned for mountainous terrain; stable hill climbing & reduced rollback/judder (LSIS/Hyosung).",
-      "High efficiency vs. DC motors (+20–30% in comparable capacity) with no brushes/commutators → lower maintenance.",
+      "AC 48V 4.6 kW (LSIS/Hyosung) motor tuned for mountainous terrain; stable hill climbing & reduced rollback/judder.",
+      "Higher efficiency than DC motors (+20–30% in comparable capacity); no brushes/commutators → lower maintenance.",
       "51V 110Ah / 160Ah lithium options; typical 4–5 h charge; wide temperature operating range.",
       "SK Mobile Energy stack: in-house BMS / PACK / CELL for quality control, service consistency, and long life."
     ],
@@ -176,15 +177,16 @@ const PERFORMANCE_SLIDES: ReadonlyArray<Slide> = [
   },
 ];
 
-// TECHNOLOGY — safety/sensing, body/storage, motor control, service/updates
+// TECHNOLOGY — safety/sensing, body/storage, motor control, service/updates, plus the “heated seats / 12V / windscreen / bag holder” detail slides
 const TECHNOLOGY_SLIDES: ReadonlyArray<Slide> = [
+  // Core technology group
   {
     id: "tech-safety",
     title: "Safety & Sensing",
     subtitle: "Predictable stopping and awareness around the course",
     img: "/technology/safety.jpg",
     bullets: [
-      "Hydraulic disc brakes with motor control; EM parking brake for reliable holds.",
+      "4-wheel hydraulic disc brakes with motor control; EM parking brake for reliable holds.",
       "Ultrasonic obstacle detection up to ~4.5 m with staged deceleration and auto stop.",
       "Cart guard sensor maintains ~1.2 m spacing between carts; impact-sensing bumper.",
       "Low-/high-temperature validation for AGV, guidance, and magnet sensors (-40 °C to +85 °C)."
@@ -222,6 +224,48 @@ const TECHNOLOGY_SLIDES: ReadonlyArray<Slide> = [
       "Parts, documentation and localization support for global operations."
     ],
   },
+
+  // Detailed tech features (from your tech_features.ts), now shown as big-image one-at-a-time slides
+  {
+    id: "tech-heated-seats",
+    title: "Heated Seats (Front & Rear)",
+    subtitle: "Comfort across seasons for both players and caddies",
+    img: "/technology/heated_seats.jpg",
+    bullets: [
+      "Quick warm-up with balanced distribution for both rows.",
+      "Energy-optimized profiles maintain comfort without excessive draw."
+    ],
+  },
+    {
+    id: "tech-12v-charger",
+    title: "12V Vehicle Charger",
+    subtitle: "Convenient power for devices and accessories",
+    img: "/technology/charger_12v.jpg",
+    bullets: [
+      "Front bay access for phones and handhelds.",
+      "Stable output for mission-critical course devices."
+    ],
+  },
+  {
+    id: "tech-windscreen",
+    title: "2-Piece Lower Opening Windscreen",
+    subtitle: "Flexible ventilation and protection from rain",
+    img: "/technology/windscreen_split.jpg",
+    bullets: [
+      "Lower panel vents air on humid days while shielding from drizzle.",
+      "Tool-free opening/closing for quick adjustments."
+    ],
+  },
+  {
+    id: "tech-bag-holder",
+    title: "One-Touch Caddie Bag Holder",
+    subtitle: "Open/lock the clamp with a single touch",
+    img: "/technology/bag_holder.jpg",
+    bullets: [
+      "Faster loading reduces tee delays and improves flow.",
+      "Secure hold for mixed bag sizes during rough or incline travel."
+    ],
+  },
 ];
 
 // ELECTRONIC GUIDANCE — wire/line guidance overview
@@ -230,10 +274,10 @@ const GUIDANCE_ELECTRONIC_SLIDES: ReadonlyArray<Slide> = [
     id: "eg-overview",
     title: "Electronic Guidance Overview",
     subtitle:
-      "Course-embedded guidance lines + on-cart sensors feed the motor controller to keep carts on path",
+      "Course-embedded guidance lines + on-cart sensors signal the motor controller to keep carts on the intended path",
     img: "/guidance/electronic_overview.jpg",
     bullets: [
-      "Guidance lines are installed beneath the cart path.",
+      "Guidance lines are installed beneath the cart path across the course.",
       "On-cart guidance sensors detect the embedded lines and relay signals to the drive motor controller.",
       "The controller steers motion logic to keep the cart on the intended route."
     ],
@@ -244,7 +288,7 @@ const GUIDANCE_ELECTRONIC_SLIDES: ReadonlyArray<Slide> = [
     subtitle: "Robust detection for reliable path following",
     img: "/guidance/electronic_sensing.jpg",
     bullets: [
-      "Multi-sensor approach to minimize false detection and drift.",
+      "Multi-sensor approach minimizes false detection and drift.",
       "Real-time signal processing stabilizes behavior on bends, grades and junctions.",
       "Integration with braking and speed policies for staging and restricted zones."
     ],
@@ -256,7 +300,7 @@ const GUIDANCE_ELECTRONIC_SLIDES: ReadonlyArray<Slide> = [
     img: "/guidance/electronic_validation.jpg",
     bullets: [
       "Low-/high-temperature sensor validation (-40 °C to +85 °C).",
-      "Noise and weather considerations for consistent detection in real-world use.",
+      "Noise/weather considerations for consistent detection in real-world use.",
       "Configuration presets for local course layouts and safety policies."
     ],
   },
@@ -310,9 +354,9 @@ const GUIDANCE_VOICE_SLIDES: ReadonlyArray<Slide> = [
   },
 ];
 
-// -------------------------------------------------------------
-// Page
-// -------------------------------------------------------------
+/* ============================================================
+   Page
+   ============================================================ */
 export default function App() {
   const variant = getVariant();
 
@@ -431,7 +475,7 @@ export default function App() {
               loading="eager"
               fetchPriority="high"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/30 to-transparent dark:from-black dark:via-black/30 dark:to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-white via-white/30 to-transparent dark:from-black dark:via-black/30 dark:to-transparent" />
             <div className="relative z-10 max-w-6xl mx-auto px-5 h-full flex flex-col justify-end pb-14">
               <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
                 Electric Golf Carts, Built for Courses, Resorts & Venues Worldwide
@@ -444,12 +488,12 @@ export default function App() {
                 <button
                   onClick={() => {
                     openLead("Hero CTA");
-                    trackEvent("heroCtaClick", { where: "hero", label: primaryCta, ab_variant: variant });
+                    trackEvent("heroCtaClick", { where: "hero", label: "Talk to Sales", ab_variant: variant });
                   }}
                   className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
                   aria-label="Open sales contact form"
                 >
-                  {primaryCta}
+                  Talk to Sales
                 </button>
 
                 {secondaryCta === "Explore models" ? (
@@ -490,7 +534,7 @@ export default function App() {
           </div>
         </SectionFrame>
 
-        {/* PERFORMANCE (one-at-a-time big image with arrows + numbers) */}
+        {/* PERFORMANCE (big image, one at a time) */}
         <GalleryPager
           id="performance"
           title="Performance"
@@ -498,11 +542,11 @@ export default function App() {
           slides={PERFORMANCE_SLIDES}
         />
 
-        {/* TECHNOLOGY (one-at-a-time big image with arrows + numbers) */}
+        {/* TECHNOLOGY (big image, one at a time; includes heated seats / 12V / windscreen / bag holder) */}
         <GalleryPager
           id="technology"
           title="Technology"
-          note="Safety & sensing, body & storage, motor control, service & updates."
+          note="Safety & sensing, body & storage, motor control, service & updates, and comfort features."
           slides={TECHNOLOGY_SLIDES}
         />
 
@@ -535,6 +579,13 @@ export default function App() {
         {/* CHARGING & POWER */}
         <SectionFrame id="charging">
           <ChargingPowerSection />
+        </SectionFrame>
+
+        {/* CONFIGURATOR — Build Your Cart (Audi-style flow lives in this component) */}
+        <SectionFrame id="configurator" title="Build Your Cart" note="Select model, seating, battery, colors, wheels and premium options. Export your build or send it to sales.">
+          <div className="not-prose">
+            <ConfiguratorSection />
+          </div>
         </SectionFrame>
 
         {/* SUPPORT */}
