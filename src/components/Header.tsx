@@ -10,9 +10,29 @@ type NavItem = { id: string; label: string };
 const LABELS: Record<string, string> = {
   models: "Models",
   technology: "Technology",
+  industries: "Industries",import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { trackEvent } from "../services/analytics";
+import { openLead } from "./LeadModal";
+
+/** -------------------------------
+ *  Config
+ * --------------------------------*/
+type NavItem = { id: string; label: string };
+
+const LABELS: Record<string, string> = {
+  models: "Models",
+  technology: "Technology",
   industries: "Industries",
   compare: "Compare",
   charging: "Charging",
+  tco: "TCO",
   resources: "Resources",
   support: "Support",
   timeline: "Timeline",
@@ -28,6 +48,7 @@ const CANDIDATE_IDS = [
   "industries",
   "compare",
   "charging",
+  "tco",
   "resources",
   "support",
   "timeline",
@@ -116,7 +137,8 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [active, setActive] = useState<string>("");
   const [navItems, setNavItems] = useState<NavItem[]>([]);
-  const { toggle: toggleTheme, icon: themeIcon, label: themeLabel } = useTheme2State();
+  const { toggle: toggleTheme, icon: themeIcon, label: themeLabel } =
+    useTheme2State();
 
   const firstMobileLinkRef = useRef<HTMLButtonElement | null>(null);
   const desktopScrollRef = useRef<HTMLDivElement | null>(null);
@@ -153,7 +175,9 @@ export default function Header() {
     const recalc = () => {
       const existing = CANDIDATE_IDS
         .map((id) => ({ id, el: document.getElementById(id) }))
-        .filter((x): x is { id: string; el: HTMLElement } => !!x.el)
+        .filter(
+          (x): x is { id: string; el: HTMLElement } => !!x.el
+        )
         .sort((a, b) => getDocTop(a.el) - getDocTop(b.el))
         .map(({ id }) => ({ id, label: LABELS[id] || id }));
       setNavItems(existing);
@@ -179,7 +203,11 @@ export default function Header() {
       (entries) => {
         const visible = entries
           .filter((e) => e.isIntersecting)
-          .sort((a, b) => Math.abs(a.boundingClientRect.top) - Math.abs(b.boundingClientRect.top));
+          .sort(
+            (a, b) =>
+              Math.abs(a.boundingClientRect.top) -
+              Math.abs(b.boundingClientRect.top)
+          );
         if (visible.length) setActive(visible[0].target.id);
       },
       { root: null, rootMargin: "-30% 0px -30% 0px", threshold: [0, 0.2, 0.5, 1] }
@@ -197,8 +225,11 @@ export default function Header() {
     const onScrollBottomFallback = () => {
       const atBottom =
         window.innerHeight + (window.scrollY || 0) >=
-        (document.scrollingElement?.scrollHeight || document.body.scrollHeight) - 2;
-      if (atBottom && navItems.length) setActive(navItems[navItems.length - 1].id);
+        (document.scrollingElement?.scrollHeight ||
+          document.body.scrollHeight) -
+          2;
+      if (atBottom && navItems.length)
+        setActive(navItems[navItems.length - 1].id);
     };
     window.addEventListener("scroll", onScrollBottomFallback, { passive: true });
 
@@ -207,6 +238,25 @@ export default function Header() {
       window.removeEventListener("scroll", onScrollBottomFallback);
     };
   }, [navItems]);
+
+  /** Auto-center active pill in desktop scroll container */
+  useEffect(() => {
+    if (!desktopScrollRef.current || !active) return;
+    const container = desktopScrollRef.current;
+    const btn =
+      container.querySelector<HTMLButtonElement>(
+        `[aria-current="page"]`
+      );
+    if (!btn) return;
+    const cRect = container.getBoundingClientRect();
+    const bRect = btn.getBoundingClientRect();
+    const offset =
+      bRect.left - cRect.left - (cRect.width / 2 - bRect.width / 2);
+    container.scrollBy({
+      left: offset,
+      behavior: "smooth",
+    });
+  }, [active]);
 
   /** Lock body when mobile drawer open */
   useEffect(() => {
@@ -231,7 +281,12 @@ export default function Header() {
     trackEvent("nav_click", { id, where: "header" });
     const el = document.getElementById(id);
     if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      const prefersReduced =
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      el.scrollIntoView({
+        behavior: prefersReduced ? "auto" : "smooth",
+        block: "start",
+      });
       history.pushState({}, "", `#${id}`);
     }
   }, []);
@@ -244,11 +299,22 @@ export default function Header() {
   const Brand = useMemo(
     () => (
       <a
-        href="#top"
+        href="#home"
         onClick={(e) => {
           e.preventDefault();
-          window.scrollTo({ top: 0, behavior: "smooth" });
-          history.pushState({}, "", "#top");
+          const prefersReduced =
+            window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+          const el = document.getElementById("home");
+          if (el) {
+            el.scrollIntoView({
+              behavior: prefersReduced ? "auto" : "smooth",
+              block: "start",
+            });
+            history.pushState({}, "", "#home");
+          } else {
+            window.scrollTo({ top: 0, behavior: prefersReduced ? "auto" : "smooth" });
+            history.pushState({}, "", "#");
+          }
         }}
         className="inline-flex items-center gap-2 font-extrabold tracking-tight text-lg lg:text-xl whitespace-nowrap"
         aria-label="APRO Home"
@@ -276,7 +342,9 @@ export default function Header() {
         ref={headerRef}
         className={[
           "fixed inset-x-0 top-0 z-50 transition-all",
-          scrolled ? "bg-white/90 dark:bg-black/70 backdrop-blur-md shadow-sm" : "bg-transparent dark:bg-transparent",
+          scrolled
+            ? "bg-white/90 dark:bg-black/70 backdrop-blur-md shadow-sm"
+            : "bg-transparent dark:bg-transparent",
           "border-b border-transparent",
         ].join(" ")}
         role="banner"
@@ -335,7 +403,9 @@ export default function Header() {
                 aria-label={themeLabel}
                 className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
               >
-                <span aria-hidden="true" className="text-base leading-none">{themeIcon}</span>
+                <span aria-hidden="true" className="text-base leading-none">
+                  {themeIcon}
+                </span>
               </button>
 
               {/* CTA on md+; 모바일은 드로어 내부 */}
@@ -361,7 +431,12 @@ export default function Header() {
                 }}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  <path
+                    d="M4 7h16M4 12h16M4 17h16"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
                 </svg>
               </button>
             </div>
@@ -404,7 +479,12 @@ export default function Header() {
                 onClick={() => setMobileOpen(false)}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  <path
+                    d="M6 6l12 12M18 6l-12 12"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
                 </svg>
               </button>
             </div>
@@ -454,7 +534,6 @@ export default function Header() {
           </div>
         </div>
       </header>
-      {/* ✅ Spacer 제거 (헤더 높이는 CSS 변수로 보정) */}
     </>
   );
 }
