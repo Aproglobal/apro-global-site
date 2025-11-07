@@ -1,4 +1,6 @@
+// src/pages/App.tsx
 import React, { useEffect, useMemo, useState } from "react";
+
 import Header from "../components/Header";
 import ModelGrid from "../components/ModelGrid";
 import CompareTable from "../components/CompareTable";
@@ -7,12 +9,9 @@ import FleetSection from "../components/FleetSection";
 import SupportSection from "../components/SupportSection";
 import LeadModal, { openLead } from "../components/LeadModal";
 import ModelDetail from "../components/ModelDetail";
+
 import { getVariant } from "../utils/ab";
-import {
-  setupScrollDepth,
-  trackEvent,
-  initAnalytics,
-} from "../services/analytics";
+import { setupScrollDepth, trackEvent, initAnalytics } from "../services/analytics";
 import { initThemeWatcher } from "../utils/theme";
 import { loadRecaptcha } from "../lib/recaptcha";
 import { getTechCopy } from "../data/technology";
@@ -29,6 +28,10 @@ import ResourcesSection from "../components/ResourcesSection";
 import TcoCalculator from "../components/TcoCalculator";
 import ConfiguratorSection from "../components/ConfiguratorSection";
 
+// ✅ Added
+import CompanySection from "../components/CompanySection"; // make sure this file exists
+import ContactCompanyPartners from "../components/ContactCompanyPartners"; // the one you just added
+
 // SEO
 import SEO from "../components/SEO";
 
@@ -40,7 +43,6 @@ export default function App() {
     setupScrollDepth();
     initThemeWatcher();
 
-    // reCAPTCHA v3 preload
     const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
     if (siteKey) loadRecaptcha(siteKey);
   }, []);
@@ -50,7 +52,7 @@ export default function App() {
 
   const techCopy = useMemo(() => getTechCopy(), []);
 
-  // CompareTable가 하단을 차지할 때 플로팅 CTA 자동 숨김
+  // Hide sticky CTA when compare takes over bottom
   const [bottomBlocked, setBottomBlocked] = useState(false);
   useEffect(() => {
     let pinnedCount = 0;
@@ -80,8 +82,7 @@ export default function App() {
   const siteName = "APRO — Electric Golf Carts";
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const canonical = origin + "/";
-  const salesEmail =
-    import.meta.env.VITE_SALES_EMAIL || "sales@example.com";
+  const salesEmail = import.meta.env.VITE_SALES_EMAIL || "sales@example.com";
   const jsonLd = [
     {
       "@context": "https://schema.org",
@@ -123,8 +124,7 @@ export default function App() {
         canonical={canonical}
         og={{
           title: "APRO Electric Golf Carts",
-          description:
-            "Lithium fleets, VIP/Semi-VIP options, and global support.",
+          description: "Lithium fleets, VIP/Semi-VIP options, and global support.",
           url: canonical,
           image: "/assets/og.jpg",
           siteName: "APRO",
@@ -280,90 +280,19 @@ export default function App() {
           <SupportSection />
         </section>
 
-        {/* CONTACT */}
-        <section
-          id="contact"
-          className="scroll-mt-24 py-20 bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white"
-          aria-label="Contact"
-        >
-          <div className="max-w-6xl mx-auto px-5">
-            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-              Contact
-            </h2>
-            <p className="mt-2 text-zinc-700 max-w-2xl dark:text-zinc-200">
-              Email us at{" "}
-              <a
-                href={`mailto:${import.meta.env.VITE_SALES_EMAIL || "sales@example.com"}`}
-                className="underline"
-              >
-                {import.meta.env.VITE_SALES_EMAIL || "sales@example.com"}
-              </a>{" "}
-              or open the form above.
-            </p>
+        {/* ✅ Company (optional but recommended, sits above Contact) */}
+        <CompanySection />
 
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={() => {
-                  openLead("Contact CTA");
-                  trackEvent("contactOpen", {
-                    where: "contact_section",
-                    label: "Talk to Sales",
-                  });
-                }}
-                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
-              >
-                Talk to Sales
-              </button>
-
-              <a
-                href="/brochure.pdf"
-                onClick={() =>
-                  trackEvent("brochureDownload", {
-                    file: "/brochure.pdf",
-                    where: "contact_section",
-                  })
-                }
-                className="px-5 py-3 rounded-full border border-black/30 dark:border-white/40"
-              >
-                Download brochure (PDF)
-              </a>
-            </div>
-
-            {/* reCAPTCHA policy note */}
-            <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
-              This site is protected by reCAPTCHA and the Google{" "}
-              <a
-                href="https://policies.google.com/privacy"
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
-                Privacy Policy
-              </a>{" "}
-              and{" "}
-              <a
-                href="https://policies.google.com/terms"
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
-                Terms of Service
-              </a>{" "}
-              apply.
-            </p>
-          </div>
-        </section>
+        {/* ✅ Contact + Company + Partners (replaces your old Contact block) */}
+        <ContactCompanyPartners />
       </main>
 
-      {/* Sticky CTA — compare가 하단을 점유할 때는 자동 숨김 */}
+      {/* Sticky CTA — hidden when compare pins at bottom */}
       {!bottomBlocked && (
         <button
           onClick={() => {
             openLead("Sticky CTA");
-            trackEvent("contactOpen", {
-              where: "sticky_cta",
-              label: "Talk to Sales",
-            });
+            trackEvent("contactOpen", { where: "sticky_cta", label: "Talk to Sales" });
           }}
           aria-label="Talk to Sales"
           className="fixed bottom-[calc(env(safe-area-inset-bottom)+88px)] right-6 px-5 py-3 rounded-full bg-black text-white font-semibold shadow-lg dark:bg-white dark:text-black z-40"
@@ -381,27 +310,17 @@ export default function App() {
             </h3>
             <p className="mt-1">KUKJE INTERTRADE Co., Ltd.</p>
             <p className="mt-1">
-              Address: Floor 12, 124, Sagimakgol-ro, Jungwon-gu, Seongnam-si,
-              Gyeonggi-do, Republic of Korea
+              Address: Floor 12, 124, Sagimakgol-ro, Jungwon-gu, Seongnam-si, Gyeonggi-do, Republic of Korea
             </p>
 
+            {/* reCAPTCHA policy note (mobile badge hidden via CSS) */}
             <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-500">
               This site is protected by reCAPTCHA and the Google{" "}
-              <a
-                href="https://policies.google.com/privacy"
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
+              <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">
                 Privacy Policy
               </a>{" "}
               and{" "}
-              <a
-                href="https://policies.google.com/terms"
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
+              <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="underline">
                 Terms of Service
               </a>{" "}
               apply.
