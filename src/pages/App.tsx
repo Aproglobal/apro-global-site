@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import Header from "../components/Header";
+import { Header } from "../components/Header";
 import ModelGrid from "../components/ModelGrid";
 import CompareTable from "../components/CompareTable";
 import TechSection from "../components/TechSection";
@@ -25,7 +25,7 @@ import ResourcesSection from "../components/ResourcesSection";
 import TcoCalculator from "../components/TcoCalculator";
 import ConfiguratorSection from "../components/ConfiguratorSection";
 
-// ✅ New consolidated section (no partners)
+// ✅ Consolidated section (Contact + Company / no partners)
 import ContactCompany from "../components/ContactCompany";
 
 // SEO
@@ -197,9 +197,13 @@ export default function App() {
           </div>
         </section>
 
-        {/* MODELS + COMPARE */}
+        {/* MODELS */}
         <section id="models" className="scroll-mt-24" aria-label="Models">
           <ModelGrid />
+        </section>
+
+        {/* COMPARE — dedicate its own anchor to match nav */}
+        <section id="compare" className="scroll-mt-24" aria-label="Compare">
           <div className="border-t border-zinc-200 dark:border-zinc-800" />
           <CompareTable />
         </section>
