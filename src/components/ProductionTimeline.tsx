@@ -1,105 +1,75 @@
+// src/components/ProductionTimeline.tsx
 import React, { useMemo } from "react";
+import Carousel from "./ui/Carousel";
 import type { Step } from "../data/timeline";
-import HorizontalRail from "./HorizontalRail";
 
 type Props = {
   steps: Step[];
   title?: string;
   note?: string;
-  progressDay?: number;
-  showSummary?: boolean;
+  progressDay?: number; // kept for API compatibility
+  showSummary?: boolean; // kept for API compatibility
 };
 
-function statusOf(day: number, progressDay?: number): "neutral" | "done" | "current" | "upcoming" {
-  if (!progressDay) return "neutral";
-  if (day < progressDay) return "done";
-  if (day === progressDay) return "current";
-  return "upcoming";
+function pad2(n: number) {
+  return String(n).padStart(2, "0");
 }
-function pad2(n: number) { return String(n).padStart(2, "0"); }
+
+function TimelineCard({ s }: { s: Step }) {
+  return (
+    <article
+      className="
+        rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800
+        bg-white dark:bg-zinc-950 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.35)]
+      "
+    >
+      {/* Big visual first (only two images in your case; others will just show a subtle placeholder) */}
+      <div className="relative aspect-[4/3] md:aspect-[16/9] bg-zinc-100 dark:bg-zinc-900">
+        {s.img ? (
+          <img src={s.img} alt={s.title} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-zinc-400 text-sm">
+            No image provided
+          </div>
+        )}
+        <div className="absolute left-3 top-3 rounded-full bg-black/75 text-white text-[11px] px-2 py-1">
+          Day {pad2(s.day)}
+        </div>
+      </div>
+
+      <div className="p-5">
+        <h3 className="text-lg font-semibold">{s.title}</h3>
+        {s.vendor ? (
+          <p className="mt-1 text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Vendor: {s.vendor}</p>
+        ) : null}
+        {s.note ? <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">{s.note}</p> : null}
+      </div>
+    </article>
+  );
+}
 
 export default function ProductionTimeline({
   steps,
   title = "Production & Delivery Timeline",
   note = "Note: Domestic delivery flow. Export process may differ.",
-  progressDay,
-  showSummary = true,
 }: Props) {
-
-  const summary = useMemo(
-    () => [
-      { label: "Typical Lead Time", val: "~30 days" },
-      { label: "Contract Phase", val: "Quotation → PO → Contract (Days 1–3)" },
-      { label: "Production & Prep", val: "Orders & Artwork (Days 4–21)" },
-      { label: "Delivery", val: "Factory Release → On-site Install (Days 29–30)" },
-    ],
-    []
-  );
+  const items = useMemo(() => steps, [steps]);
 
   return (
-    <div className="relative">
-      <div className="mb-6">
-        <h3 className="text-xl md:text-2xl font-extrabold tracking-tight">{title}</h3>
+    <section id="timeline" className="py-2">
+      <div className="mb-5">
+        <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">{title}</h2>
         {note ? <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{note}</p> : null}
       </div>
 
-      {showSummary && (
-        <div className="mb-4 grid grid-cols-1 md:grid-cols-4 gap-3">
-          {summary.map((b, i) => (
-            <div key={i} className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 bg-white dark:bg-zinc-950/90">
-              <div className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{b.label}</div>
-              <div className="mt-1 text-sm font-semibold">{b.val}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <HorizontalRail ariaLabel="Production timeline">
-        {steps.map((s) => {
-          const st = statusOf(s.day, progressDay);
-          const border =
-            st === "current"
-              ? "border-black dark:border-white shadow-xl"
-              : st === "done"
-              ? "border-emerald-500/70 dark:border-emerald-400/70"
-              : "border-zinc-200 dark:border-zinc-800";
-          return (
-            <article
-              key={s.day}
-              className={`snap-start shrink-0 w-[280px] md:w-[360px] rounded-2xl border ${border} bg-white dark:bg-zinc-950 p-4 md:p-5`}
-            >
-              {s.img ? (
-                <div className="w-full aspect-square overflow-hidden rounded-xl bg-zinc-50 dark:bg-zinc-900">
-                  <img
-                    src={s.img}
-                    alt={s.title}
-                    width={600}
-                    height={600}
-                    loading="lazy"
-                    draggable={false}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ) : null}
-
-              <div className="mt-3 flex items-center gap-3">
-                <span
-                  className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-[11px] font-medium border min-w-[78px] text-center tracking-wide
-                    ${st === "current" ? "border-black dark:border-white"
-                      : st === "done" ? "border-emerald-500 dark:border-emerald-400"
-                      : "border-zinc-300 dark:border-zinc-700"}`}
-                >
-                  Day {pad2(s.day)}
-                </span>
-                <h4 className="text-sm font-semibold">{s.title}</h4>
-              </div>
-
-              {s.vendor ? <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">Vendor: {s.vendor}</p> : null}
-              {s.note ? <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">{s.note}</p> : null}
-            </article>
-          );
-        })}
-      </HorizontalRail>
-    </div>
+      <Carousel
+        ariaLabel="Production & Delivery"
+        items={items.map((s) => (
+          <TimelineCard key={s.day} s={s} />
+        ))}
+        itemClassName="w-[88vw] sm:w-[520px] md:w-[760px] lg:w-[980px]"
+        showCount
+      />
+    </section>
   );
 }
