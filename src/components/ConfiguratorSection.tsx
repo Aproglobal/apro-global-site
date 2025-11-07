@@ -1,5 +1,6 @@
 import React from "react";
 import { trackEvent } from "../services/analytics";
+import { openLead } from "./LeadModal";
 
 export default function ConfiguratorSection() {
   return (
@@ -16,14 +17,23 @@ export default function ConfiguratorSection() {
           Choose seating, battery options, colors, and must-have features. We’ll pre-fill a quote with your configuration.
         </p>
 
-        <div className="mt-6">
+        <div className="mt-6 flex flex-wrap gap-3">
           <button
             type="button"
-            onClick={() => trackEvent("configuratorNotifyClick", { where: "configurator_section" })}
+            onClick={() => {
+              trackEvent("configuratorNotifyClick", { where: "configurator_section" });
+              openLead("Configurator Notify");
+            }}
             className="px-4 py-2 rounded-full bg-black text-white dark:bg-white dark:text-black text-sm w-full sm:w-auto transition hover:opacity-90"
           >
             Notify me when ready
           </button>
+          <a
+            href="#models"
+            className="px-4 py-2 rounded-full border border-zinc-300 dark:border-zinc-700 text-sm"
+          >
+            Explore models
+          </a>
         </div>
       </div>
     </section>
