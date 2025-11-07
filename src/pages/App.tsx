@@ -301,7 +301,7 @@ export default function App() {
     </div>
   );
 }
-lank" rel="noreferrer" className="underline">
+
                 Privacy Policy
               </a>{" "}
               and{" "}
