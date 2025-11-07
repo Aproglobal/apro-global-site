@@ -3,7 +3,7 @@ export type Step = {
   title: string;
   note?: string;
   vendor?: string;
-  img?: string; // optional image
+  img?: string;
 };
 
 export const TIMELINE_STEPS: Step[] = [
