@@ -1,17 +1,6 @@
 // src/pages/App.tsx
 import React from "react";
 
-// Import components
-import Header from "../components/Header";
-import ModelGrid from "../components/ModelGrid";
-// import CompareTable from "../components/CompareTable"; // keep disabled until shape is confirmed
-import ChargingPowerSection from "../components/ChargingPowerSection";
-import FleetSection from "../components/FleetSection";
-// import TechSection from "../components/TechSection";  // requires `copy`
-import TechFeatureGrid from "../components/TechFeatureGrid";
-// import ProductionTimeline from "../components/ProductionTimeline"; // requires `steps`// src/pages/App.tsx
-import React from "react";
-
 // Components
 import Header from "../components/Header";
 import ModelGrid from "../components/ModelGrid";
