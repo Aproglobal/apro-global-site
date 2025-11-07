@@ -1,36 +1,39 @@
+// src/pages/App.tsx
 import React, { useEffect, useMemo, useState } from "react";
+
+// Core UI
 import Header from "../components/Header";
-import ModelGrid from "../components/ModelGrid";
-import CompareTable from "../components/CompareTable";
-import TechSection from "../components/TechSection";
-import FleetSection from "../components/FleetSection";
-import SupportSection from "../components/SupportSection";
+import SectionFrame from "../components/SectionFrame";
 import LeadModal, { openLead } from "../components/LeadModal";
 import ModelDetail from "../components/ModelDetail";
-import { getVariant } from "../utils/ab";
-import {
-  setupScrollDepth,
-  trackEvent,
-  initAnalytics,
-} from "../services/analytics";
-import { initThemeWatcher } from "../utils/theme";
-import { loadRecaptcha } from "../lib/recaptcha";
-import { getTechCopy } from "../data/technology";
 
-// Production timeline
-import ProductionTimeline from "../components/ProductionTimeline";
-import { TIMELINE_STEPS } from "../data/timeline";
-
-// NEW sections
+// Content sections
+import ModelGrid from "../components/ModelGrid";
+import CompareTable from "../components/CompareTable";
+import PerfTechShowcase from "../components/PerfTechShowcase";
 import IndustriesSection from "../components/IndustriesSection";
+import ProductionTimeline from "../components/ProductionTimeline";
 import ServiceWarrantySection from "../components/ServiceWarrantySection";
 import ChargingPowerSection from "../components/ChargingPowerSection";
 import ResourcesSection from "../components/ResourcesSection";
 import TcoCalculator from "../components/TcoCalculator";
 import ConfiguratorSection from "../components/ConfiguratorSection";
+import FleetSection from "../components/FleetSection";
+import SupportSection from "../components/SupportSection";
+import ContactCompany from "../components/ContactCompany";
+
+// Data
+import { TIMELINE_STEPS } from "../data/timeline";
+import { getTechCopy } from "../data/technology";
 
 // SEO
 import SEO from "../components/SEO";
+
+// Utilities / analytics
+import { getVariant } from "../utils/ab";
+import { initThemeWatcher } from "../utils/theme";
+import { loadRecaptcha } from "../lib/recaptcha";
+import { initAnalytics, setupScrollDepth, trackEvent } from "../services/analytics";
 
 export default function App() {
   const variant = getVariant();
@@ -39,18 +42,15 @@ export default function App() {
     initAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
     setupScrollDepth();
     initThemeWatcher();
-
-    // reCAPTCHA v3 preload
     const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
     if (siteKey) loadRecaptcha(siteKey);
   }, []);
 
   const primaryCta = "Talk to Sales";
   const secondaryCta = variant === "A" ? "Explore models" : "Download brochure";
-
   const techCopy = useMemo(() => getTechCopy(), []);
 
-  // CompareTable가 하단을 차지할 때 플로팅 CTA 자동 숨김
+  // Hide sticky CTA when compare section pins a mini view at bottom
   const [bottomBlocked, setBottomBlocked] = useState(false);
   useEffect(() => {
     let pinnedCount = 0;
@@ -80,8 +80,7 @@ export default function App() {
   const siteName = "APRO — Electric Golf Carts";
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const canonical = origin + "/";
-  const salesEmail =
-    import.meta.env.VITE_SALES_EMAIL || "sales@example.com";
+  const salesEmail = import.meta.env.VITE_SALES_EMAIL || "sales@example.com";
   const jsonLd = [
     {
       "@context": "https://schema.org",
@@ -117,22 +116,22 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
+      {/* SEO */}
       <SEO
         title="APRO Electric Golf Carts — Lithium, VIP & Fleet Solutions"
         description="APRO builds electric golf carts for courses, resorts, and venues worldwide—smart guidance, flexible seating, and global after-sales support."
         canonical={canonical}
         og={{
           title: "APRO Electric Golf Carts",
-          description:
-            "Lithium fleets, VIP/Semi-VIP options, and global support.",
+          description: "Lithium fleets, VIP/Semi-VIP options, and global support.",
           url: canonical,
-          image: "/assets/og.jpg", // replace if you have a dedicated OG image
+          image: "/assets/og.jpg",
           siteName: "APRO",
         }}
         twitter={{
           card: "summary_large_image",
-          site: "@yourbrand", // optional
-          creator: "@yourteam", // optional
+          site: "@yourbrand",
+          creator: "@yourteam",
           image: "/assets/og.jpg",
         }}
         jsonLd={jsonLd}
@@ -140,7 +139,7 @@ export default function App() {
 
       <Header />
 
-      {/* consume header height variable */}
+      {/* consume header height variable for safe anchor offsets */}
       <main id="main" style={{ paddingTop: "var(--header-h, 4rem)" }}>
         {/* HERO */}
         <section id="home" className="relative scroll-mt-24" aria-label="Hero">
@@ -165,11 +164,7 @@ export default function App() {
                 <button
                   onClick={() => {
                     openLead("Hero CTA");
-                    trackEvent("heroCtaClick", {
-                      where: "hero",
-                      label: primaryCta,
-                      ab_variant: variant,
-                    });
+                    trackEvent("heroCtaClick", { where: "hero", label: primaryCta, ab_variant: variant });
                   }}
                   className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
                   aria-label="Open sales contact form"
@@ -181,11 +176,7 @@ export default function App() {
                   <a
                     href="#models"
                     onClick={() =>
-                      trackEvent("modelExploreClick", {
-                        where: "hero",
-                        label: secondaryCta,
-                        ab_variant: variant,
-                      })
+                      trackEvent("modelExploreClick", { where: "hero", label: secondaryCta, ab_variant: variant })
                     }
                     className="px-5 py-3 rounded-full border border-black/40 text-black dark:border-white/60 dark:text-white"
                     aria-label="Jump to models section"
@@ -196,11 +187,7 @@ export default function App() {
                   <a
                     href="/brochure.pdf"
                     onClick={() =>
-                      trackEvent("brochureDownload", {
-                        file: "/brochure.pdf",
-                        where: "hero",
-                        ab_variant: variant,
-                      })
+                      trackEvent("brochureDownload", { file: "/brochure.pdf", where: "hero", ab_variant: variant })
                     }
                     className="px-5 py-3 rounded-full border border-black/40 text-black dark:border-white/60 dark:text-white"
                     aria-label="Download brochure"
@@ -214,156 +201,86 @@ export default function App() {
         </section>
 
         {/* MODELS + COMPARE */}
-        <section id="models" className="scroll-mt-24" aria-label="Models">
-          <ModelGrid />
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <CompareTable />
-        </section>
+        <SectionFrame id="models">
+          <div className="space-y-8">
+            <ModelGrid />
+            <div id="compare" className="sr-only" aria-hidden="true" />
+            <div className="border-t border-zinc-200 dark:border-zinc-800" />
+            <CompareTable />
+          </div>
+        </SectionFrame>
 
-        {/* TECHNOLOGY */}
-        <section id="technology" className="scroll-mt-24" aria-label="Technology">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <TechSection copy={techCopy} />
-        </section>
+        {/* Unified Performance & Technology (single row, numbered navigation) */}
+        <SectionFrame id="technology">
+          <PerfTechShowcase />
+        </SectionFrame>
 
         {/* INDUSTRIES */}
-        <section id="industries" className="scroll-mt-24" aria-label="Industries">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+        <SectionFrame id="industries">
           <IndustriesSection />
-        </section>
+        </SectionFrame>
 
-        {/* PRODUCTION TIMELINE */}
-        <section id="timeline" className="scroll-mt-24" aria-label="Production timeline">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <ProductionTimeline steps={TIMELINE_STEPS} />
-        </section>
+        {/* PRODUCTION & DELIVERY TIMELINE */}
+        <SectionFrame id="timeline">
+          <ProductionTimeline
+            steps={TIMELINE_STEPS}
+            title="Production & Delivery Timeline"
+            note="Note: Domestic delivery flow. Export process may differ."
+            showSummary={true}
+          />
+        </SectionFrame>
 
         {/* SERVICE & WARRANTY */}
-        <section id="service" className="scroll-mt-24" aria-label="Service and warranty">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+        <SectionFrame id="service">
           <ServiceWarrantySection />
-        </section>
+        </SectionFrame>
 
         {/* CHARGING & POWER */}
-        <section id="charging" className="scroll-mt-24" aria-label="Charging and power">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+        <SectionFrame id="charging">
           <ChargingPowerSection />
-        </section>
+        </SectionFrame>
 
         {/* RESOURCES */}
-        <section id="resources" className="scroll-mt-24" aria-label="Resources">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+        <SectionFrame id="resources">
           <ResourcesSection />
-        </section>
+        </SectionFrame>
 
         {/* TCO / ROI */}
-        <section id="tco" className="scroll-mt-24" aria-label="Total cost of ownership">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <TcoCalculator />
-        </section>
+        <SectionFrame id="tco" title="TCO / ROI">
+          <div className="not-prose">
+            <TcoCalculator />
+          </div>
+        </SectionFrame>
 
         {/* CONFIGURATOR */}
-        <section id="configurator" className="scroll-mt-24" aria-label="Configurator">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <ConfiguratorSection />
-        </section>
+        <SectionFrame id="configurator" title="Configurator">
+          <div className="not-prose">
+            <ConfiguratorSection />
+          </div>
+        </SectionFrame>
 
         {/* FLEET */}
-        <section id="fleet" className="scroll-mt-24" aria-label="Fleet">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+        <SectionFrame id="fleet">
           <FleetSection />
-        </section>
+        </SectionFrame>
 
         {/* SUPPORT */}
-        <section id="support" className="scroll-mt-24" aria-label="Support">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+        <SectionFrame id="support">
           <SupportSection />
-        </section>
+        </SectionFrame>
 
-        {/* CONTACT */}
-        <section
-          id="contact"
-          className="scroll-mt-24 py-20 bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white"
-          aria-label="Contact"
-        >
-          <div className="max-w-6xl mx-auto px-5">
-            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-              Contact
-            </h2>
-            <p className="mt-2 text-zinc-700 max-w-2xl dark:text-zinc-200">
-              Email us at{" "}
-              <a
-                href={`mailto:${import.meta.env.VITE_SALES_EMAIL || "sales@example.com"}`}
-                className="underline"
-              >
-                {import.meta.env.VITE_SALES_EMAIL || "sales@example.com"}
-              </a>{" "}
-              or open the form above.
-            </p>
-
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={() => {
-                  openLead("Contact CTA");
-                  trackEvent("contactOpen", {
-                    where: "contact_section",
-                    label: "Talk to Sales",
-                  });
-                }}
-                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
-              >
-                Talk to Sales
-              </button>
-
-              <a
-                href="/brochure.pdf"
-                onClick={() =>
-                  trackEvent("brochureDownload", {
-                    file: "/brochure.pdf",
-                    where: "contact_section",
-                  })
-                }
-                className="px-5 py-3 rounded-full border border-black/30 dark:border-white/40"
-              >
-                Download brochure (PDF)
-              </a>
-            </div>
-
-            {/* reCAPTCHA 정책 고지 (모바일 배지 숨김시 필수) */}
-            <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
-              This site is protected by reCAPTCHA and the Google{" "}
-              <a
-                href="https://policies.google.com/privacy"
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
-                Privacy Policy
-              </a>{" "}
-              and{" "}
-              <a
-                href="https://policies.google.com/terms"
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
-                Terms of Service
-              </a>{" "}
-              apply.
-            </p>
-          </div>
-        </section>
+        {/* CONTACT & COMPANY */}
+        <SectionFrame id="contact">
+          <ContactCompany />
+        </SectionFrame>
       </main>
 
-      {/* Sticky CTA — compare가 하단을 점유할 때는 자동 숨김 */}
+      {/* Sticky CTA — hidden when compare pins a bottom mini view */}
       {!bottomBlocked && (
         <button
           onClick={() => {
             openLead("Sticky CTA");
-            trackEvent("contactOpen", {
-              where: "sticky_cta",
-              label: "Talk to Sales",
-            });
+            trackEvent("contactOpen", { where: "sticky_cta", label: "Talk to Sales" });
           }}
           aria-label="Talk to Sales"
           className="fixed bottom-[calc(env(safe-area-inset-bottom)+88px)] right-6 px-5 py-3 rounded-full bg-black text-white font-semibold shadow-lg dark:bg-white dark:text-black z-40"
@@ -372,6 +289,7 @@ export default function App() {
         </button>
       )}
 
+      {/* Footer */}
       <footer className="border-t border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
         <div className="max-w-6xl mx-auto px-5 py-6 text-sm text-zinc-600 dark:text-zinc-400">
           © {new Date().getFullYear()} APRO. All rights reserved.
@@ -381,28 +299,16 @@ export default function App() {
             </h3>
             <p className="mt-1">KUKJE INTERTRADE Co., Ltd.</p>
             <p className="mt-1">
-              Address: Floor 12, 124, Sagimakgol-ro, Jungwon-gu, Seongnam-si,
-              Gyeonggi-do, Republic of Korea
+              Address: Floor 12, 124, Sagimakgol-ro, Jungwon-gu, Seongnam-si, Gyeonggi-do, Republic of Korea
             </p>
 
-            {/* 고지 문구를 푸터에도 한 번 더 표기해두면 정책상 가장 안전 */}
             <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-500">
               This site is protected by reCAPTCHA and the Google{" "}
-              <a
-                href="https://policies.google.com/privacy"
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
+              <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">
                 Privacy Policy
               </a>{" "}
               and{" "}
-              <a
-                href="https://policies.google.com/terms"
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
+              <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="underline">
                 Terms of Service
               </a>{" "}
               apply.
@@ -411,6 +317,7 @@ export default function App() {
         </div>
       </footer>
 
+      {/* Portals / modals */}
       <LeadModal />
       <ModelDetail />
     </div>
