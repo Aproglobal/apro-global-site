@@ -25,7 +25,7 @@ import ResourcesSection from "../components/ResourcesSection";
 import TcoCalculator from "../components/TcoCalculator";
 import ConfiguratorSection from "../components/ConfiguratorSection";
 
-// New: unified frame + consolidated contact
+// Frame + consolidated contact
 import SectionFrame from "../components/SectionFrame";
 import ContactCompany from "../components/ContactCompany";
 
@@ -47,7 +47,7 @@ export default function App() {
   const secondaryCta = variant === "A" ? "Explore models" : "Download brochure";
   const techCopy = useMemo(() => getTechCopy(), []);
 
-  // hide sticky CTA when compare occupies bottom
+  // Hide sticky CTA when compare occupies the bottom
   const [bottomBlocked, setBottomBlocked] = useState(false);
   useEffect(() => {
     let pinnedCount = 0;
