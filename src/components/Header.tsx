@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { trackEvent } from "../services/analytics";
 import { openLead } from "./LeadModal";
+import { Sun, Moon, Menu, X } from "lucide-react";
 
 /** -------------------------------
  *  Config
@@ -15,7 +16,6 @@ import { openLead } from "./LeadModal";
 type NavItem = { id: string; label: string };
 
 const LABELS: Record<string, string> = {
-  company: "Company",
   models: "Models",
   technology: "Technology",
   industries: "Industries",
@@ -27,12 +27,10 @@ const LABELS: Record<string, string> = {
   configurator: "Configurator",
   fleet: "Fleet",
   service: "Service",
-  partners: "Partners",
   contact: "Contact",
 };
 
 const CANDIDATE_IDS = [
-  "company",
   "models",
   "technology",
   "industries",
@@ -44,12 +42,11 @@ const CANDIDATE_IDS = [
   "configurator",
   "fleet",
   "service",
-  "partners",
   "contact",
 ] as const;
 
 /** -------------------------------
- *  Theme (2-state toggle + time-of-day auto if unset)
+ *  Theme (time-based default + user lock)
  * --------------------------------*/
 type UserPref = "light" | "dark" | null;
 const USER_KEY = "theme_user_pref";
@@ -99,9 +96,8 @@ function useTheme2State() {
     });
   }, []);
 
-  const icon = theme === "dark" ? "🌙" : "☀️";
   const label = theme === "dark" ? "Theme: dark" : "Theme: light";
-  return { theme, toggle, icon, label };
+  return { theme, toggle, label };
 }
 
 /** -------------------------------
@@ -113,10 +109,9 @@ function getDocTop(el: Element) {
   return rect.top + scrollY;
 }
 
-/** Header height → CSS var */
+/** Header height -> CSS var */
 function setHeaderVar(px: number) {
-  const r = document.documentElement;
-  r.style.setProperty("--header-h", `${px}px`);
+  document.documentElement.style.setProperty("--header-h", `${px}px`);
 }
 
 /** -------------------------------
@@ -127,63 +122,28 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [active, setActive] = useState<string>("");
   const [navItems, setNavItems] = useState<NavItem[]>([]);
-  const { toggle: toggleTheme, icon: themeIcon, label: themeLabel } =
-    useTheme2State();
+  const { theme, toggle: toggleTheme, label: themeLabel } = useTheme2State();
 
   const firstMobileLinkRef = useRef<HTMLButtonElement | null>(null);
-  const desktopScrollRef = useRef<HTMLDivElement | null>(null);
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
 
-  // moving underline indicator
-  const indicatorRef = useRef<HTMLDivElement | null>(null);
-  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-  const [indicator, setIndicator] = useState<{ left: number; width: number; visible: boolean }>({
+  // keep refs to each nav button for ink positioning
+  const btnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  // ink bar state
+  const [ink, setInk] = useState<{ left: number; width: number; opacity: number }>({
     left: 0,
     width: 0,
-    visible: false,
+    opacity: 0,
   });
 
-  const updateIndicator = useCallback(
-    (id?: string) => {
-      const curId = id ?? active;
-      const wrap = desktopScrollRef.current;
-      const btn = curId ? buttonRefs.current[curId] : null;
-      if (!wrap || !btn) {
-        setIndicator((p) => ({ ...p, visible: false }));
-        return;
-      }
-      const left = btn.offsetLeft - wrap.scrollLeft;
-      const width = btn.offsetWidth;
-      setIndicator({ left, width, visible: true });
-    },
-    [active]
-  );
-
-  useEffect(() => {
-    updateIndicator();
-  }, [active, updateIndicator]);
-
-  useEffect(() => {
-    const wrap = desktopScrollRef.current;
-    if (!wrap) return;
-    const onScroll = () => updateIndicator();
-    const onResize = () => updateIndicator();
-    wrap.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize);
-    return () => {
-      wrap.removeEventListener("scroll", onScroll as any);
-      window.removeEventListener("resize", onResize);
-    };
-  }, [updateIndicator]);
-
-  /** Header height → CSS var */
+  /** Header height -> CSS var */
   useLayoutEffect(() => {
     if (!headerRef.current) return;
     const el = headerRef.current;
-
     const apply = () => setHeaderVar(el.offsetHeight);
     apply();
-
     const ro = new ResizeObserver(apply);
     ro.observe(el);
     window.addEventListener("resize", apply);
@@ -207,12 +167,12 @@ export default function Header() {
     const recalc = () => {
       const existing = CANDIDATE_IDS
         .map((id) => ({ id, el: document.getElementById(id) }))
-        .filter((x): x is { id: string; el: HTMLElement } => !!x && !!x.el)
+        .filter(
+          (x): x is { id: string; el: HTMLElement } => !!x && !!x.el
+        )
         .sort((a, b) => getDocTop(a.el) - getDocTop(b.el))
         .map(({ id }) => ({ id, label: LABELS[id] || id }));
       setNavItems(existing);
-      // after navItems update, line will be updated by effect watching "active"
-      setTimeout(() => updateIndicator(existing[0]?.id), 0);
     };
     recalc();
     window.addEventListener("load", recalc);
@@ -226,7 +186,7 @@ export default function Header() {
       window.removeEventListener("resize", onResize);
       if (t) window.clearTimeout(t);
     };
-  }, [updateIndicator]);
+  }, []);
 
   /** Active section highlight + bottom fallback */
   useEffect(() => {
@@ -244,6 +204,7 @@ export default function Header() {
       },
       { root: null, rootMargin: "-30% 0px -30% 0px", threshold: [0, 0.2, 0.5, 1] }
     );
+
     const targets: HTMLElement[] = [];
     navItems.forEach((n) => {
       const el = document.getElementById(n.id);
@@ -257,7 +218,8 @@ export default function Header() {
       const atBottom =
         window.innerHeight + (window.scrollY || 0) >=
         (document.scrollingElement?.scrollHeight ||
-          document.body.scrollHeight) - 2;
+          document.body.scrollHeight) -
+          2;
       if (atBottom && navItems.length) setActive(navItems[navItems.length - 1].id);
     };
     window.addEventListener("scroll", onScrollBottomFallback, { passive: true });
@@ -286,6 +248,7 @@ export default function Header() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  /** Smooth scroll to section */
   const onNavClick = useCallback((id: string) => {
     setMobileOpen(false);
     trackEvent("nav_click", { id, where: "header" });
@@ -300,6 +263,42 @@ export default function Header() {
     openLead("Header CTA");
     trackEvent("cta_click", { where: "header", label: "Talk to Sales" });
   }, []);
+
+  /** Ink bar updater — positions underline under active button */
+  const updateInk = useCallback(() => {
+    const scroller = scrollerRef.current;
+    const id = active;
+    if (!scroller || !id) {
+      setInk((s) => ({ ...s, opacity: 0 }));
+      return;
+    }
+    const btn = btnRefs.current[id];
+    if (!btn) {
+      setInk((s) => ({ ...s, opacity: 0 }));
+      return;
+    }
+    const btnRect = btn.getBoundingClientRect();
+    const scRect = scroller.getBoundingClientRect();
+    const left = btnRect.left - scRect.left; // left within visible scroller viewport
+    const width = btnRect.width;
+    setInk({ left, width, opacity: 1 });
+  }, [active]);
+
+  // Recompute ink on changes / resize / scroll
+  useEffect(() => updateInk(), [updateInk, navItems]);
+  useEffect(() => {
+    const sc = scrollerRef.current;
+    if (!sc) return;
+    const ro = new ResizeObserver(() => updateInk());
+    ro.observe(sc);
+    window.addEventListener("resize", updateInk);
+    sc.addEventListener("scroll", updateInk, { passive: true });
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", updateInk);
+      sc.removeEventListener("scroll", updateInk);
+    };
+  }, [updateInk]);
 
   const Brand = useMemo(
     () => (
@@ -350,51 +349,43 @@ export default function Header() {
 
             {/* Center: Desktop Nav */}
             <div className="relative hidden lg:flex flex-1 min-w-0 items-center justify-center px-2">
-              {/* soft fades at edges */}
               <div className="pointer-events-none absolute left-0 top-0 h-full w-6 bg-gradient-to-r from-white/90 dark:from-black/70 to-transparent" />
               <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-white/90 dark:from-black/70 to-transparent" />
 
               <div
-                ref={desktopScrollRef}
-                className="relative mx-auto overflow-x-auto overscroll-x-contain pb-[10px]"
+                ref={scrollerRef}
+                className="relative mx-auto overflow-x-auto overscroll-x-contain"
                 style={{
-                  scrollbarWidth: "none",
-                  msOverflowStyle: "none",
-                  maxWidth: "min(820px, calc(100vw - 280px))",
+                  scrollbarWidth: "thin",
+                  maxWidth: "min(760px, calc(100vw - 280px))",
                 }}
               >
-                {/* floating underline indicator */}
-                <div
-                  ref={indicatorRef}
-                  className={[
-                    "pointer-events-none absolute bottom-[2px] h-[2px] rounded-full",
-                    "bg-gradient-to-r from-zinc-900/80 via-zinc-900/90 to-zinc-900/80",
-                    "dark:from-white/70 dark:via-white/90 dark:to-white/70",
-                    "transition-all duration-300 ease-out",
-                  ].join(" ")}
+                {/* Ink bar */}
+                <span
+                  aria-hidden="true"
+                  className="absolute bottom-1 h-0.5 rounded-full bg-black/70 dark:bg-white/80 transition-all duration-300 ease-out"
                   style={{
-                    left: indicator.left,
-                    width: indicator.width,
-                    opacity: indicator.visible ? 1 : 0,
+                    left: `${ink.left}px`,
+                    width: `${ink.width}px`,
+                    opacity: ink.opacity,
                   }}
                 />
-
-                <ul className="relative flex items-center gap-2 whitespace-nowrap pr-6">
+                <ul className="relative flex items-center gap-1 whitespace-nowrap pr-6">
                   {navItems.map((item) => {
                     const isActive = active === item.id;
                     return (
                       <li key={item.id}>
                         <button
+                          ref={(el) => (btnRefs.current[item.id] = el)}
                           type="button"
-                          ref={(el) => (buttonRefs.current[item.id] = el)}
                           onClick={() => onNavClick(item.id)}
                           className={[
-                            "px-3 py-2 rounded-md text-sm font-medium transition-all",
-                            "hover:-translate-y-0.5 hover:opacity-90",
-                            isActive
-                              ? "text-zinc-900 dark:text-white"
-                              : "text-zinc-700 dark:text-zinc-300",
+                            "px-3 py-2 rounded-md text-sm transition-colors",
+                            "hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70",
                             "focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20",
+                            isActive
+                              ? "text-black dark:text-white font-semibold"
+                              : "text-zinc-700 dark:text-zinc-300",
                           ].join(" ")}
                           aria-current={isActive ? "page" : undefined}
                         >
@@ -417,12 +408,14 @@ export default function Header() {
                 aria-label={themeLabel}
                 className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
               >
-                <span aria-hidden="true" className="text-base leading-none">
-                  {themeIcon}
-                </span>
+                {theme === "dark" ? (
+                  <Moon size={16} aria-hidden="true" />
+                ) : (
+                  <Sun size={16} aria-hidden="true" />
+                )}
               </button>
 
-              {/* CTA on md+; mobile → in drawer */}
+              {/* CTA on md+; 모바일은 드로어 내부 */}
               <button
                 type="button"
                 onClick={onTalkToSales}
@@ -432,7 +425,7 @@ export default function Header() {
                 Talk to Sales
               </button>
 
-              {/* Hamburger */}
+              {/* Hamburger (mobile only) */}
               <button
                 type="button"
                 className="inline-flex lg:hidden items-center justify-center w-10 h-10 rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
@@ -444,14 +437,7 @@ export default function Header() {
                   setTimeout(() => firstMobileLinkRef.current?.focus(), 60);
                 }}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M4 7h16M4 12h16M4 17h16"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
+                <Menu size={18} aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -492,14 +478,7 @@ export default function Header() {
                 aria-label="Close menu"
                 onClick={() => setMobileOpen(false)}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M6 6l12 12M18 6l-12 12"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
+                <X size={16} aria-hidden="true" />
               </button>
             </div>
 
@@ -548,6 +527,7 @@ export default function Header() {
           </div>
         </div>
       </header>
+      {/* no spacer; sections use scroll-mt via --header-h */}
     </>
   );
 }
