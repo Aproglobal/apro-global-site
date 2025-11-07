@@ -1,309 +1,97 @@
-import React, { useEffect, useMemo, useState } from "react";
+// src/pages/App.tsx
 import Header from "../components/Header";
 import ModelGrid from "../components/ModelGrid";
 import CompareTable from "../components/CompareTable";
 import TechSection from "../components/TechSection";
 import FleetSection from "../components/FleetSection";
-import SupportSection from "../components/SupportSection";
-import LeadModal, { openLead } from "../components/LeadModal";
-import ModelDetail from "../components/ModelDetail";
-import { getVariant } from "../utils/ab";
-import { setupScrollDepth, trackEvent, initAnalytics } from "../services/analytics";import React, { useEffect, useMemo, useState } from "react";
-import Header from "../components/Header";
-import ModelGrid from "../components/ModelGrid";
-import CompareTable from "../components/CompareTable";
-import TechSection from "../components/TechSection";
-import FleetSection from "../components/FleetSection";
-import SupportSection from "../components/SupportSection";
-import LeadModal, { openLead } from "../components/LeadModal";
-import ModelDetail from "../components/ModelDetail";
-import { getVariant } from "../utils/ab";
-import { setupScrollDepth, trackEvent, initAnalytics } from "../services/analytics";
-import { initThemeWatcher } from "../utils/theme";
-import { loadRecaptcha } from "../lib/recaptcha";
-import { getTechCopy } from "../data/technology";
-
-import ProductionTimeline from "../components/ProductionTimeline";
-import { TIMELINE_STEPS } from "../data/timeline";
-import IndustriesSection from "../components/IndustriesSection";
-import ServiceWarrantySection from "../components/ServiceWarrantySection";
 import ChargingPowerSection from "../components/ChargingPowerSection";
-import ResourcesSection from "../components/ResourcesSection";
-import TcoCalculator from "../components/TcoCalculator";
 import ConfiguratorSection from "../components/ConfiguratorSection";
-import { MessageSquare } from "lucide-react";
+import ProductionTimeline from "../components/ProductionTimeline";
+import ResourcesSection from "../components/ResourcesSection";
+import ServiceWarrantySection from "../components/ServiceWarrantySection";
+import SupportSection from "../components/SupportSection";
+import TcoCalculator from "../components/TcoCalculator";
+import IndustriesSection from "../components/IndustriesSection";
+import LeadModal from "../components/LeadModal";
 
 export default function App() {
-  const variant = getVariant();
-
-  useEffect(() => {
-    initAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
-    setupScrollDepth();
-    initThemeWatcher();
-
-    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
-    if (siteKey) loadRecaptcha(siteKey);
-  }, []);
-
-  const primaryCta = "Talk to Sales";
-  const secondaryCta = variant === "A" ? "Explore models" : "Download brochure";
-
-  const techCopy = useMemo(() => getTechCopy(), []);
-
-  const [bottomBlocked, setBottomBlocked] = useState(false);
-  useEffect(() => {
-    let pinnedCount = 0;
-    let miniOpen = false;
-    const recompute = () => setBottomBlocked(miniOpen || pinnedCount > 0);
-
-    const onPinned = (e: Event) => {
-      const ce = e as CustomEvent<{ count: number }>;
-      pinnedCount = Number(ce?.detail?.count ?? 0);
-      recompute();
-    };
-    const onMini = (e: Event) => {
-      const ce = e as CustomEvent<{ open: boolean }>;
-      miniOpen = Boolean(ce?.detail?.open ?? false);
-      recompute();
-    };
-
-    window.addEventListener("compare:pinned" as any, onPinned as any);
-    window.addEventListener("compare:mini" as any, onMini as any);
-    return () => {
-      window.removeEventListener("compare:pinned" as any, onPinned as any);
-      window.removeEventListener("compare:mini" as any, onMini as any);
-    };
-  }, []);
-
   return (
-    <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
+    <div className="min-h-screen bg-white text-gray-900">
       <Header />
 
-      {/* Use the height that Header exports via --header-h */}
-      <main id="main" style={{ paddingTop: "var(--header-h, 4rem)" }}>
-        {/* HERO */}
-        <section id="home" className="relative scroll-mt-24" aria-label="Hero">
-          <div className="relative h-[72vh] md:h-[84vh] w-full">
-            <img
-              src="/assets/hero.jpg"
-              alt="APRO Golf Carts"
-              className="absolute inset-0 h-full w-full object-cover"
-              loading="eager"
-              fetchPriority="high"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/30 to-transparent dark:from-black dark:via-black/30 dark:to-transparent" />
-            <div className="relative z-10 mx-auto flex h-full max-w-6xl flex-col justify-end px-5 pb-14">
-              <h1 className="text-4xl font-extrabold tracking-tight md:text-6xl">
-                Electric Golf Carts, Built for Courses, Resorts & Venues Worldwide
-              </h1>
-              <p className="mt-3 max-w-2xl text-zinc-700 dark:text-zinc-200">
-                Smart guidance, flexible seating, and global after-sales support.
-              </p>
-
-              <div className="mt-6 flex flex-wrap gap-3">
-                <button
-                  onClick={() => {
-                    openLead("Hero CTA");
-                    trackEvent("heroCtaClick", { where: "hero", label: primaryCta, ab_variant: variant });
-                  }}
-                  className="rounded-full bg-black px-5 py-3 font-semibold text-white dark:bg-white dark:text-black"
-                  aria-label="Open sales contact form"
-                >
-                  {primaryCta}
-                </button>
-
-                {secondaryCta === "Explore models" ? (
-                  <a
-                    href="#models"
-                    onClick={() =>
-                      trackEvent("modelExploreClick", { where: "hero", label: secondaryCta, ab_variant: variant })
-                    }
-                    className="rounded-full border border-black/40 px-5 py-3 text-black dark:border-white/60 dark:text-white"
-                    aria-label="Jump to models section"
-                  >
-                    {secondaryCta}
-                  </a>
-                ) : (
-                  <a
-                    href="/brochure.pdf"
-                    onClick={() =>
-                      trackEvent("brochureDownload", { file: "/brochure.pdf", where: "hero", ab_variant: variant })
-                    }
-                    className="rounded-full border border-black/40 px-5 py-3 text-black dark:border-white/60 dark:text-white"
-                    aria-label="Download brochure"
-                  >
-                    {secondaryCta}
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Product overview */}
+        <section aria-labelledby="models">
+          <h2 id="models" className="sr-only">Models</h2>
+          <ModelGrid />
         </section>
 
-        {/* MODELS + COMPARE */}
-        <section id="models" className="scroll-mt-24" aria-label="Models">
-          <ModelGrid />
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+        {/* Side-by-side comparison */}
+        <section aria-labelledby="compare" className="mt-16">
+          <h2 id="compare" className="sr-only">Compare Models</h2>
           <CompareTable />
         </section>
 
-        {/* TECHNOLOGY */}
-        <section id="technology" className="scroll-mt-24" aria-label="Technology">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <TechSection copy={techCopy} />
+        {/* Technology highlights */}
+        <section aria-labelledby="tech" className="mt-16">
+          <h2 id="tech" className="sr-only">Technology</h2>
+          <TechSection />
         </section>
 
-        {/* INDUSTRIES */}
-        <section id="industries" className="scroll-mt-24" aria-label="Industries">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <IndustriesSection />
-        </section>
-
-        {/* PRODUCTION TIMELINE */}
-        <section id="timeline" className="scroll-mt-24" aria-label="Production timeline">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <ProductionTimeline steps={TIMELINE_STEPS} />
-        </section>
-
-        {/* SERVICE & WARRANTY */}
-        <section id="service" className="scroll-mt-24" aria-label="Service and warranty">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <ServiceWarrantySection />
-        </section>
-
-        {/* CHARGING & POWER */}
-        <section id="charging" className="scroll-mt-24" aria-label="Charging and power">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <ChargingPowerSection />
-        </section>
-
-        {/* RESOURCES */}
-        <section id="resources" className="scroll-mt-24" aria-label="Resources">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <ResourcesSection />
-        </section>
-
-        {/* TCO / ROI */}
-        <section id="tco" className="scroll-mt-24" aria-label="Total cost of ownership">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <TcoCalculator />
-        </section>
-
-        {/* CONFIGURATOR */}
-        <section id="configurator" className="scroll-mt-24" aria-label="Configurator">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <ConfiguratorSection />
-        </section>
-
-        {/* FLEET */}
-        <section id="fleet" className="scroll-mt-24" aria-label="Fleet">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+        {/* Fleet & industries */}
+        <section aria-labelledby="fleet" className="mt-16">
+          <h2 id="fleet" className="sr-only">Fleet</h2>
           <FleetSection />
         </section>
 
-        {/* SUPPORT */}
-        <section id="support" className="scroll-mt-24" aria-label="Support">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <SupportSection />
+        <section aria-labelledby="industries" className="mt-16">
+          <h2 id="industries" className="sr-only">Industries</h2>
+          <IndustriesSection />
         </section>
 
-        {/* CONTACT */}
-        <section
-          id="contact"
-          className="scroll-mt-24 bg-zinc-100 py-20 text-black dark:bg-zinc-800 dark:text-white"
-          aria-label="Contact"
-        >
-          <div className="mx-auto max-w-6xl px-5">
-            <h2 className="text-3xl font-extrabold tracking-tight md:text-4xl">Contact</h2>
-            <p className="mt-2 max-w-2xl text-zinc-700 dark:text-zinc-200">
-              Email us at{" "}
-              <a href={`mailto:${import.meta.env.VITE_SALES_EMAIL || "sales@example.com"}`} className="underline">
-                {import.meta.env.VITE_SALES_EMAIL || "sales@example.com"}
-              </a>{" "}
-              or open the form above.
-            </p>
+        {/* Charging power */}
+        <section aria-labelledby="charging" className="mt-16">
+          <h2 id="charging" className="sr-only">Charging</h2>
+          <ChargingPowerSection />
+        </section>
 
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={() => {
-                  openLead("Contact CTA");
-                  trackEvent("contactOpen", { where: "contact_section", label: "Talk to Sales" });
-                }}
-                className="rounded-full bg-black px-5 py-3 font-semibold text-white dark:bg-white dark:text-black"
-              >
-                Talk to Sales
-              </button>
+        {/* TCO calculator */}
+        <section aria-labelledby="tco" className="mt-16">
+          <h2 id="tco" className="sr-only">Total Cost of Ownership</h2>
+          <TcoCalculator />
+        </section>
 
-              <a
-                href="/brochure.pdf"
-                onClick={() => trackEvent("brochureDownload", { file: "/brochure.pdf", where: "contact_section" })}
-                className="rounded-full border border-black/30 px-5 py-3 dark:border-white/40"
-              >
-                Download brochure (PDF)
-              </a>
-            </div>
+        {/* Configurator */}
+        <section aria-labelledby="configurator" className="mt-16">
+          <h2 id="configurator" className="sr-only">Configurator</h2>
+          <ConfiguratorSection />
+        </section>
 
-            <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
-              This site is protected by reCAPTCHA and the Google{" "}
-              <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">
-                Privacy Policy
-              </a>{" "}
-              and{" "}
-              <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="underline">
-                Terms of Service
-              </a>{" "}
-              apply.
-            </p>
-          </div>
+        {/* Production timeline */}
+        <section aria-labelledby="timeline" className="mt-16">
+          <h2 id="timeline" className="sr-only">Production Timeline</h2>
+          <ProductionTimeline />
+        </section>
+
+        {/* Resources & support */}
+        <section aria-labelledby="resources" className="mt-16">
+          <h2 id="resources" className="sr-only">Resources</h2>
+          <ResourcesSection />
+        </section>
+
+        <section aria-labelledby="service" className="mt-16">
+          <h2 id="service" className="sr-only">Service & Warranty</h2>
+          <ServiceWarrantySection />
+        </section>
+
+        <section aria-labelledby="support" className="mt-16 mb-24">
+          <h2 id="support" className="sr-only">Support</h2>
+          <SupportSection />
         </section>
       </main>
 
-      {/* Sticky CTA — hidden when compare table is pinned/mini */}
-      {!bottomBlocked && (
-        <button
-          onClick={() => {
-            openLead("Sticky CTA");
-            trackEvent("contactOpen", { where: "sticky_cta", label: "Talk to Sales" });
-          }}
-          aria-label="Talk to Sales"
-          className="fixed right-6 z-40 bottom-6 rounded-full bg-black px-5 py-3 font-semibold text-white shadow-xl
-                     hover:opacity-90 dark:bg-white dark:text-black inline-flex items-center gap-2"
-          style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)" }}
-        >
-          <MessageSquare className="h-4 w-4" />
-          Talk to Sales
-        </button>
-      )}
-
-      <footer className="border-t border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
-        <div className="mx-auto max-w-6xl px-5 py-6 text-sm text-zinc-600 dark:text-zinc-400">
-          © {new Date().getFullYear()} APRO. All rights reserved.
-          <div className="mt-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-500">
-              Company information
-            </h3>
-            <p className="mt-1">KUKJE INTERTRADE Co., Ltd.</p>
-            <p className="mt-1">
-              Address: Floor 12, 124, Sagimakgol-ro, Jungwon-gu, Seongnam-si, Gyeonggi-do, Republic of Korea
-            </p>
-
-            <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-500">
-              This site is protected by reCAPTCHA and the Google{" "}
-              <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">
-                Privacy Policy
-              </a>{" "}
-              and{" "}
-              <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="underline">
-                Terms of Service
-              </a>{" "}
-              apply.
-            </p>
-          </div>
-        </div>
-      </footer>
-
+      {/* Keep this mounted near the end so it can portal correctly */}
       <LeadModal />
-      <ModelDetail />
     </div>
   );
 }
