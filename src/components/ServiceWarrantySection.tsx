@@ -15,11 +15,7 @@ export default function ServiceWarrantySection() {
             },
             {
               title: "Warranty Matrix",
-              items: [
-                "Battery — standard term by chemistry",
-                "Motor & Controller — limited warranty",
-                "Chassis & Trim — limited warranty",
-              ],
+              items: ["Battery — standard term by chemistry", "Motor & Controller — limited warranty", "Chassis & Trim — limited warranty"],
               foot: "Final terms vary by market.",
             },
             {
@@ -40,15 +36,13 @@ export default function ServiceWarrantySection() {
             >
               <h3 className="font-semibold">{c.title}</h3>
               {"body" in c ? (
-                <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">{c.body as string}</p>
+                <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">{(c as any).body}</p>
               ) : (
                 <ul className="mt-2 text-sm text-zinc-700 dark:text-zinc-300 space-y-1">
-                  {(c.items as string[]).map((t, idx) => (
-                    <li key={idx}>{t}</li>
-                  ))}
+                  {(c as any).items.map((t: string, idx: number) => <li key={idx}>{t}</li>)}
                 </ul>
               )}
-              <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">{c.foot}</p>
+              <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">{(c as any).foot}</p>
             </article>
           ))}
         </div>
