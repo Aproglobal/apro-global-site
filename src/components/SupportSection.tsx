@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { trackEvent } from "../services/analytics";
 
 /**
- * 원문 복기 + 반응형/미세 인터랙션만 정리
+ * Support section with hover/keyboard analytics and accessible mobile accordions.
  */
 export default function SupportSection() {
   useEffect(() => {
@@ -84,7 +84,7 @@ export default function SupportSection() {
             >
               <summary className="cursor-pointer list-none p-4 font-semibold flex items-center justify-between">
                 {block.title}
-                <span>▾</span>
+                <span aria-hidden>▾</span>
               </summary>
               <div className="p-4 pt-0">
                 <ul className="space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
