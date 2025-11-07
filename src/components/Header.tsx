@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
 
 type NavItem = { id: string; label: string };
-const NAV: NavItem[] = [
+
+const PRIMARY: NavItem[] = [
   { id: "models", label: "Models" },
   { id: "technology", label: "Technology" },
   { id: "timeline", label: "Timeline" },
@@ -11,12 +12,25 @@ const NAV: NavItem[] = [
   { id: "contact", label: "Contact" },
 ];
 
+const SECONDARY: NavItem[] = [
+  { id: "industries", label: "Industries" },
+  { id: "charging", label: "Charging" },
+  { id: "resources", label: "Resources" },
+  { id: "tco", label: "TCO" },
+  { id: "configurator", label: "Configurator" },
+  { id: "support", label: "Support" },
+];
+
+const ALL = [...PRIMARY, ...SECONDARY];
+
 export default function Header() {
   const [active, setActive] = useState<string>("models");
   const [open, setOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const barRef = useRef<HTMLDivElement | null>(null);
+  const moreRef = useRef<HTMLDivElement | null>(null);
 
-  // set header height CSS var so main can offset
+  // header height → CSS var
   useEffect(() => {
     const h = () => {
       const el = barRef.current;
@@ -29,9 +43,9 @@ export default function Header() {
     return () => ro.disconnect();
   }, []);
 
-  // Scrollspy (IntersectionObserver)
+  // Scrollspy
   useEffect(() => {
-    const sections = NAV.map(n => document.getElementById(n.id)).filter(Boolean) as HTMLElement[];
+    const sections = ALL.map(n => document.getElementById(n.id)).filter(Boolean) as HTMLElement[];
     if (sections.length === 0) return;
     const obs = new IntersectionObserver(
       entries => {
@@ -46,48 +60,110 @@ export default function Header() {
     return () => obs.disconnect();
   }, []);
 
-  const onClickNav = (id: string) => {
+  // close More on outside click
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (!moreRef.current) return;
+      if (!moreRef.current.contains(e.target as Node)) setMoreOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  const scrollToId = (id: string) => {
     setOpen(false);
+    setMoreOpen(false);
     const el = document.getElementById(id);
     if (!el) return;
-    const y = el.getBoundingClientRect().top + window.scrollY - (parseInt(getComputedStyle(document.documentElement).getPropertyValue("--header-h")) || 64) - 8;
+    const headerH =
+      parseInt(getComputedStyle(document.documentElement).getPropertyValue("--header-h")) || 64;
+    const y = el.getBoundingClientRect().top + window.scrollY - headerH - 8;
     window.scrollTo({ top: y, behavior: "smooth" });
   };
 
-  const links = useMemo(
-    () => (
-      <nav className="relative">
-        <ul className="flex items-center gap-1">
-          {NAV.map(item => {
-            const isActive = active === item.id;
-            return (
-              <li key={item.id} className="relative">
+  const LinkPill = ({ item }: { item: NavItem }) => {
+    const isActive = active === item.id;
+    return (
+      <button
+        onClick={() => scrollToId(item.id)}
+        className={`px-3 py-2 rounded-full text-sm font-medium transition
+        ${isActive ? "text-black dark:text-white" : "text-zinc-600 dark:text-zinc-300 hover:text-black dark:hover:text-white"}`}
+      >
+        {item.label}
+        {isActive && (
+          <span className="absolute inset-0 -z-10 rounded-full bg-zinc-900/5 dark:bg-white/10" />
+        )}
+      </button>
+    );
+  };
+
+  const DesktopNav = useMemo(() => {
+    const moreActive = SECONDARY.some(s => s.id === active);
+    return (
+      <nav className="relative hidden md:flex items-center gap-1">
+        {PRIMARY.map(item => (
+          <div key={item.id} className="relative">
+            <LinkPill item={item} />
+          </div>
+        ))}
+        <div className="relative" ref={moreRef}>
+          <button
+            onClick={() => setMoreOpen(v => !v)}
+            className={`px-3 py-2 rounded-full text-sm font-medium transition
+            ${moreActive ? "text-black dark:text-white" : "text-zinc-600 dark:text-zinc-300 hover:text-black dark:hover:text-white"}`}
+          >
+            More
+          </button>
+          {moreOpen && (
+            <div
+              className="absolute right-0 mt-2 w-56 rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 shadow-lg p-2 z-50"
+            >
+              {SECONDARY.map(s => (
                 <button
-                  onClick={() => onClickNav(item.id)}
-                  className={`px-3 py-2 rounded-full text-sm font-medium transition
-                    ${isActive ? "text-black dark:text-white" : "text-zinc-600 dark:text-zinc-300 hover:text-black dark:hover:text-white"}`}
+                  key={s.id}
+                  onClick={() => scrollToId(s.id)}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm
+                    ${active === s.id ? "bg-zinc-100 dark:bg-zinc-800 font-semibold" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"}`}
                 >
-                  {item.label}
+                  {s.label}
                 </button>
-                {isActive && (
-                  <span className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-zinc-900/5 dark:bg-white/10" />
-                )}
-              </li>
-            );
-          })}
-        </ul>
+              ))}
+            </div>
+          )}
+        </div>
       </nav>
-    ),
-    [active]
+    );
+  }, [active, moreOpen]);
+
+  const MobileDrawer = () => (
+    <div className="md:hidden border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+      <div className="max-w-6xl mx-auto px-5 py-2">
+        <div className="grid grid-cols-2 gap-2">
+          {ALL.map(item => (
+            <button
+              key={item.id}
+              onClick={() => scrollToId(item.id)}
+              className={`px-3 py-2 rounded-lg text-sm border
+                ${active === item.id
+                  ? "border-black dark:border-white font-semibold"
+                  : "border-zinc-200 dark:border-zinc-700"}`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 
   return (
-    <header ref={barRef} className="fixed top-0 inset-x-0 z-50 backdrop-blur-md bg-white/70 dark:bg-black/40 border-b border-zinc-200/60 dark:border-zinc-800/60">
+    <header
+      ref={barRef}
+      className="fixed top-0 inset-x-0 z-50 backdrop-blur-md bg-white/70 dark:bg-black/40 border-b border-zinc-200/60 dark:border-zinc-800/60"
+    >
       <div className="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between">
         <a href="#home" className="font-extrabold tracking-tight text-lg">APRO</a>
-
-        <div className="hidden md:block">{links}</div>
-
+        {DesktopNav}
         <div className="flex items-center gap-2">
           <a
             href="#contact"
@@ -95,18 +171,16 @@ export default function Header() {
           >
             Talk to Sales
           </a>
-          <button className="md:hidden p-2 rounded-lg border border-zinc-200 dark:border-zinc-700" onClick={() => setOpen(s => !s)} aria-label="Toggle menu">
+          <button
+            className="md:hidden p-2 rounded-lg border border-zinc-200 dark:border-zinc-700"
+            onClick={() => setOpen(s => !s)}
+            aria-label="Toggle menu"
+          >
             {open ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
       </div>
-
-      {/* Mobile drawer */}
-      {open && (
-        <div className="md:hidden border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
-          <div className="max-w-6xl mx-auto px-5 py-2">{links}</div>
-        </div>
-      )}
+      {open && <MobileDrawer />}
     </header>
   );
 }
