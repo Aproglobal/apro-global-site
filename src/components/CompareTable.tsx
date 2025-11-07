@@ -1,56 +1,68 @@
 import React from "react";
 
-type Row = { key: string; g2: string; g3: string };
+type Row = {
+  feature: string;
+  g2: string;
+  g3: string;
+};
 
-const rows: Row[] = [
-  { key: "Seating", g2: "2+3 (5-seat)", g3: "2+3 (5-seat)" },
-  { key: "Battery", g2: "Lithium / Lead-acid", g3: "Lithium / Lead-acid" },
-  { key: "Top Speed", g2: "≈ 24 km/h (gov.)", g3: "≈ 24 km/h (gov.)" },
-  { key: "Wheelbase", g2: "Short / Long deck", g3: "Short / Long deck" },
-  { key: "Guidance", g2: "Electronic (opt.)", g3: "Electronic (opt.)" },
-  { key: "Warranty", g2: "Varies by market", g3: "Varies by market" },
+const ROWS: Row[] = [
+  { feature: "Seats", g2: "5", g3: "5" },
+  { feature: "Deck", g2: "Short / Long", g3: "Short / Long" },
+  { feature: "Battery", g2: "LiFePO₄ (48V)", g3: "LiFePO₄ (48V)" },
+  { feature: "Drive", g2: "2WD", g3: "2WD" },
+  { feature: "Charger", g2: "AC 6.6kW", g3: "AC 6.6kW + DC Optional" },
 ];
 
-function CompareTable() {
+export default function CompareTable() {
   return (
-    <section id="compare" className="w-full bg-white">
-      <div className="mx-auto max-w-7xl px-4 py-16">
-        <div className="mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-            Compare Models
-          </h2>
+    <section className="w-full bg-white">
+      <div className="mx-auto max-w-6xl px-6 py-16">
+        <header className="mb-8">
+          <h2 className="text-3xl font-bold tracking-tight">G2 vs G3</h2>
           <p className="mt-2 text-sm text-gray-600">
-            High-level differences between G2 and G3. Contact us for a detailed
-            spec sheet.
+            A quick spec-by-spec comparison of our core models.
           </p>
-        </div>
+        </header>
 
-        <div className="overflow-x-auto rounded-2xl border border-gray-200">
-          <table className="min-w-[640px] w-full text-left">
-            <thead className="bg-gray-50 text-gray-600 text-sm">
+        <div className="overflow-x-auto rounded-2xl border border-gray-200 shadow-sm">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 font-semibold">Key</th>
-                <th className="px-4 py-3 font-semibold">G2</th>
-                <th className="px-4 py-3 font-semibold">G3</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
+                  Feature
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
+                  G2
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
+                  G3
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 text-sm">
-              {rows.map((r) => (
-                <tr key={r.key}>
-                  <td className="px-4 py-3 font-medium text-gray-900">
-                    {r.key}
+            <tbody className="divide-y divide-gray-100 bg-white">
+              {ROWS.map((r) => (
+                <tr key={r.feature}>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-800">
+                    {r.feature}
                   </td>
-                  <td className="px-4 py-3">{r.g2}</td>
-                  <td className="px-4 py-3">{r.g3}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
+                    {r.g2}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
+                    {r.g3}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+
+        <p className="mt-4 text-xs text-gray-500">
+          Specs shown are representative; final configuration varies by market and
+          options.
+        </p>
       </div>
     </section>
   );
 }
-
-export default CompareTable;
-export { CompareTable };
