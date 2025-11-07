@@ -27,7 +27,7 @@ export default function ResourcesSection() {
               key={c.id}
               className="
                 group rounded-2xl border border-zinc-200 dark:border-zinc-800 
-                bg-white dark:bg-zinc-950 p-6
+                bg.white dark:bg-zinc-950 p-6
                 transition-all duration-200
                 hover:shadow-lg hover:-translate-y-0.5 hover:border-black/15 dark:hover:border-white/20
                 motion-reduce:transition-none motion-reduce:hover:translate-y-0
