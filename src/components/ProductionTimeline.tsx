@@ -7,7 +7,7 @@ type Props = {
   note?: string;
   /** Highlight by day number (1..N). Omit to disable emphasis. */
   progressDay?: number;
-  /** Show top summary boxes (lead time, phases) */
+  /** Show top summary boxes (lead time, phases). Defaults to true when steps > 2, otherwise false. */
   showSummary?: boolean;
 };
 
@@ -35,8 +35,11 @@ export default function ProductionTimeline({
   title = "Production & Delivery Timeline",
   note = "Note: Domestic delivery flow. Export process may differ.",
   progressDay,
-  showSummary = true,
+  showSummary,
 }: Props) {
+  const shouldShowSummary = showSummary ?? steps.length > 2;
+  const gridColsClass = steps.length <= 2 ? "grid-cols-2" : "grid-cols-4";
+
   return (
     <section id="timeline" className="py-20 bg-white text-black dark:bg-black dark:text-white scroll-mt-24">
       <div className="max-w-6xl mx-auto px-5">
@@ -44,7 +47,7 @@ export default function ProductionTimeline({
         {note ? <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{note}</p> : null}
 
         {/* Overview summary */}
-        {showSummary && (
+        {shouldShowSummary && (
           <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-3">
             {[
               { label: "Typical Lead Time", val: "~30 days" },
@@ -108,8 +111,11 @@ export default function ProductionTimeline({
         {/* Desktop grid */}
         <div className="mt-10 hidden md:block">
           <div className="relative">
-            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-zinc-200 dark:bg-zinc-800 z-0" />
-            <div className="relative z-10 grid grid-cols-4 gap-6">
+            {/* hide center guideline when only two steps */}
+            {steps.length > 2 && (
+              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-zinc-200 dark:bg-zinc-800 z-0" />
+            )}
+            <div className={`relative z-10 grid ${gridColsClass} gap-6`}>
               {steps.map((s, i) => {
                 const st = statusOf(s.day, progressDay);
                 const cardBorder =
