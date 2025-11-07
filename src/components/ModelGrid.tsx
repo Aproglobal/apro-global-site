@@ -11,7 +11,7 @@ function useReveal() {
     if (!el) return;
     const io = new IntersectionObserver(
       (entries) => entries.forEach((en) => en.isIntersecting && (setVisible(true), io.disconnect())),
-      { threshold: 0.15 }
+      { threshold: 0.15, rootMargin: "80px" }
     );
     io.observe(el);
     return () => io.disconnect();
