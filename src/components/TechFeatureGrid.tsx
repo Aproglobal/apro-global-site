@@ -21,9 +21,7 @@ export default function TechFeatureGrid({ items, lowRes = false, thumbMaxPx = 18
   // 카테고리 정렬
   const display = useMemo(() => {
     const order = ["Performance", "Control", "Comfort", "Service", "Protection", "Storage"];
-    return [...items].sort(
-      (a, b) => order.indexOf(a.category || "Performance") - order.indexOf(b.category || "Performance")
-    );
+    return [...items].sort((a, b) => order.indexOf(a.category || "Performance") - order.indexOf(b.category || "Performance"));
   }, [items]);
 
   return (
