@@ -10,8 +10,11 @@ on:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    # Concurrency per-branch so different branches don't cancel each other
     concurrency:
-      group: deploy-live
+      group: deploy-${{ github.ref_name }}
       cancel-in-progress: true
 
     steps:
@@ -22,6 +25,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Restore npm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
       # --- Build-time env for Vite (frontend public vars) ---
       - name: Create .env for build
@@ -36,6 +47,8 @@ jobs:
           cat .env | sed 's/=\(.*\)/=[HIDDEN]/'
 
       - name: Install deps
+        env:
+          npm_config_cache: ~/.npm
         run: |
           if [ -f package-lock.json ]; then
             npm ci
@@ -43,8 +56,20 @@ jobs:
             npm install
           fi
 
-      # --- Ensure optional UI deps present for CI builds (premium icons) ---
+      # --- Ensure Vite React plugin (fixes prior CI error) ---
+      - name: Ensure @vitejs/plugin-react present
+        shell: bash
+        run: |
+          if ! npm ls @vitejs/plugin-react >/dev/null 2>&1; then
+            echo "Installing @vitejs/plugin-react (dev dep)"
+            npm i -D @vitejs/plugin-react@^4
+          else
+            echo "@vitejs/plugin-react already present"
+          fi
+
+      # --- Optional premium icon set (your request) ---
       - name: Ensure lucide-react present
+        shell: bash
         run: |
           if ! npm ls lucide-react >/dev/null 2>&1; then
             echo "Installing lucide-react (not found in node_modules)"
@@ -99,6 +124,7 @@ jobs:
           RECAPTCHA_SECRET: ${{ secrets.RECAPTCHA_SECRET }}
         run: |
           set -euo pipefail
+          # 0) Skip if required secrets are missing
           missing=()
           [ -z "${SENDGRID_API_KEY:-}" ]  && missing+=("SENDGRID_API_KEY")
           [ -z "${SALES_TO:-}" ]         && missing+=("SALES_TO")
@@ -109,11 +135,14 @@ jobs:
             exit 0
           fi
 
+          # 1) ADC via service account
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/gcp.json"
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$GOOGLE_APPLICATION_CREDENTIALS"
 
+          # 2) Firebase CLI
           npm i -g firebase-tools@latest
 
+          # 3) Mirror GH secrets → Firebase Secret Manager
           sync_secret () {
             local NAME="$1"
             local VAL="$(printenv "$NAME" || true)"
@@ -131,6 +160,7 @@ jobs:
           sync_secret SALES_BCC
           sync_secret RECAPTCHA_SECRET
 
+          # 4) Build & deploy functions
           pushd functions
             if [ -f package-lock.json ]; then npm ci; else npm install; fi
             npm run build
@@ -141,14 +171,25 @@ jobs:
             --project "$FIREBASE_PROJECT_ID" \
             --non-interactive --force
 
-      # ---- Hosting: branch preview (channel = branch) ----
-      - name: Deploy to Firebase Hosting (Preview channel = branch)
+      # ---- Compute safe channel id from branch (lowercase, dash-only, <=20 chars) ----
+      - name: Prepare Preview Channel ID
+        id: preview
+        shell: bash
+        run: |
+          BRANCH="${{ github.ref_name }}"
+          SLUG=$(echo "$BRANCH" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9-]+/-/g' | sed -E 's/^-+|-+$//g' | cut -c1-20)
+          if [ -z "$SLUG" ]; then SLUG="preview"; fi
+          echo "PREVIEW_CHANNEL=$SLUG" >> $GITHUB_ENV
+          echo "Using preview channel: $SLUG"
+
+      # ---- Hosting: branch preview (channel = sanitized branch) ----
+      - name: Deploy to Firebase Hosting (Preview)
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
-          channelId: ${{ github.ref_name }}
+          channelId: ${{ env.PREVIEW_CHANNEL }}
 
       # ---- Hosting: always LIVE (you asked to deploy live on branch too) ----
       - name: Deploy to Firebase Hosting (LIVE)
