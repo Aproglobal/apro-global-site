@@ -11,6 +11,8 @@ const LINKS: LinkItem[] = [
   { href: "#timeline", label: "Timeline" },
   { href: "#service", label: "Service" },// src/components/Header.tsx
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import { Menu, X, ChevronDown, Phone } from "lucide-react";// src/components/Header.tsx
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Menu, X, ChevronDown, Phone } from "lucide-react";
 import { openLead } from "./LeadModal"; // same folder
 
