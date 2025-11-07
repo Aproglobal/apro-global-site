@@ -15,6 +15,7 @@ import { openLead } from "./LeadModal";
 type NavItem = { id: string; label: string };
 
 const LABELS: Record<string, string> = {
+  company: "Company",
   models: "Models",
   technology: "Technology",
   industries: "Industries",
@@ -26,10 +27,12 @@ const LABELS: Record<string, string> = {
   configurator: "Configurator",
   fleet: "Fleet",
   service: "Service",
+  partners: "Partners",
   contact: "Contact",
 };
 
 const CANDIDATE_IDS = [
+  "company",
   "models",
   "technology",
   "industries",
@@ -41,11 +44,12 @@ const CANDIDATE_IDS = [
   "configurator",
   "fleet",
   "service",
+  "partners",
   "contact",
-];
+] as const;
 
 /** -------------------------------
- *  Theme (시간대 자동 + 사용자가 Light/Dark 둘 중 하나만 고정)
+ *  Theme (2-state toggle + time-of-day auto if unset)
  * --------------------------------*/
 type UserPref = "light" | "dark" | null;
 const USER_KEY = "theme_user_pref";
@@ -109,7 +113,7 @@ function getDocTop(el: Element) {
   return rect.top + scrollY;
 }
 
-/** Header 높이를 CSS 변수로 반영 */
+/** Header height → CSS var */
 function setHeaderVar(px: number) {
   const r = document.documentElement;
   r.style.setProperty("--header-h", `${px}px`);
@@ -130,7 +134,49 @@ export default function Header() {
   const desktopScrollRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
 
-  /** Header 높이 → CSS 변수 */
+  // moving underline indicator
+  const indicatorRef = useRef<HTMLDivElement | null>(null);
+  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [indicator, setIndicator] = useState<{ left: number; width: number; visible: boolean }>({
+    left: 0,
+    width: 0,
+    visible: false,
+  });
+
+  const updateIndicator = useCallback(
+    (id?: string) => {
+      const curId = id ?? active;
+      const wrap = desktopScrollRef.current;
+      const btn = curId ? buttonRefs.current[curId] : null;
+      if (!wrap || !btn) {
+        setIndicator((p) => ({ ...p, visible: false }));
+        return;
+      }
+      const left = btn.offsetLeft - wrap.scrollLeft;
+      const width = btn.offsetWidth;
+      setIndicator({ left, width, visible: true });
+    },
+    [active]
+  );
+
+  useEffect(() => {
+    updateIndicator();
+  }, [active, updateIndicator]);
+
+  useEffect(() => {
+    const wrap = desktopScrollRef.current;
+    if (!wrap) return;
+    const onScroll = () => updateIndicator();
+    const onResize = () => updateIndicator();
+    wrap.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+    return () => {
+      wrap.removeEventListener("scroll", onScroll as any);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [updateIndicator]);
+
+  /** Header height → CSS var */
   useLayoutEffect(() => {
     if (!headerRef.current) return;
     const el = headerRef.current;
@@ -161,12 +207,12 @@ export default function Header() {
     const recalc = () => {
       const existing = CANDIDATE_IDS
         .map((id) => ({ id, el: document.getElementById(id) }))
-        .filter(
-          (x): x is { id: string; el: HTMLElement } => !!x && !!x.el
-        )
+        .filter((x): x is { id: string; el: HTMLElement } => !!x && !!x.el)
         .sort((a, b) => getDocTop(a.el) - getDocTop(b.el))
         .map(({ id }) => ({ id, label: LABELS[id] || id }));
       setNavItems(existing);
+      // after navItems update, line will be updated by effect watching "active"
+      setTimeout(() => updateIndicator(existing[0]?.id), 0);
     };
     recalc();
     window.addEventListener("load", recalc);
@@ -180,7 +226,7 @@ export default function Header() {
       window.removeEventListener("resize", onResize);
       if (t) window.clearTimeout(t);
     };
-  }, []);
+  }, [updateIndicator]);
 
   /** Active section highlight + bottom fallback */
   useEffect(() => {
@@ -198,7 +244,6 @@ export default function Header() {
       },
       { root: null, rootMargin: "-30% 0px -30% 0px", threshold: [0, 0.2, 0.5, 1] }
     );
-
     const targets: HTMLElement[] = [];
     navItems.forEach((n) => {
       const el = document.getElementById(n.id);
@@ -212,8 +257,7 @@ export default function Header() {
       const atBottom =
         window.innerHeight + (window.scrollY || 0) >=
         (document.scrollingElement?.scrollHeight ||
-          document.body.scrollHeight) -
-          2;
+          document.body.scrollHeight) - 2;
       if (atBottom && navItems.length) setActive(navItems[navItems.length - 1].id);
     };
     window.addEventListener("scroll", onScrollBottomFallback, { passive: true });
@@ -306,30 +350,50 @@ export default function Header() {
 
             {/* Center: Desktop Nav */}
             <div className="relative hidden lg:flex flex-1 min-w-0 items-center justify-center px-2">
+              {/* soft fades at edges */}
               <div className="pointer-events-none absolute left-0 top-0 h-full w-6 bg-gradient-to-r from-white/90 dark:from-black/70 to-transparent" />
               <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-white/90 dark:from-black/70 to-transparent" />
+
               <div
                 ref={desktopScrollRef}
-                className="mx-auto overflow-x-auto overscroll-x-contain"
+                className="relative mx-auto overflow-x-auto overscroll-x-contain pb-[10px]"
                 style={{
-                  scrollbarWidth: "thin",
-                  maxWidth: "min(760px, calc(100vw - 280px))",
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none",
+                  maxWidth: "min(820px, calc(100vw - 280px))",
                 }}
               >
-                <ul className="flex items-center gap-1 whitespace-nowrap pr-6">
+                {/* floating underline indicator */}
+                <div
+                  ref={indicatorRef}
+                  className={[
+                    "pointer-events-none absolute bottom-[2px] h-[2px] rounded-full",
+                    "bg-gradient-to-r from-zinc-900/80 via-zinc-900/90 to-zinc-900/80",
+                    "dark:from-white/70 dark:via-white/90 dark:to-white/70",
+                    "transition-all duration-300 ease-out",
+                  ].join(" ")}
+                  style={{
+                    left: indicator.left,
+                    width: indicator.width,
+                    opacity: indicator.visible ? 1 : 0,
+                  }}
+                />
+
+                <ul className="relative flex items-center gap-2 whitespace-nowrap pr-6">
                   {navItems.map((item) => {
                     const isActive = active === item.id;
                     return (
                       <li key={item.id}>
                         <button
                           type="button"
+                          ref={(el) => (buttonRefs.current[item.id] = el)}
                           onClick={() => onNavClick(item.id)}
                           className={[
-                            "px-3 py-2 rounded-full text-sm font-medium transition-all",
-                            "hover:-translate-y-0.5 hover:shadow-sm",
+                            "px-3 py-2 rounded-md text-sm font-medium transition-all",
+                            "hover:-translate-y-0.5 hover:opacity-90",
                             isActive
-                              ? "bg-black text-white dark:bg-white dark:text-black"
-                              : "text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70",
+                              ? "text-zinc-900 dark:text-white"
+                              : "text-zinc-700 dark:text-zinc-300",
                             "focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20",
                           ].join(" ")}
                           aria-current={isActive ? "page" : undefined}
@@ -345,7 +409,7 @@ export default function Header() {
 
             {/* Right: Theme + CTA + Hamburger */}
             <div className="flex items-center gap-2 flex-none ml-auto">
-              {/* Theme (2-state toggle only) */}
+              {/* Theme toggle */}
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -358,7 +422,7 @@ export default function Header() {
                 </span>
               </button>
 
-              {/* CTA on md+; 모바일은 드로어 내부 */}
+              {/* CTA on md+; mobile → in drawer */}
               <button
                 type="button"
                 onClick={onTalkToSales}
@@ -368,7 +432,7 @@ export default function Header() {
                 Talk to Sales
               </button>
 
-              {/* Hamburger (mobile only) */}
+              {/* Hamburger */}
               <button
                 type="button"
                 className="inline-flex lg:hidden items-center justify-center w-10 h-10 rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
@@ -456,7 +520,7 @@ export default function Header() {
                 </button>
               </div>
 
-              {/* Menu — DOM 순서 반영 */}
+              {/* Menu — DOM order based */}
               <ul className="space-y-1">
                 {navItems.map((item) => {
                   const isActive = active === item.id;
@@ -484,7 +548,6 @@ export default function Header() {
           </div>
         </div>
       </header>
-      {/* ✅ Spacer 제거 (헤더 높이는 CSS 변수로 보정) */}
     </>
   );
 }
