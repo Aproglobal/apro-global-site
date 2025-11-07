@@ -9,7 +9,18 @@ import ChargingPowerSection from "../components/ChargingPowerSection";
 import FleetSection from "../components/FleetSection";
 // import TechSection from "../components/TechSection";  // requires `copy`
 import TechFeatureGrid from "../components/TechFeatureGrid";
-// import ProductionTimeline from "../components/ProductionTimeline"; // requires `steps`
+// import ProductionTimeline from "../components/ProductionTimeline"; // requires `steps`// src/pages/App.tsx
+import React from "react";
+
+// Components
+import Header from "../components/Header";
+import ModelGrid from "../components/ModelGrid";
+import CompareTable from "../components/CompareTable";
+import ChargingPowerSection from "../components/ChargingPowerSection";
+import FleetSection from "../components/FleetSection";
+import TechSection from "../components/TechSection";
+import TechFeatureGrid from "../components/TechFeatureGrid";
+import ProductionTimeline from "../components/ProductionTimeline";
 import ServiceWarrantySection from "../components/ServiceWarrantySection";
 import ResourcesSection from "../components/ResourcesSection";
 import SupportSection from "../components/SupportSection";
@@ -29,6 +40,7 @@ class SectionBoundary extends React.Component<
     return { hasError: true, error };
   }
   componentDidCatch(error: unknown, info: unknown) {
+    // Keep this console for quick field debugging
     // eslint-disable-next-line no-console
     console.error(`[Section Error] ${this.props.name}`, error, info);
   }
@@ -50,34 +62,47 @@ const Safe: React.FC<{ name: string; children: React.ReactNode }> = ({ name, chi
   <SectionBoundary name={name}>{children}</SectionBoundary>
 );
 
-/** Cast components to any so TS doesn't enforce required props at call sites */
+// Cast to any so TS won’t block the build if these components require props
 const ModelGridAny = ModelGrid as unknown as React.ComponentType<any>;
-// const CompareTableAny = CompareTable as unknown as React.ComponentType<any>;
+const CompareTableAny = CompareTable as unknown as React.ComponentType<any>;
 const ChargingPowerSectionAny = ChargingPowerSection as unknown as React.ComponentType<any>;
 const FleetSectionAny = FleetSection as unknown as React.ComponentType<any>;
-// const TechSectionAny = TechSection as unknown as React.ComponentType<any>;
+const TechSectionAny = TechSection as unknown as React.ComponentType<any>;
 const TechFeatureGridAny = TechFeatureGrid as unknown as React.ComponentType<any>;
-// const ProductionTimelineAny = ProductionTimeline as unknown as React.ComponentType<any>;
+const ProductionTimelineAny = ProductionTimeline as unknown as React.ComponentType<any>;
 const TcoCalculatorAny = TcoCalculator as unknown as React.ComponentType<any>;
 const ConfiguratorSectionAny = ConfiguratorSection as unknown as React.ComponentType<any>;
 const ServiceWarrantySectionAny = ServiceWarrantySection as unknown as React.ComponentType<any>;
 const ResourcesSectionAny = ResourcesSection as unknown as React.ComponentType<any>;
 const SupportSectionAny = SupportSection as unknown as React.ComponentType<any>;
 
+/** 
+ * Safe, minimal props to avoid runtime crashes.
+ * If your components expect richer shapes, replace these with real data later.
+ */
+const compareItems: any[] = [];           // If CompareTable maps, empty array is safe
+const techFeatureItems: any[] = [];       // If TechFeatureGrid maps, empty array is safe
+const productionSteps: any[] = [];        // If ProductionTimeline maps, empty array is safe
+const techCopy: any = {                   // Keep fields optional to avoid destructure errors
+  title: "APRO Technology",
+  subtitle: "",
+  bullets: [],
+  notes: "",
+};
+
 export default function App() {
   return (
     <>
       <Header />
+
       <main className="min-h-screen">
         <Safe name="ModelGrid">
           <ModelGridAny />
         </Safe>
 
-        {/* Leave CompareTable off until we confirm the exact prop name/shape
         <Safe name="CompareTable">
-          <CompareTableAny items={[]} />
+          <CompareTableAny items={compareItems} />
         </Safe>
-        */}
 
         <Safe name="ChargingPowerSection">
           <ChargingPowerSectionAny />
@@ -87,22 +112,17 @@ export default function App() {
           <FleetSectionAny />
         </Safe>
 
-        {/* TechSection needs `copy`; enable when ready
         <Safe name="TechSection">
-          <TechSectionAny copy={{}} />
+          <TechSectionAny copy={techCopy} />
         </Safe>
-        */}
 
-        {/* TechFeatureGrid often requires `items` — pass empty to avoid .map on undefined */}
         <Safe name="TechFeatureGrid">
-          <TechFeatureGridAny items={[]} />
+          <TechFeatureGridAny items={techFeatureItems} />
         </Safe>
 
-        {/* ProductionTimeline needs `steps`; enable when ready
         <Safe name="ProductionTimeline">
-          <ProductionTimelineAny steps={[]} />
+          <ProductionTimelineAny steps={productionSteps} />
         </Safe>
-        */}
 
         <Safe name="TcoCalculator">
           <TcoCalculatorAny />
