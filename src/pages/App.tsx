@@ -330,4 +330,103 @@ function ContactSection() {
           </div>
           <div className="text-sm">TEL: 031-739-3200</div>
           <div className="mt-4 text-xs text-zinc-500">
-            For APRO cart inquiries, cli
+            For APRO cart inquiries, click “Talk to Sales” in the header.
+          </div>
+        </div>
+        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6">
+          <div className="text-sm text-zinc-500">Service Factory</div>
+          <div className="mt-1 text-sm">TEL: 031-643-3077</div>
+          <div className="text-sm">FAX: 031-643-3087</div>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// -------------------------------------
+// App layout
+// -------------------------------------
+export default function App() {
+  return (
+    <>
+      <Header />
+      <main id="main">
+        {/* Product / Tech */}
+        <Guard name="Models">
+          <Section id="models">
+            <ModelGrid />
+          </Section>
+        </Guard>
+
+        <Guard name="Technology">
+          <Section id="technology" title="Technology">
+            <TechSection />
+          </Section>
+        </Guard>
+
+        <Guard name="Industries">
+          <Section id="industries" title="Industries">
+            <IndustriesSection />
+          </Section>
+        </Guard>
+
+        <Guard name="Compare">
+          <Section id="compare" title="Compare">
+            <CompareTable />
+          </Section>
+        </Guard>
+
+        <Guard name="Charging">
+          <Section id="charging" title="Charging & Power">
+            <ChargingPowerSection />
+          </Section>
+        </Guard>
+
+        <Guard name="Resources">
+          <Section id="resources" title="Resources">
+            <ResourcesSection />
+          </Section>
+        </Guard>
+
+        <Guard name="Support">
+          <Section id="support" title="Support">
+            <SupportSection />
+          </Section>
+        </Guard>
+
+        <Guard name="Timeline">
+          <Section id="timeline" title="Production Timeline">
+            <ProductionTimeline />
+          </Section>
+        </Guard>
+
+        <Guard name="Configurator">
+          <Section id="configurator" title="Configurator">
+            <ConfiguratorSection />
+          </Section>
+        </Guard>
+
+        <Guard name="Fleet">
+          <Section id="fleet" title="Fleet">
+            <FleetSection />
+          </Section>
+        </Guard>
+
+        <Guard name="Service / Warranty">
+          <Section id="service" title="Service & Warranty">
+            <ServiceWarrantySection />
+          </Section>
+        </Guard>
+
+        {/* Premium company info (not in header nav) */}
+        <CompanyIntroSection />
+        <CompanyHistorySection />
+        <OrganizationSection />
+        <PartnersSection />
+
+        {/* Contact (in header nav) */}
+        <ContactSection />
+      </main>
+    </>
+  );
+}
