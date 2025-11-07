@@ -1,6 +1,4 @@
-// src/pages/App.tsx
 import React, { useEffect, useMemo, useState } from "react";
-
 import Header from "../components/Header";
 import ModelGrid from "../components/ModelGrid";
 import CompareTable from "../components/CompareTable";
@@ -9,7 +7,6 @@ import FleetSection from "../components/FleetSection";
 import SupportSection from "../components/SupportSection";
 import LeadModal, { openLead } from "../components/LeadModal";
 import ModelDetail from "../components/ModelDetail";
-
 import { getVariant } from "../utils/ab";
 import { setupScrollDepth, trackEvent, initAnalytics } from "../services/analytics";
 import { initThemeWatcher } from "../utils/theme";
@@ -20,7 +17,7 @@ import { getTechCopy } from "../data/technology";
 import ProductionTimeline from "../components/ProductionTimeline";
 import { TIMELINE_STEPS } from "../data/timeline";
 
-// NEW sections
+// Sections
 import IndustriesSection from "../components/IndustriesSection";
 import ServiceWarrantySection from "../components/ServiceWarrantySection";
 import ChargingPowerSection from "../components/ChargingPowerSection";
@@ -28,9 +25,8 @@ import ResourcesSection from "../components/ResourcesSection";
 import TcoCalculator from "../components/TcoCalculator";
 import ConfiguratorSection from "../components/ConfiguratorSection";
 
-// ✅ Added
-import CompanySection from "../components/CompanySection"; // make sure this file exists
-import ContactCompanyPartners from "../components/ContactCompanyPartners"; // the one you just added
+// ✅ New consolidated section (no partners)
+import ContactCompany from "../components/ContactCompany";
 
 // SEO
 import SEO from "../components/SEO";
@@ -52,7 +48,7 @@ export default function App() {
 
   const techCopy = useMemo(() => getTechCopy(), []);
 
-  // Hide sticky CTA when compare takes over bottom
+  // Hide sticky CTA when compare occupies the bottom
   const [bottomBlocked, setBottomBlocked] = useState(false);
   useEffect(() => {
     let pinnedCount = 0;
@@ -165,11 +161,7 @@ export default function App() {
                 <button
                   onClick={() => {
                     openLead("Hero CTA");
-                    trackEvent("heroCtaClick", {
-                      where: "hero",
-                      label: primaryCta,
-                      ab_variant: variant,
-                    });
+                    trackEvent("heroCtaClick", { where: "hero", label: primaryCta, ab_variant: variant });
                   }}
                   className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
                   aria-label="Open sales contact form"
@@ -181,11 +173,7 @@ export default function App() {
                   <a
                     href="#models"
                     onClick={() =>
-                      trackEvent("modelExploreClick", {
-                        where: "hero",
-                        label: secondaryCta,
-                        ab_variant: variant,
-                      })
+                      trackEvent("modelExploreClick", { where: "hero", label: secondaryCta, ab_variant: variant })
                     }
                     className="px-5 py-3 rounded-full border border-black/40 text-black dark:border-white/60 dark:text-white"
                     aria-label="Jump to models section"
@@ -196,11 +184,7 @@ export default function App() {
                   <a
                     href="/brochure.pdf"
                     onClick={() =>
-                      trackEvent("brochureDownload", {
-                        file: "/brochure.pdf",
-                        where: "hero",
-                        ab_variant: variant,
-                      })
+                      trackEvent("brochureDownload", { file: "/brochure.pdf", where: "hero", ab_variant: variant })
                     }
                     className="px-5 py-3 rounded-full border border-black/40 text-black dark:border-white/60 dark:text-white"
                     aria-label="Download brochure"
@@ -280,11 +264,8 @@ export default function App() {
           <SupportSection />
         </section>
 
-        {/* ✅ Company (optional but recommended, sits above Contact) */}
-        <CompanySection />
-
-        {/* ✅ Contact + Company + Partners (replaces your old Contact block) */}
-        <ContactCompanyPartners />
+        {/* ✅ Consolidated “Contact & Company” (no partners) */}
+        <ContactCompany />
       </main>
 
       {/* Sticky CTA — hidden when compare pins at bottom */}
@@ -313,7 +294,6 @@ export default function App() {
               Address: Floor 12, 124, Sagimakgol-ro, Jungwon-gu, Seongnam-si, Gyeonggi-do, Republic of Korea
             </p>
 
-            {/* reCAPTCHA policy note (mobile badge hidden via CSS) */}
             <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-500">
               This site is protected by reCAPTCHA and the Google{" "}
               <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">
