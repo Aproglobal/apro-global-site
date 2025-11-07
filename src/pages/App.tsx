@@ -7,19 +7,14 @@ import SectionFrame from "../components/SectionFrame";
 import LeadModal, { openLead } from "../components/LeadModal";
 import ModelDetail from "../components/ModelDetail";
 
-// Content sections
+// Sections
 import ModelGrid from "../components/ModelGrid";
 import CompareTable from "../components/CompareTable";
 import IndustriesSection from "../components/IndustriesSection";
 import ServiceWarrantySection from "../components/ServiceWarrantySection";
 import ChargingPowerSection from "../components/ChargingPowerSection";
-import ConfiguratorSection from "../components/ConfiguratorSection";
 import SupportSection from "../components/SupportSection";
 import ContactCompany from "../components/ContactCompany";
-
-// Premium, one-item-at-a-time renderers
-import StepGallery from "../components/StepGallery";
-import FeatureGroupSection from "../components/FeatureGroupSection";
 
 // SEO
 import SEO from "../components/SEO";
@@ -30,98 +25,294 @@ import { initThemeWatcher } from "../utils/theme";
 import { loadRecaptcha } from "../lib/recaptcha";
 import { initAnalytics, setupScrollDepth, trackEvent } from "../services/analytics";
 
-/** ------------------------------------------------
- * Slides: Electronic Guidance
- * (Update image paths to real assets under /public/guidance/*)
- * ------------------------------------------------- */
-const GUIDANCE_ELECTRONIC_SLIDES = [
-  {
-    id: "e-line",
-    title: "Buried Guidance Line",
-    subtitle: "Defines the driving route via underground wire",
-    img: "/guidance/egps_line.jpg",
-    bullets: [
-      "Guidance wire embedded along the cart path",
-      "Route design aligned with course policies",
-      "Durable, waterproof installation for long-term operation"
-    ],
-    cta: { label: "Design a route", href: "#contact" }
-  },
-  {
-    id: "e-sensor",
-    title: "Underbody Guidance Sensor",
-    subtitle: "Detects the wire while driving",
-    img: "/guidance/egps_sensor.jpg",
-    bullets: [
-      "Underbody sensor continuously detects the embedded line",
-      "Real-time left/right correction minimizes deviation",
-      "Diagnostic mode supports quick maintenance checks"
-    ]
-  },
-  {
-    id: "e-controller",
-    title: "Motor Controller Integration",
-    subtitle: "Signals delivered to the drive controller",
-    img: "/guidance/egps_controller.jpg",
-    bullets: [
-      "Sensor deviation is fed into the controller",
-      "Speed/steering correction for stable tracking",
-      "Zone-based speed and stop scenarios"
-    ]
-  },
-  {
-    id: "e-ops",
-    title: "Operations & Safety",
-    subtitle: "Speed & zone control, protective rules",
-    img: "/guidance/egps_ops.jpg",
-    bullets: [
-      "Entry restriction to protect fairways and sensitive areas",
-      "Auto slow-down on bridges and steep grades",
-      "Off-route/stop event logging for audits"
-    ]
-  }
-] as const;
+// -------------------------------------------------------------
+// Lightweight, accessible gallery with arrows + numbered dots
+// -------------------------------------------------------------
+type Slide = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  img: string; // /public path
+  bullets?: string[];
+  cta?: { label: string; href: string };
+};
 
-/** ------------------------------------------------
- * Slides: Voice Guidance
- * ------------------------------------------------- */
-const GUIDANCE_VOICE_SLIDES = [
+function GalleryPager({
+  id,
+  title,
+  note,
+  slides,
+  startIndex = 0,
+}: {
+  id?: string;
+  title?: string;
+  note?: string;
+  slides: ReadonlyArray<Slide>;
+  startIndex?: number;
+}) {
+  const [idx, setIdx] = useState(startIndex);
+  const total = slides.length;
+  const go = (n: number) => setIdx(((n % total) + total) % total);
+  const prev = () => go(idx - 1);
+  const next = () => go(idx + 1);
+
+  const current = slides[idx];
+
+  return (
+    <SectionFrame id={id} title={title} note={note}>
+      <div className="relative">
+        {/* Big media */}
+        <div className="aspect-[16/9] w-full overflow-hidden rounded-3xl bg-zinc-100 dark:bg-zinc-900">
+          <img
+            src={current.img}
+            alt={current.title}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        </div>
+
+        {/* Content under image */}
+        <div className="mt-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-xl md:text-2xl font-bold">{current.title}</h3>
+              {current.subtitle ? (
+                <p className="mt-1 text-zinc-700 dark:text-zinc-300">{current.subtitle}</p>
+              ) : null}
+            </div>
+            {/* Arrows on the right */}
+            <div className="shrink-0 flex items-center gap-2">
+              <button
+                aria-label="Previous"
+                onClick={prev}
+                className="h-10 w-10 rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              >
+                ‹
+              </button>
+              <button
+                aria-label="Next"
+                onClick={next}
+                className="h-10 w-10 rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              >
+                ›
+              </button>
+            </div>
+          </div>
+
+          {current.bullets?.length ? (
+            <ul className="mt-4 grid gap-2 text-sm md:text-base text-zinc-800 dark:text-zinc-200">
+              {current.bullets.map((b, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className="mt-1.5 inline-block h-1.5 w-1.5 rounded-full bg-zinc-400 dark:bg-zinc-600" />
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          {current.cta ? (
+            <div className="mt-5">
+              <a
+                href={current.cta.href}
+                onClick={() => trackEvent("gallery_cta_click", { id: current.id, label: current.cta?.label })}
+                className="inline-block px-4 py-2 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold"
+              >
+                {current.cta.label}
+              </a>
+            </div>
+          ) : null}
+        </div>
+
+        {/* Numbered dots in top-right corner */}
+        <div className="absolute right-4 top-4 flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-xs text-white dark:bg-white/70 dark:text-black">
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => go(i)}
+              aria-label={`Go to slide ${i + 1}`}
+              className={[
+                "h-6 min-w-6 px-1 rounded-full grid place-items-center",
+                i === idx ? "bg-white text-black dark:bg-black dark:text-white" : "opacity-80",
+              ].join(" ")}
+            >
+              {i + 1}
+            </button>
+          ))}
+        </div>
+      </div>
+    </SectionFrame>
+  );
+}
+
+// -------------------------------------------------------------
+// Content: Performance, Technology, Electronic & Voice Guidance
+// (Images are placeholders — point to your real assets)
+// -------------------------------------------------------------
+
+// PERFORMANCE — focus on powertrain, battery, chassis/ride
+const PERFORMANCE_SLIDES: ReadonlyArray<Slide> = [
   {
-    id: "v-brake",
-    title: "Braking Alerts",
-    subtitle: "Audio warning on hard braking",
-    img: "/guidance/voice_brake.jpg",
+    id: "perf-powertrain",
+    title: "Powertrain & Battery",
+    subtitle: "AC 48V 4.6 kW motor + SK Mobile Energy lithium pack",
+    img: "/performance/powertrain.jpg",
     bullets: [
-      "Immediate voice alert when sudden braking is detected",
-      "Raises passenger awareness and prevents accidents",
-      "Customizable phrases to match course policies"
+      "AC 48V 4.6 kW motor tuned for mountainous terrain; stable hill climbing & reduced rollback/judder (LSIS/Hyosung).",
+      "High efficiency vs. DC motors (+20–30% in comparable capacity) with no brushes/commutators → lower maintenance.",
+      "51V 110Ah / 160Ah lithium options; typical 4–5 h charge; wide temperature operating range.",
+      "SK Mobile Energy stack: in-house BMS / PACK / CELL for quality control, service consistency, and long life."
     ],
-    cta: { label: "Configure alerts", href: "#contact" }
   },
   {
-    id: "v-accel",
-    title: "Acceleration Alerts",
-    subtitle: "Guidance on hard acceleration",
-    img: "/guidance/voice_accel.jpg",
+    id: "perf-chassis",
+    title: "Suspension & Chassis",
+    subtitle: "Sedan-class ride quality with confident handling",
+    img: "/performance/suspension.jpg",
     bullets: [
-      "Alerts on hard acceleration or wheel slip",
-      "Deters aggressive driving and protects equipment",
-      "Zone-specific thresholds and volume controls"
-    ]
+      "Ultra-light MacPherson-type suspension for refined ride comfort.",
+      "4-wheel independent suspension maintains ground contact and improves cornering stability.",
+      "Balanced weight distribution for confident feel over uneven fairways."
+    ],
+  },
+];
+
+// TECHNOLOGY — safety/sensing, body/storage, motor control, service/updates
+const TECHNOLOGY_SLIDES: ReadonlyArray<Slide> = [
+  {
+    id: "tech-safety",
+    title: "Safety & Sensing",
+    subtitle: "Predictable stopping and awareness around the course",
+    img: "/technology/safety.jpg",
+    bullets: [
+      "Hydraulic disc brakes with motor control; EM parking brake for reliable holds.",
+      "Ultrasonic obstacle detection up to ~4.5 m with staged deceleration and auto stop.",
+      "Cart guard sensor maintains ~1.2 m spacing between carts; impact-sensing bumper.",
+      "Low-/high-temperature validation for AGV, guidance, and magnet sensors (-40 °C to +85 °C)."
+    ],
+  },
+  {
+    id: "tech-body",
+    title: "Body & Storage",
+    subtitle: "More usable space, easier serviceability",
+    img: "/technology/body_storage.jpg",
+    bullets: [
+      "ABS+ASA body panels in a 4-piece layout for easier service and cost-effective replacement.",
+      "Front: larger, organized storage with dedicated phone bay.",
+      "Rear: concealed, sealed locker keeps belongings secure; simplified open/close."
+    ],
+  },
+  {
+    id: "tech-motor-ctrl",
+    title: "Motor Control System",
+    subtitle: "Composed launches and consistent braking feel",
+    img: "/technology/motor_control.jpg",
+    bullets: [
+      "Integrated motor control enables smooth starts on grades and coordinated braking feel.",
+      "Patent No. 10-1860936 — Electric vehicle brake control system to replace hydraulic braking."
+    ],
+  },
+  {
+    id: "tech-service",
+    title: "Service & Updates",
+    subtitle: "Built for uptime and lifecycle value",
+    img: "/technology/service_updates.jpg",
+    bullets: [
+      "Service-friendly access hatch shortens inspection time.",
+      "Field-proven components and organized harnessing simplify troubleshooting.",
+      "Parts, documentation and localization support for global operations."
+    ],
+  },
+];
+
+// ELECTRONIC GUIDANCE — wire/line guidance overview
+const GUIDANCE_ELECTRONIC_SLIDES: ReadonlyArray<Slide> = [
+  {
+    id: "eg-overview",
+    title: "Electronic Guidance Overview",
+    subtitle:
+      "Course-embedded guidance lines + on-cart sensors feed the motor controller to keep carts on path",
+    img: "/guidance/electronic_overview.jpg",
+    bullets: [
+      "Guidance lines are installed beneath the cart path.",
+      "On-cart guidance sensors detect the embedded lines and relay signals to the drive motor controller.",
+      "The controller steers motion logic to keep the cart on the intended route."
+    ],
+  },
+  {
+    id: "eg-sensing",
+    title: "Sensors + Controller",
+    subtitle: "Robust detection for reliable path following",
+    img: "/guidance/electronic_sensing.jpg",
+    bullets: [
+      "Multi-sensor approach to minimize false detection and drift.",
+      "Real-time signal processing stabilizes behavior on bends, grades and junctions.",
+      "Integration with braking and speed policies for staging and restricted zones."
+    ],
+  },
+  {
+    id: "eg-validation",
+    title: "Validation & Environment",
+    subtitle: "Wide-range performance and course-friendly operation",
+    img: "/guidance/electronic_validation.jpg",
+    bullets: [
+      "Low-/high-temperature sensor validation (-40 °C to +85 °C).",
+      "Noise and weather considerations for consistent detection in real-world use.",
+      "Configuration presets for local course layouts and safety policies."
+    ],
+  },
+];
+
+// VOICE GUIDANCE — start + stop announcements (per your clarification)
+const GUIDANCE_VOICE_SLIDES: ReadonlyArray<Slide> = [
+  {
+    id: "v-start",
+    title: "Start Announcement",
+    subtitle: "Notifies nearby people when the cart begins moving",
+    img: "/guidance/voice_start.jpg",
+    bullets: [
+      "Voice or chime plays when the cart transitions from standstill to moving.",
+      "Improves pedestrian awareness around tees and crossings.",
+      "Speed threshold & debounce prevent repeated triggers in creeping traffic."
+    ],
+  },
+  {
+    id: "v-stop",
+    title: "Stop Announcement",
+    subtitle: "Confirms that the cart has come to a full stop",
+    img: "/guidance/voice_stop.jpg",
+    bullets: [
+      "Plays when the cart reaches zero speed for loading/unloading.",
+      "Helps passengers recognize safe entry/exit timing.",
+      "Silence window avoids chatter during brief pauses."
+    ],
   },
   {
     id: "v-custom",
     title: "Custom Language & Volume",
-    subtitle: "Multi-language, volume & frequency control",
+    subtitle: "Multi-language voice packs, volume & timing controls",
     img: "/guidance/voice_custom.jpg",
     bullets: [
-      "Language packs (EN/KR/JP etc.) for global operations",
-      "Adjust volume, frequency, and conditions",
-      "Night/Event modes to reduce disturbance"
-    ]
-  }
-] as const;
+      "Language packs (EN/KR/JP, etc.) with course-specific phrases.",
+      "Adjust volume, cue length, and cooldown between announcements.",
+      "Quiet/Event modes for early morning or tournament operation."
+    ],
+  },
+  {
+    id: "v-zones",
+    title: "Zone Awareness",
+    subtitle: "Different behaviors by area to minimize disturbance",
+    img: "/guidance/voice_zones.jpg",
+    bullets: [
+      "Use short chimes in quiet or residential-adjacent holes.",
+      "Normal voice cues in parking, crossing and staging zones.",
+      "Policy presets can be saved and reused across courses."
+    ],
+  },
+];
 
+// -------------------------------------------------------------
+// Page
+// -------------------------------------------------------------
 export default function App() {
   const variant = getVariant();
 
@@ -136,7 +327,7 @@ export default function App() {
   const primaryCta = "Talk to Sales";
   const secondaryCta = variant === "A" ? "Explore models" : "Download brochure";
 
-  // Hide sticky CTA when compare section pins a mini view at bottom
+  // Sticky CTA suppression when compare mini opens (events fired by CompareTable)
   const [bottomBlocked, setBottomBlocked] = useState(false);
   useEffect(() => {
     let pinnedCount = 0;
@@ -167,65 +358,68 @@ export default function App() {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const canonical = origin + "/";
   const salesEmail = import.meta.env.VITE_SALES_EMAIL || "sales@example.com";
-  const jsonLd = [
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      name: "KUKJE INTERTRADE Co., Ltd. (APRO)",
-      url: canonical,
-      logo: origin + "/assets/logo.png",
-      email: salesEmail,
-      brand: { "@type": "Brand", name: "APRO" },
-      contactPoint: [
-        {
-          "@type": "ContactPoint",
-          contactType: "sales",
-          email: salesEmail,
-          areaServed: "KR, US, JP, EU, SEA",
-          availableLanguage: ["en", "ko", "ja"]
-        }
-      ],
-      sameAs: []
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      name: siteName,
-      url: canonical,
-      potentialAction: {
-        "@type": "SearchAction",
-        target: canonical + "?q={search_term_string}",
-        "query-input": "required name=search_term_string"
-      }
-    }
-  ];
+  const jsonLd = useMemo(
+    () => [
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        name: "KUKJE INTERTRADE Co., Ltd. (APRO)",
+        url: canonical,
+        logo: origin + "/assets/logo.png",
+        email: salesEmail,
+        brand: { "@type": "Brand", name: "APRO" },
+        contactPoint: [
+          {
+            "@type": "ContactPoint",
+            contactType: "sales",
+            email: salesEmail,
+            areaServed: "KR, US, JP, EU, SEA",
+            availableLanguage: ["en", "ko", "ja"],
+          },
+        ],
+        sameAs: [],
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: siteName,
+        url: canonical,
+        potentialAction: {
+          "@type": "SearchAction",
+          target: canonical + "?q={search_term_string}",
+          "query-input": "required name=search_term_string",
+        },
+      },
+    ],
+    [canonical, origin, salesEmail, siteName]
+  );
 
   return (
     <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
       {/* SEO */}
       <SEO
-        title="APRO Electric Golf Carts — Lithium, Technology & Safety"
-        description="APRO builds electric golf carts for courses, resorts, and venues worldwide—advanced technology, guidance systems, and global support."
+        title="APRO Electric Golf Carts — Lithium, VIP & Fleet Solutions"
+        description="APRO builds electric golf carts for courses, resorts, and venues worldwide—smart guidance, refined ride, and global after-sales support."
         canonical={canonical}
         og={{
           title: "APRO Electric Golf Carts",
-          description: "Lithium performance, advanced technology, and operator safety.",
+          description: "Lithium powertrains, advanced guidance, and global support.",
           url: canonical,
           image: "/assets/og.jpg",
-          siteName: "APRO"
+          siteName: "APRO",
         }}
         twitter={{
           card: "summary_large_image",
           site: "@yourbrand",
           creator: "@yourteam",
-          image: "/assets/og.jpg"
+          image: "/assets/og.jpg",
         }}
         jsonLd={jsonLd}
       />
 
       <Header />
 
-      {/* safe anchor offset under sticky header */}
+      {/* Main */}
       <main id="main" style={{ paddingTop: "var(--header-h, 4rem)" }}>
         {/* HERO */}
         <section id="home" className="relative scroll-mt-24" aria-label="Hero">
@@ -243,7 +437,7 @@ export default function App() {
                 Electric Golf Carts, Built for Courses, Resorts & Venues Worldwide
               </h1>
               <p className="mt-3 max-w-2xl text-zinc-700 dark:text-zinc-200">
-                Smart guidance, flexible seating, and global after-sales support.
+                Smart guidance, refined ride, and global after-sales support.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
@@ -296,87 +490,62 @@ export default function App() {
           </div>
         </SectionFrame>
 
-        {/* PERFORMANCE — one large slide at a time */}
-        <SectionFrame
+        {/* PERFORMANCE (one-at-a-time big image with arrows + numbers) */}
+        <GalleryPager
           id="performance"
           title="Performance"
-          note="AC 48V 4.6 kW (LSIS/Hyosung) motor, SK Mobile Energy lithium packs, 4-wheel independent/MacPherson suspension, and hydraulic disc brakes — built for mountainous courses."
-        >
-          <FeatureGroupSection group="performance" />
-        </SectionFrame>
+          note="Powertrain, battery, and chassis tuned for real golf-course conditions."
+          slides={PERFORMANCE_SLIDES}
+        />
 
-        {/* TECHNOLOGY — one large slide at a time */}
-        <SectionFrame
+        {/* TECHNOLOGY (one-at-a-time big image with arrows + numbers) */}
+        <GalleryPager
           id="technology"
           title="Technology"
-          note="Comfort, storage, sensing, and service — heated seats, 12V vehicle charger, ABS+ASA body, ultrasonic detection, cart guard spacing, −40~+85 °C sensor validation, and patented brake control."
-        >
-          <FeatureGroupSection group="technology" />
-        </SectionFrame>
+          note="Safety & sensing, body & storage, motor control, service & updates."
+          slides={TECHNOLOGY_SLIDES}
+        />
 
-        {/* TECHNOLOGY DETAIL — Electronic Guidance */}
-        <SectionFrame
+        {/* ELECTRONIC GUIDANCE */}
+        <GalleryPager
           id="tech-electronic-guidance"
           title="Electronic Guidance"
-          note="For route guidance, a wire is buried under the cart path; the underbody guidance sensor detects the wire during operation and sends signals to the drive controller to keep the cart on course."
-        >
-          <StepGallery
-            slides={GUIDANCE_ELECTRONIC_SLIDES as any}
-            onChange={(idx) => trackEvent("eguidance_slide_change", { index: idx })}
-          />
-        </SectionFrame>
+          note="Embedded guidance lines are detected by on-cart sensors which pass signals to the drive motor controller, keeping the cart on its intended path."
+          slides={GUIDANCE_ELECTRONIC_SLIDES}
+        />
 
-        {/* TECHNOLOGY DETAIL — Voice Guidance */}
-        <SectionFrame
+        {/* VOICE GUIDANCE (start/stop announcements) */}
+        <GalleryPager
           id="tech-voice-guidance"
           title="Voice Guidance"
-          note="Speakers deliver immediate warnings for events such as sudden braking or hard acceleration; language, volume, and frequency are adjustable to suit course policy."
-        >
-          <StepGallery
-            slides={GUIDANCE_VOICE_SLIDES as any}
-            onChange={(idx) => trackEvent("vguidance_slide_change", { index: idx })}
-          />
-        </SectionFrame>
+          note="Speakers provide start/stop announcements so players and pedestrians know when the cart is moving or has come to a full stop. Language, volume, timing and zone behavior are configurable."
+          slides={GUIDANCE_VOICE_SLIDES}
+        />
 
         {/* INDUSTRIES */}
-        <SectionFrame id="industries" title="Industries">
+        <SectionFrame id="industries">
           <IndustriesSection />
         </SectionFrame>
 
         {/* SERVICE & WARRANTY */}
-        <SectionFrame id="service" title="Service & Warranty">
+        <SectionFrame id="service">
           <ServiceWarrantySection />
         </SectionFrame>
 
         {/* CHARGING & POWER */}
-        <SectionFrame id="charging" title="Charging & Power">
+        <SectionFrame id="charging">
           <ChargingPowerSection />
         </SectionFrame>
 
-        {/* CONFIGURATOR */}
-        <SectionFrame id="configurator" title="Configurator">
-          <div className="not-prose">
-            <ConfiguratorSection />
-          </div>
-        </SectionFrame>
-
         {/* SUPPORT */}
-        <SectionFrame id="support" title="Support">
+        <SectionFrame id="support">
           <SupportSection />
         </SectionFrame>
 
-        {/* CONTACT & COMPANY */}
-        <SectionFrame id="contact" title="Contact & Company">
+        {/* CONTACT */}
+        <SectionFrame id="contact">
           <ContactCompany />
         </SectionFrame>
-
-        {/* Back-compat invisible anchors (removed sections) */}
-        <div id="timeline" className="sr-only" aria-hidden="true" />
-        <div id="resources" className="sr-only" aria-hidden="true" />
-        <div id="tco" className="sr-only" aria-hidden="true" />
-        <div id="fleet" className="sr-only" aria-hidden="true" />
-        {/* Legacy combined guidance anchor for any existing links */}
-        <div id="guidance" className="sr-only" aria-hidden="true" />
       </main>
 
       {/* Sticky CTA — hidden when compare pins a bottom mini view */}
