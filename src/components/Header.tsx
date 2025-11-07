@@ -30,7 +30,6 @@ const LABELS: Record<string, string> = {
 };
 
 const CANDIDATE_IDS = [
-  // keep your original order
   "models",
   "technology",
   "industries",
@@ -221,7 +220,7 @@ export default function Header() {
     };
   }, [navItems]);
 
-  /** Ink bar positioner (NOT a real scrollbar) */
+  /** Ink bar positioner (not a real scrollbar) */
   const updateInk = useCallback(() => {
     const wrap = scrollWrapRef.current;
     const btn = active ? btnRefs.current[active] : null;
@@ -242,6 +241,15 @@ export default function Header() {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [updateInk, navItems.length]);
+
+  // keep ink aligned while user scrolls the nav horizontally
+  useEffect(() => {
+    const wrap = scrollWrapRef.current;
+    if (!wrap) return;
+    const onScroll = () => updateInk();
+    wrap.addEventListener("scroll", onScroll, { passive: true });
+    return () => wrap.removeEventListener("scroll", onScroll);
+  }, [updateInk]);
 
   /** Lock body when mobile drawer open */
   useEffect(() => {
@@ -322,9 +330,9 @@ export default function Header() {
 
             {/* Center: Desktop Nav */}
             <div className="relative hidden lg:flex flex-1 min-w-0 items-center justify-center px-2">
-              {/* soft edges */}
               <div className="pointer-events-none absolute left-0 top-0 h-full w-6 bg-gradient-to-r from-white/90 dark:from-black/70 to-transparent" />
               <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-white/90 dark:from-black/70 to-transparent" />
+
               <div
                 ref={scrollWrapRef}
                 data-nav-scroll
@@ -374,7 +382,6 @@ export default function Header() {
 
             {/* Right: Theme + CTA + Hamburger */}
             <div className="flex items-center gap-2 flex-none ml-auto">
-              {/* Theme */}
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -387,7 +394,6 @@ export default function Header() {
                 </span>
               </button>
 
-              {/* CTA on md+ */}
               <button
                 type="button"
                 onClick={onTalkToSales}
@@ -397,7 +403,6 @@ export default function Header() {
                 Talk to Sales
               </button>
 
-              {/* Hamburger */}
               <button
                 type="button"
                 className="inline-flex lg:hidden items-center justify-center w-10 h-10 rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
@@ -419,7 +424,7 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobile Drawer + overlay (unchanged except minor tidy) */}
+        {/* Mobile Drawer */}
         <div
           className={[
             "lg:hidden fixed inset-0 z-40 transition-opacity",
