@@ -4,23 +4,17 @@
 
 html, body, #root { height: 100%; }
 
-/* ✅ reCAPTCHA v3 배지 */
+/* reCAPTCHA v3 badge */
 .grecaptcha-badge {
   position: fixed !important;
   left: 16px !important;
   right: auto !important;
   bottom: 16px !important;
-  z-index: 30 !important; /* CTA(z-40)와 겹치지 않게 낮춤 */
+  z-index: 30 !important;
   transform: translateZ(0);
 }
-@media (max-width: 640px) {
-  .grecaptcha-badge { display: none !important; }
-}
+@media (max-width: 640px) { .grecaptcha-badge { display: none !important; } }
 
-/* Horizontal rail helpers */
+/* horizontal rail helpers */
 .scrollbar-none::-webkit-scrollbar { display: none; }
 .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
-.rail { overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
-
-/* Small tweak: reduce link jitter on focus */
-:focus-visible { outline-offset: 2px; }
