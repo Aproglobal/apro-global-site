@@ -10,20 +10,16 @@ import ModelDetail from "../components/ModelDetail";
 // Content sections
 import ModelGrid from "../components/ModelGrid";
 import CompareTable from "../components/CompareTable";
-import FeatureGroupSection from "../components/FeatureGroupSection"; // <-- NEW
 import IndustriesSection from "../components/IndustriesSection";
-import ProductionTimeline from "../components/ProductionTimeline";
 import ServiceWarrantySection from "../components/ServiceWarrantySection";
 import ChargingPowerSection from "../components/ChargingPowerSection";
-import ResourcesSection from "../components/ResourcesSection";
-import TcoCalculator from "../components/TcoCalculator";
 import ConfiguratorSection from "../components/ConfiguratorSection";
-import FleetSection from "../components/FleetSection";
 import SupportSection from "../components/SupportSection";
 import ContactCompany from "../components/ContactCompany";
 
-// Data
-import { TIMELINE_STEPS } from "../data/timeline";
+// Premium, one-item-at-a-time renderers
+import StepGallery from "../components/StepGallery";
+import FeatureGroupSection from "../components/FeatureGroupSection";
 
 // SEO
 import SEO from "../components/SEO";
@@ -33,6 +29,98 @@ import { getVariant } from "../utils/ab";
 import { initThemeWatcher } from "../utils/theme";
 import { loadRecaptcha } from "../lib/recaptcha";
 import { initAnalytics, setupScrollDepth, trackEvent } from "../services/analytics";
+
+/** ------------------------------------------------
+ * Slides: Electronic Guidance
+ * (Update image paths to real assets under /public/guidance/*)
+ * ------------------------------------------------- */
+const GUIDANCE_ELECTRONIC_SLIDES = [
+  {
+    id: "e-line",
+    title: "Buried Guidance Line",
+    subtitle: "Defines the driving route via underground wire",
+    img: "/guidance/egps_line.jpg",
+    bullets: [
+      "Guidance wire embedded along the cart path",
+      "Route design aligned with course policies",
+      "Durable, waterproof installation for long-term operation"
+    ],
+    cta: { label: "Design a route", href: "#contact" }
+  },
+  {
+    id: "e-sensor",
+    title: "Underbody Guidance Sensor",
+    subtitle: "Detects the wire while driving",
+    img: "/guidance/egps_sensor.jpg",
+    bullets: [
+      "Underbody sensor continuously detects the embedded line",
+      "Real-time left/right correction minimizes deviation",
+      "Diagnostic mode supports quick maintenance checks"
+    ]
+  },
+  {
+    id: "e-controller",
+    title: "Motor Controller Integration",
+    subtitle: "Signals delivered to the drive controller",
+    img: "/guidance/egps_controller.jpg",
+    bullets: [
+      "Sensor deviation is fed into the controller",
+      "Speed/steering correction for stable tracking",
+      "Zone-based speed and stop scenarios"
+    ]
+  },
+  {
+    id: "e-ops",
+    title: "Operations & Safety",
+    subtitle: "Speed & zone control, protective rules",
+    img: "/guidance/egps_ops.jpg",
+    bullets: [
+      "Entry restriction to protect fairways and sensitive areas",
+      "Auto slow-down on bridges and steep grades",
+      "Off-route/stop event logging for audits"
+    ]
+  }
+] as const;
+
+/** ------------------------------------------------
+ * Slides: Voice Guidance
+ * ------------------------------------------------- */
+const GUIDANCE_VOICE_SLIDES = [
+  {
+    id: "v-brake",
+    title: "Braking Alerts",
+    subtitle: "Audio warning on hard braking",
+    img: "/guidance/voice_brake.jpg",
+    bullets: [
+      "Immediate voice alert when sudden braking is detected",
+      "Raises passenger awareness and prevents accidents",
+      "Customizable phrases to match course policies"
+    ],
+    cta: { label: "Configure alerts", href: "#contact" }
+  },
+  {
+    id: "v-accel",
+    title: "Acceleration Alerts",
+    subtitle: "Guidance on hard acceleration",
+    img: "/guidance/voice_accel.jpg",
+    bullets: [
+      "Alerts on hard acceleration or wheel slip",
+      "Deters aggressive driving and protects equipment",
+      "Zone-specific thresholds and volume controls"
+    ]
+  },
+  {
+    id: "v-custom",
+    title: "Custom Language & Volume",
+    subtitle: "Multi-language, volume & frequency control",
+    img: "/guidance/voice_custom.jpg",
+    bullets: [
+      "Language packs (EN/KR/JP etc.) for global operations",
+      "Adjust volume, frequency, and conditions",
+      "Night/Event modes to reduce disturbance"
+    ]
+  }
+] as const;
 
 export default function App() {
   const variant = getVariant();
@@ -94,10 +182,10 @@ export default function App() {
           contactType: "sales",
           email: salesEmail,
           areaServed: "KR, US, JP, EU, SEA",
-          availableLanguage: ["en", "ko", "ja"],
-        },
+          availableLanguage: ["en", "ko", "ja"]
+        }
       ],
-      sameAs: [],
+      sameAs: []
     },
     {
       "@context": "https://schema.org",
@@ -107,37 +195,37 @@ export default function App() {
       potentialAction: {
         "@type": "SearchAction",
         target: canonical + "?q={search_term_string}",
-        "query-input": "required name=search_term_string",
-      },
-    },
+        "query-input": "required name=search_term_string"
+      }
+    }
   ];
 
   return (
     <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
       {/* SEO */}
       <SEO
-        title="APRO Electric Golf Carts — Lithium, VIP & Fleet Solutions"
-        description="APRO builds electric golf carts for courses, resorts, and venues worldwide—smart guidance, flexible seating, and global after-sales support."
+        title="APRO Electric Golf Carts — Lithium, Technology & Safety"
+        description="APRO builds electric golf carts for courses, resorts, and venues worldwide—advanced technology, guidance systems, and global support."
         canonical={canonical}
         og={{
           title: "APRO Electric Golf Carts",
-          description: "Lithium fleets, VIP/Semi-VIP options, and global support.",
+          description: "Lithium performance, advanced technology, and operator safety.",
           url: canonical,
           image: "/assets/og.jpg",
-          siteName: "APRO",
+          siteName: "APRO"
         }}
         twitter={{
           card: "summary_large_image",
           site: "@yourbrand",
           creator: "@yourteam",
-          image: "/assets/og.jpg",
+          image: "/assets/og.jpg"
         }}
         jsonLd={jsonLd}
       />
 
       <Header />
 
-      {/* consume header height variable for safe anchor offsets */}
+      {/* safe anchor offset under sticky header */}
       <main id="main" style={{ paddingTop: "var(--header-h, 4rem)" }}>
         {/* HERO */}
         <section id="home" className="relative scroll-mt-24" aria-label="Hero">
@@ -208,51 +296,61 @@ export default function App() {
           </div>
         </SectionFrame>
 
-        {/* PERFORMANCE (big, one-at-a-time gallery) */}
-        <SectionFrame id="performance" title="Performance" note="Powertrain, braking, and chassis dynamics engineered for courses.">
+        {/* PERFORMANCE — one large slide at a time */}
+        <SectionFrame
+          id="performance"
+          title="Performance"
+          note="AC 48V 4.6 kW (LSIS/Hyosung) motor, SK Mobile Energy lithium packs, 4-wheel independent/MacPherson suspension, and hydraulic disc brakes — built for mountainous courses."
+        >
           <FeatureGroupSection group="performance" />
         </SectionFrame>
 
-        {/* TECHNOLOGY (big, one-at-a-time gallery) */}
-        <SectionFrame id="technology" title="Technology" note="Comfort, utility, and serviceability that simplify daily operations.">
+        {/* TECHNOLOGY — one large slide at a time */}
+        <SectionFrame
+          id="technology"
+          title="Technology"
+          note="Comfort, storage, sensing, and service — heated seats, 12V vehicle charger, ABS+ASA body, ultrasonic detection, cart guard spacing, −40~+85 °C sensor validation, and patented brake control."
+        >
           <FeatureGroupSection group="technology" />
         </SectionFrame>
 
-        {/* INDUSTRIES */}
-        <SectionFrame id="industries">
-          <IndustriesSection />
-        </SectionFrame>
-
-        {/* PRODUCTION & DELIVERY TIMELINE */}
-        <SectionFrame id="timeline">
-          <ProductionTimeline
-            steps={TIMELINE_STEPS}
-            title="Production & Delivery Timeline"
-            note="Note: Domestic delivery flow. Export process may differ."
-            showSummary={true}
+        {/* TECHNOLOGY DETAIL — Electronic Guidance */}
+        <SectionFrame
+          id="tech-electronic-guidance"
+          title="Electronic Guidance"
+          note="For route guidance, a wire is buried under the cart path; the underbody guidance sensor detects the wire during operation and sends signals to the drive controller to keep the cart on course."
+        >
+          <StepGallery
+            slides={GUIDANCE_ELECTRONIC_SLIDES as any}
+            onChange={(idx) => trackEvent("eguidance_slide_change", { index: idx })}
           />
         </SectionFrame>
 
+        {/* TECHNOLOGY DETAIL — Voice Guidance */}
+        <SectionFrame
+          id="tech-voice-guidance"
+          title="Voice Guidance"
+          note="Speakers deliver immediate warnings for events such as sudden braking or hard acceleration; language, volume, and frequency are adjustable to suit course policy."
+        >
+          <StepGallery
+            slides={GUIDANCE_VOICE_SLIDES as any}
+            onChange={(idx) => trackEvent("vguidance_slide_change", { index: idx })}
+          />
+        </SectionFrame>
+
+        {/* INDUSTRIES */}
+        <SectionFrame id="industries" title="Industries">
+          <IndustriesSection />
+        </SectionFrame>
+
         {/* SERVICE & WARRANTY */}
-        <SectionFrame id="service">
+        <SectionFrame id="service" title="Service & Warranty">
           <ServiceWarrantySection />
         </SectionFrame>
 
         {/* CHARGING & POWER */}
-        <SectionFrame id="charging">
+        <SectionFrame id="charging" title="Charging & Power">
           <ChargingPowerSection />
-        </SectionFrame>
-
-        {/* RESOURCES */}
-        <SectionFrame id="resources">
-          <ResourcesSection />
-        </SectionFrame>
-
-        {/* TCO / ROI */}
-        <SectionFrame id="tco" title="TCO / ROI">
-          <div className="not-prose">
-            <TcoCalculator />
-          </div>
         </SectionFrame>
 
         {/* CONFIGURATOR */}
@@ -262,20 +360,23 @@ export default function App() {
           </div>
         </SectionFrame>
 
-        {/* FLEET */}
-        <SectionFrame id="fleet">
-          <FleetSection />
-        </SectionFrame>
-
         {/* SUPPORT */}
-        <SectionFrame id="support">
+        <SectionFrame id="support" title="Support">
           <SupportSection />
         </SectionFrame>
 
         {/* CONTACT & COMPANY */}
-        <SectionFrame id="contact">
+        <SectionFrame id="contact" title="Contact & Company">
           <ContactCompany />
         </SectionFrame>
+
+        {/* Back-compat invisible anchors (removed sections) */}
+        <div id="timeline" className="sr-only" aria-hidden="true" />
+        <div id="resources" className="sr-only" aria-hidden="true" />
+        <div id="tco" className="sr-only" aria-hidden="true" />
+        <div id="fleet" className="sr-only" aria-hidden="true" />
+        {/* Legacy combined guidance anchor for any existing links */}
+        <div id="guidance" className="sr-only" aria-hidden="true" />
       </main>
 
       {/* Sticky CTA — hidden when compare pins a bottom mini view */}
