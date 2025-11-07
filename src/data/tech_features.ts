@@ -1,16 +1,17 @@
+// src/data/tech_features.ts
 export type TechGroup = "performance" | "technology";
 
 export type TechItem = {
   key: string;
   title: string;
   desc?: string;
-  img: string;          // absolute from /public
-  group: TechGroup;     // <-- NEW
-  system?: string;      // <-- NEW (Powertrain, Body & Storage, etc.)
+  img: string;          // absolute path from /public
+  group: TechGroup;     // <-- which section to show in
+  system?: string;      // optional label (Powertrain, Body & Storage, etc.)
 };
 
 export const TECH_FEATURES: TechItem[] = [
-  // -------- Performance --------
+  // ===== Performance =====
   {
     key: "motor_46kw",
     title: "High-Output AC Motor (4.6 kW)",
@@ -52,7 +53,7 @@ export const TECH_FEATURES: TechItem[] = [
     system: "Powertrain & Battery",
   },
 
-  // -------- Technology --------
+  // ===== Technology =====
   {
     key: "heated_seats",
     title: "Heated Seats (Front & Rear)",
