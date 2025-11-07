@@ -20,7 +20,7 @@ export default function TechSection({ copy }: { copy: TechCopy }) {
   const onClose = () => setActive(null);
 
   return (
-    <section id="technology" className="py-20 bg-white text-black dark:bg-black dark:text-white scroll-mt-24">
+    <section id="technology" className="py-20 bg.white text.black dark:bg.black dark:text.white scroll-mt-24">
       <div className="max-w-6xl mx-auto px-5">
         <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Technology</h2>
 
@@ -47,9 +47,7 @@ export default function TechSection({ copy }: { copy: TechCopy }) {
             type="button"
             onClick={() => setView("gallery")}
             className={`flex-1 rounded-full border px-4 py-2 text-sm ${
-              view === "gallery"
-                ? "bg-black text-white dark:bg-white dark:text-black border-black dark:border-white"
-                : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
+              view === "gallery" ? "bg-black text-white dark:bg-white dark:text-black border-black dark:border-white" : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
             }`}
           >
             Photos
@@ -58,9 +56,7 @@ export default function TechSection({ copy }: { copy: TechCopy }) {
             type="button"
             onClick={() => setView("list")}
             className={`flex-1 rounded-full border px-4 py-2 text-sm ${
-              view === "list"
-                ? "bg-black text-white dark:bg-white dark:text-black border-black dark:border-white"
-                : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
+              view === "list" ? "bg-black text-white dark:bg-white dark:text-black border-black dark:border-white" : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
             }`}
           >
             Specs
@@ -81,12 +77,7 @@ export default function TechSection({ copy }: { copy: TechCopy }) {
                     motion-reduce:transition-none motion-reduce:hover:translate-y-0
                   "
                 >
-                  <button
-                    type="button"
-                    onClick={() => onOpen(f)}
-                    className="block w-full text-left"
-                    aria-label={`Open ${f.title} image`}
-                  >
+                  <button type="button" onClick={() => onOpen(f)} className="block w-full text-left" aria-label={`Open ${f.title} image`}>
                     <div className="w-full flex justify-center max-w-[320px] mx-auto">
                       <img src={f.img} alt={f.title} loading="lazy" width={300} height={300} className="block" />
                     </div>
@@ -104,7 +95,7 @@ export default function TechSection({ copy }: { copy: TechCopy }) {
                 <details key={sec.id} className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/90">
                   <summary className="cursor-pointer list-none p-4 font-semibold flex items-center justify-between">
                     {sec.title}
-                    <span>▾</span>
+                    <span aria-hidden>▾</span>
                   </summary>
                   <div className="p-4 pt-0">
                     <ul className="space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
@@ -166,21 +157,9 @@ export default function TechSection({ copy }: { copy: TechCopy }) {
                     motion-reduce:transition-none motion-reduce:hover:translate-y-0
                   "
                 >
-                  <button
-                    type="button"
-                    onClick={() => onOpen(f)}
-                    className="block w-full text-left"
-                    aria-label={`Open ${f.title} image`}
-                  >
+                  <button type="button" onClick={() => onOpen(f)} className="block w-full text-left" aria-label={`Open ${f.title} image`}>
                     <div className="mx-auto w-[300px] h-[300px] flex items-center justify-center">
-                      <img
-                        src={f.img}
-                        alt={f.title}
-                        loading="lazy"
-                        width={300}
-                        height={300}
-                        className="w-[300px] h-[300px] object-contain"
-                      />
+                      <img src={f.img} alt={f.title} loading="lazy" width={300} height={300} className="w-[300px] h-[300px] object-contain" />
                     </div>
                     <div className="p-3">
                       <h3 className="text-sm font-semibold">{f.title}</h3>
@@ -198,12 +177,7 @@ export default function TechSection({ copy }: { copy: TechCopy }) {
 
       {/* 라이트박스 */}
       {active ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-          onClick={onClose}
-        >
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
           <div className="max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
             <div className="overflow-hidden rounded-2xl bg-black">
               <img src={active.img} alt={active.title} className="w-full h-auto" />
