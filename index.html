@@ -12,7 +12,7 @@
       content="APRO — Electric carts for modern golf courses. Electronic guidance, flexible seating, and dependable service across APAC."
     />
 
-    <!-- Open Graph / SEO (keep simple to avoid copy/paste collisions) -->
+    <!-- Open Graph -->
     <meta property="og:title" content="APRO — Electric Golf Carts" />
     <meta
       property="og:description"
@@ -24,6 +24,15 @@
 
     <link rel="icon" href="/favicon.ico" />
     <meta name="theme-color" content="#000000" />
+
+    <!-- GA4 (static so CI can grep it) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=%VITE_GA_MEASUREMENT_ID%"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){ dataLayer.push(arguments); }
+      gtag('js', new Date());
+      gtag('config', '%VITE_GA_MEASUREMENT_ID%');
+    </script>
   </head>
   <body>
     <div id="root"></div>
