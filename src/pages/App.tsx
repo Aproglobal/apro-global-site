@@ -10,9 +10,7 @@ import ModelDetail from "../components/ModelDetail";
 // Content sections
 import ModelGrid from "../components/ModelGrid";
 import CompareTable from "../components/CompareTable";
-// Split tech into Performance + Technology
-import PerformanceSection from "../components/PerformanceSection";
-import TechnologySection from "../components/TechnologySection";
+import PerfTechShowcase from "../components/PerfTechShowcase";
 import IndustriesSection from "../components/IndustriesSection";
 import ProductionTimeline from "../components/ProductionTimeline";
 import ServiceWarrantySection from "../components/ServiceWarrantySection";
@@ -206,21 +204,15 @@ export default function App() {
         <SectionFrame id="models">
           <div className="space-y-8">
             <ModelGrid />
-            {/* Anchor so header 'Compare' jumps correctly */}
             <div id="compare" className="sr-only" aria-hidden="true" />
             <div className="border-t border-zinc-200 dark:border-zinc-800" />
             <CompareTable />
           </div>
         </SectionFrame>
 
-        {/* PERFORMANCE (systems + feature gallery) */}
-        <SectionFrame id="performance">
-          <PerformanceSection copy={techCopy} />
-        </SectionFrame>
-
-        {/* TECHNOLOGY (systems + feature gallery) */}
+        {/* Unified Performance & Technology (single row, numbered navigation) */}
         <SectionFrame id="technology">
-          <TechnologySection copy={techCopy} />
+          <PerfTechShowcase />
         </SectionFrame>
 
         {/* INDUSTRIES */}
