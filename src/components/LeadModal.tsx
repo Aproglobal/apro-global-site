@@ -1,4 +1,3 @@
-// src/components/LeadModal.tsx
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { MODELS } from "../data/models";
@@ -34,16 +33,13 @@ export default function LeadModal() {
 
   const formRef = useRef<HTMLFormElement | null>(null);
 
-  const selectedModel = useMemo(
-    () => MODELS.find((m) => m.code === modelCode) || null,
-    [modelCode]
-  );
+  const selectedModel = useMemo(() => MODELS.find((m) => m.code === modelCode) || null, [modelCode]);
 
   const onEsc = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") setOpen(false);
   }, []);
 
-  // 모달 열릴 때 reCAPTCHA 선로드(+ ready 보장) → 첫 클릭 딜레이 제거
+  // 모달 열릴 때 reCAPTCHA 선로드(+ ready 보장)
   useEffect(() => {
     if (!open) return;
     const key = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
@@ -52,7 +48,7 @@ export default function LeadModal() {
       try {
         await loadRecaptcha(key);
       } catch {
-        /* 캡차 미사용 환경에서도 동작 */
+        /* optional */
       }
     })();
   }, [open]);
@@ -103,11 +99,9 @@ export default function LeadModal() {
 
     setStatusMsg(null);
 
-    // 항상 실제 form 엘리먼트에서 FormData 생성
     const formEl = formRef.current ?? e.currentTarget;
     const fd = new FormData(formEl);
 
-    // 값 안전 처리
     const firstName = String(fd.get("firstName") || "").trim();
     const lastName = String(fd.get("lastName") || "").trim();
     const email = String(fd.get("email") || "").trim();
@@ -116,24 +110,21 @@ export default function LeadModal() {
     const message = String(fd.get("message") || "").trim();
     const selModelCode = String(fd.get("modelCode") || "");
     const src = String(fd.get("source") || source || "Unknown");
-    const website = String(fd.get("website") || ""); // 허니팟(있으면 서버에서 400)
+    const website = String(fd.get("website") || ""); // honeypot
 
-    // 프론트 1차 유효성
     if (!firstName || !lastName || !email || !company) {
-      setStatusMsg("필수 항목을 확인해주세요.");
+      setStatusMsg("Please check the required fields.");
       return;
     }
 
-    // 제출 직전 reCAPTCHA 토큰 (lib/recaptcha가 로드/ready/재시도까지 케어)
     let recaptchaToken = "";
     try {
       recaptchaToken = await getRecaptchaToken("lead_email");
     } catch {
-      // no-op — 서버에서 누락 시 400
+      /* server will reject if required */
     }
 
     const payload = {
-      // 서버 필수
       firstName,
       lastName,
       name: [firstName, lastName].filter(Boolean).join(" "),
@@ -143,7 +134,7 @@ export default function LeadModal() {
       message,
       modelCode: selModelCode,
       source: src,
-      website, // 허니팟
+      website,
       type: "lead",
       site: location.hostname,
       country: "KR",
@@ -156,39 +147,33 @@ export default function LeadModal() {
       locale: navigator.language,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       recaptchaToken,
-      requestId: crypto.randomUUID(), // (서버 중복 방지)
+      requestId: crypto.randomUUID(),
     };
 
     try {
       setLoading(true);
       await submitLead(payload);
 
-      // ✅ GA4 전환용 이벤트 (권장 스키마)
       window.gtag?.("event", "generate_lead", {
         event_category: "lead",
         source: payload.source || "(unknown)",
         model_code: payload.modelCode || "(none)",
       });
 
-      // 보조 성공 이벤트(분석용)
       window.gtag?.("event", "lead_submit_success", {
         event_category: "lead",
         source: payload.source || "(unknown)",
         model_code: payload.modelCode || "(none)",
       });
 
-      setStatusMsg("제출이 완료되었습니다. 감사합니다.");
+      setStatusMsg("Submitted. Thank you!");
       formEl.reset();
       setOpen(false);
     } catch (err: any) {
       console.error("❌ Lead submit failed", err);
-      const msg =
-        err?.body?.data?.message ||
-        err?.message ||
-        "제출 중 오류가 발생했습니다.";
+      const msg = err?.body?.data?.message || err?.message || "An error occurred during submission.";
       setStatusMsg(msg);
 
-      // GA4 에러 이벤트
       window.gtag?.("event", "lead_submit_error", {
         event_category: "lead",
         source: src || "(unknown)",
@@ -203,11 +188,7 @@ export default function LeadModal() {
   const modal = (
     <div className="fixed inset-0 z-[100]">
       {/* Overlay */}
-      <div
-        className="absolute inset-0 bg-black/70"
-        onClick={() => setOpen(false)}
-        aria-hidden
-      />
+      <div className="absolute inset-0 bg-black/70" onClick={() => setOpen(false)} aria-hidden />
       {/* Dialog wrapper */}
       <div className="absolute inset-0 flex items-center justify-center p-4 overflow-y-auto">
         <div
@@ -222,7 +203,7 @@ export default function LeadModal() {
               Talk to Sales
             </h3>
             <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-              Share your details and your request. We&apos;ll get back with pricing, lead time, and demos.
+              Share your details and your request. We’ll reply with pricing, lead time, and demos.
             </p>
 
             {/* Close (X) */}
@@ -234,19 +215,13 @@ export default function LeadModal() {
               className="absolute right-3 top-3 inline-grid h-9 w-9 place-items-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M18 6L6 18M6 6l12 12"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  className="text-zinc-500"
-                />
+                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-zinc-500" />
               </svg>
             </button>
           </div>
 
           {/* Form */}
-          <form ref={formRef} className="p-6" onSubmit={handleSubmit}>
+          <form ref={formRef} className="p-6" onSubmit={handleSubmit} noValidate>
             <div className="grid gap-3">
               {/* 이름 */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -288,9 +263,7 @@ export default function LeadModal() {
               />
 
               {/* 문의 대상 모델 */}
-              <label className="text-xs font-medium text-zinc-600 dark:text-zinc-300 mt-1">
-                Inquiry about
-              </label>
+              <label className="text-xs font-medium text-zinc-600 dark:text-zinc-300 mt-1">Inquiry about</label>
               <select
                 name="modelCode"
                 value={modelCode}
@@ -315,7 +288,7 @@ export default function LeadModal() {
                 className="min-h-[100px] w-full resize-y rounded-xl border border-zinc-200 px-3.5 py-3 text-sm outline-none focus:ring-2 focus:ring-black/10 dark:bg-zinc-900 dark:border-zinc-700 dark:placeholder-zinc-400 dark:focus:ring-white/10"
               />
 
-              {/* 허니팟(봇 차단용) — 서버에서 값 있으면 400 처리 */}
+              {/* 허니팟 */}
               <input name="website" className="hidden" tabIndex={-1} autoComplete="off" />
 
               {/* 추적용 hidden */}
@@ -323,13 +296,13 @@ export default function LeadModal() {
             </div>
 
             {/* Actions */}
-            <div className="mt-6 flex items-center gap-3">
+            <div className="mt-6 flex flex-wrap items-center gap-3">
               <button
                 type="submit"
                 disabled={loading}
                 className="px-5 py-3 rounded-full bg-black text-white font-semibold disabled:opacity-60 dark:bg-white dark:text-black"
               >
-                {loading ? "Submitting..." : "Continue in email"}
+                {loading ? "Submitting..." : "Send inquiry"}
               </button>
               <button
                 type="button"
@@ -341,11 +314,11 @@ export default function LeadModal() {
               </button>
             </div>
 
-            {statusMsg && (
-              <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
-                {statusMsg}
-              </p>
-            )}
+            <p className="mt-3 text-[11px] text-zinc-500 dark:text-zinc-400">
+              This site is protected by reCAPTCHA and the Google Privacy Policy and Terms of Service apply.
+            </p>
+
+            {statusMsg && <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">{statusMsg}</p>}
           </form>
         </div>
       </div>
