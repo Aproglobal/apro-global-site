@@ -2,19 +2,36 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
+
+    <!-- Viewport -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Primary Meta -->
+    <title>APRO — Electric Golf Carts</title>
     <meta
       name="description"
       content="APRO — Electric carts for modern golf courses. Electronic guidance, flexible seating, and dependable service across APAC."
     />
+
+    <!-- Open Graph (static defaults — runtime will be enhanced by SEO.tsx) -->
     <meta property="og:title" content="APRO — Electric Golf Carts" />
     <meta property="og:description" content="Electronic guidance, flexible seating, dependable service." />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="/assets/hero.jpg" />
     <meta property="og:url" content="https://apro.kukjeint.com" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="APRO — Electric Golf Carts" />
+    <meta name="twitter:description" content="Electronic guidance, flexible seating, dependable service." />
+    <meta name="twitter:image" content="/assets/hero.jpg" />
+    <meta name="twitter:url" content="https://apro.kukjeint.com" />
+
+    <!-- Theme color for PWA / address bar (light & dark) -->
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0b0b0b" media="(prefers-color-scheme: dark)">
+
+    <!-- Fonts & Favicon -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -22,7 +39,6 @@
       rel="stylesheet"
     />
     <link rel="icon" href="/favicon.ico" />
-    <title>APRO — Electric Golf Carts</title>
 
     <style>
       :root { --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; }
@@ -30,27 +46,62 @@
       :root { color-scheme: light dark; }
     </style>
 
-    <!-- (1) 테마 초기 적용 -->
+    <!-- (1) Early Theme Apply (aligns with app's USER_KEY = 'theme_user_pref') -->
     <script>
       (function () {
         try {
-          var saved = localStorage.getItem('theme') || 'system';
-          var mql = window.matchMedia('(prefers-color-scheme: dark)');
-          var isDark = saved === 'dark' || (saved === 'system' && mql.matches);
-          document.documentElement.classList.toggle('dark', isDark);
+          var KEY = 'theme_user_pref'; // 'light' | 'dark' | (null => auto)
+          var saved = localStorage.getItem(KEY); // might be null
+          var isDark;
+          if (saved === 'light' || saved === 'dark') {
+            isDark = (saved === 'dark');
+          } else {
+            // Auto: prefer system; fallback to simple time-of-day (night 19:00–06:59)
+            var mql = window.matchMedia('(prefers-color-scheme: dark)');
+            if (mql.matches) isDark = true;
+            else {
+              var h = new Date().getHours();
+              isDark = (h >= 19 || h < 7);
+            }
+          }
+          document.documentElement.classList.toggle('dark', !!isDark);
+          document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
         } catch (e) { /* no-op */ }
       })();
     </script>
 
-    <!-- ✅ Canonical + Non-prod noindex -->
+    <!-- ✅ Canonical + Non-prod noindex + dynamic URL metas -->
     <link id="canonical-link" rel="canonical" href="https://apro.kukjeint.com/">
     <script>
       (function () {
-        var isProd = location.hostname === 'apro.kukjeint.com';
-        // canonical 동적 갱신
+        var PROD_HOST = 'apro.kukjeint.com';
+        var isProd = location.hostname === PROD_HOST;
+
+        // Canonical per-path
         var canon = document.getElementById('canonical-link');
-        if (canon) canon.href = 'https://apro.kukjeint.com' + location.pathname;
-        // 프리뷰/비프로덕션은 noindex
+        if (canon) {
+          canon.href = 'https://' + PROD_HOST + location.pathname + (location.search || '');
+        }
+
+        // Dynamic og:url & twitter:url to current page (good for crawlers on static builds)
+        function setMeta(selector, attr, value) {
+          var el = document.querySelector(selector);
+          if (!el) {
+            el = document.createElement('meta');
+            if (selector.startsWith('meta[property=')) {
+              el.setAttribute('property', selector.match(/"([^"]+)"/)[1]);
+            } else if (selector.startsWith('meta[name=')) {
+              el.setAttribute('name', selector.match(/"([^"]+)"/)[1]);
+            }
+            document.head.appendChild(el);
+          }
+          el.setAttribute(attr, value);
+        }
+        var pageUrl = 'https://' + PROD_HOST + location.pathname + (location.search || '');
+        setMeta('meta[property="og:url"]', 'content', pageUrl);
+        setMeta('meta[name="twitter:url"]', 'content', pageUrl);
+
+        // Non-production: noindex
         if (!isProd) {
           var m = document.createElement('meta');
           m.name = 'robots';
@@ -93,7 +144,7 @@
     }
     </script>
 
-    <!-- Structured Data: FAQ (AI/LLM 친화) -->
+    <!-- Structured Data: FAQ (optional, keep concise to avoid spammy signals) -->
     <script type="application/ld+json">
     {
       "@context":"https://schema.org",
@@ -118,28 +169,22 @@
     }
     </script>
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="APRO — Electric Golf Carts" />
-    <meta name="twitter:description" content="Electronic guidance, flexible seating, dependable service." />
-    <meta name="twitter:image" content="/assets/hero.jpg" />
-    <meta name="twitter:url" content="https://apro.kukjeint.com" />
-
-    <!-- (2) GA4 (운영 도메인에서만) -->
+    <!-- GA4: load only on production domain -->
     <script>
       (function () {
         if (location.hostname !== 'apro.kukjeint.com') return;
 
-        var GA_ID = '%VITE_GA_MEASUREMENT_ID%'; // Vite가 치환
+        var GA_ID = '%VITE_GA_MEASUREMENT_ID%'; // Vite replaces %VITE_*% in index.html
         var s = document.createElement('script');
         s.async = true;
-        s.src = 'https://www.googletagmanager.com/gtag/js?id=%VITE_GA_MEASUREMENT_ID%';
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
         document.head.appendChild(s);
 
         window.dataLayer = window.dataLayer || [];
         function gtag(){ dataLayer.push(arguments); }
         window.gtag = gtag;
 
-        // (선택) Consent 기본값
+        // (Optional) Consent defaults
         gtag('consent', 'default', {
           ad_user_data: 'denied',
           ad_personalization: 'denied',
@@ -151,6 +196,10 @@
         gtag('config', GA_ID, { send_page_view: true });
       })();
     </script>
+
+    <!-- Preconnect for GA (micro perf) -->
+    <link rel="preconnect" href="https://www.googletagmanager.com">
+    <link rel="preconnect" href="https://www.google-analytics.com">
   </head>
 
   <body>
