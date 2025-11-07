@@ -1,47 +1,47 @@
 import React from "react";
 
-type Spec = { label: string; value: string };
+type Stat = {
+  label: string;
+  value: string;
+  note?: string;
+};
 
-const specs: Spec[] = [
-  { label: "On-board Charger", value: "3.3–6.6 kW (model dependent)" },
-  { label: "Input Voltage", value: "AC 100–240V / 50–60Hz" },
-  { label: "Fast Charge (0→80%)", value: "≈ 2–3 hrs (lithium, fast charger)" },
-  { label: "Standard Charge (0→100%)", value: "≈ 6–8 hrs (on-board)" },
-  { label: "Battery Options", value: "Lithium / Lead-acid (per model)" },
-  { label: "Safety", value: "Over-voltage / Over-temp / Short-circuit" },
+const STATS: Stat[] = [
+  { label: "AC Charging", value: "6.6 kW", note: "On-board charger" },
+  { label: "DC Fast Charge", value: "Up to 30 kW", note: "Optional" },
+  { label: "Charge Port", value: "IP67", note: "Weather sealed" },
+  { label: "Battery Chem.", value: "LiFePO₄", note: "Long cycle life" },
 ];
 
-function ChargingPowerSection() {
+export default function ChargingPowerSection() {
   return (
-    <section id="charging" className="w-full bg-white">
-      <div className="mx-auto max-w-7xl px-4 py-16">
-        <div className="mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-            Charging & Power
-          </h2>
+    <section className="w-full bg-white">
+      <div className="mx-auto max-w-6xl px-6 py-16">
+        <div className="mb-10">
+          <h2 className="text-3xl font-bold tracking-tight">Charging & Power</h2>
           <p className="mt-2 text-sm text-gray-600">
-            Practical specs for day-to-day operations. Exact values vary by model
-            and market option.
+            Fast, safe, and reliable charging for daily fleet operations.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {specs.map((s, i) => (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {STATS.map((s) => (
             <div
-              key={i}
-              className="rounded-2xl border border-gray-200 p-4 shadow-sm"
+              key={s.label}
+              className="rounded-2xl border border-gray-200 p-5 shadow-sm"
             >
-              <div className="text-xs uppercase tracking-wide text-gray-500">
-                {s.label}
-              </div>
-              <div className="mt-1 text-lg font-semibold">{s.value}</div>
+              <div className="text-xs uppercase text-gray-500">{s.label}</div>
+              <div className="mt-1 text-2xl font-semibold">{s.value}</div>
+              {s.note && <div className="mt-1 text-xs text-gray-500">{s.note}</div>}
             </div>
           ))}
+        </div>
+
+        <div className="mt-8 rounded-xl bg-gray-50 p-5 text-sm text-gray-700">
+          Compatible with standard AC outlets and optional DC fast-charge
+          infrastructure. Exact specs can vary by model and market.
         </div>
       </div>
     </section>
   );
 }
-
-export default ChargingPowerSection;
-export { ChargingPowerSection };
