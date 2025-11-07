@@ -1,141 +1,107 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { openLead } from "./LeadModal";
-import { trackEvent } from "../services/analytics";
 
-// Keep labels/ids in sync with sections in App.tsx
-const LABELS: Record<string, string> = {
-  models: "Models",
-  compare: "Compare",
-  technology: "Technology",
-  industries: "Industries",
-  timeline: "Timeline",
-  service: "Service",
-  charging: "Charging",
-  resources: "Resources",
-  tco: "TCO",
-  configurator: "Configurator",
-  fleet: "Fleet",
-  support: "Support",
-  contact: "Contact",
-};
+type NavItem = { id: string; label: string };
 
-const CANDIDATE_IDS = Object.keys(LABELS);
+const NAV: NavItem[] = [
+  { id: "models", label: "Models" },
+  { id: "technology", label: "Technology" },
+  { id: "contact", label: "Contact" },
+];
 
 export function Header() {
-  const ref = useRef<HTMLElement | null>(null);
-  const [activeId, setActiveId] = useState<string>("models");
+  const [active, setActive] = useState<string>("home");
+  const [scrolled, setScrolled] = useState(false);
+  const barRef = useRef<HTMLDivElement | null>(null);
+  const itemRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
 
-  // Set CSS var for header height and observe section intersections
+  // Scroll spy
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    const setH = () => {
-      const h = el.getBoundingClientRect().height;
-      document.documentElement.style.setProperty("--header-h", `${Math.ceil(h)}px`);
-    };
-    setH();
-    const ro = new ResizeObserver(setH);
-    ro.observe(el);
-
-    // IntersectionObserver to update active section
-    const sections = CANDIDATE_IDS
-      .map((id) => document.getElementById(id))
-      .filter(Boolean) as HTMLElement[];
-
-    const io = new IntersectionObserver(
+    const ids = ["home", ...NAV.map(n => n.id)];
+    const observer = new IntersectionObserver(
       (entries) => {
-        // Find the entry with the highest intersection ratio near top
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-
-        if (visible.length) {
-          const id = visible[0].target.id;
-          setActiveId(id);
-        } else {
-          // Fallback based on scroll position
-          const scrollY = window.scrollY + 120; // a bit below header
-          let current = activeId;
-          for (const s of sections) {
-            if (s.offsetTop <= scrollY) current = s.id;
-          }
-          setActiveId(current);
-        }
+        entries.forEach((entry) => {
+          const id = entry.target.getAttribute("id")!;
+          if (entry.isIntersecting) setActive(id);
+        });
       },
-      {
-        rootMargin: "-30% 0px -55% 0px", // prefer the section near the top/middle
-        threshold: [0.01, 0.15, 0.3, 0.6, 0.9],
-      }
+      { rootMargin: "-50% 0px -50% 0px", threshold: 0 }
     );
-
-    sections.forEach((s) => io.observe(s));
-
-    return () => {
-      ro.disconnect();
-      io.disconnect();
-    };
+    ids.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
   }, []);
 
-  const onNavClick = (id: string, label: string) => {
-    trackEvent("nav_click", { id, label });
-  };
+  // Underline position
+  useEffect(() => {
+    const el = active && itemRefs.current[active];
+    const bar = barRef.current;
+    if (!el || !bar) return;
+    const { left, width } = el.getBoundingClientRect();
+    const headerLeft = el.closest("nav")?.getBoundingClientRect().left ?? 0;
+    bar.style.transform = `translateX(${left - headerLeft}px)`;
+    bar.style.width = `${width}px`;
+  }, [active]);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const navItems = useMemo(() => NAV, []);
 
   return (
     <header
-      ref={ref as any}
-      className="fixed inset-x-0 top-0 z-50 backdrop-blur bg-white/70 dark:bg-black/50 border-b border-zinc-200 dark:border-zinc-800"
+      className={`fixed top-0 inset-x-0 z-50 transition-colors ${
+        scrolled ? "backdrop-blur bg-white/70 dark:bg-black/50 border-b border-zinc-200/60 dark:border-zinc-800/60" : ""
+      }`}
+      style={{ ["--header-h" as any]: "64px" }}
     >
-      <div className="max-w-6xl mx-auto px-5 h-16 flex items-center gap-4">
-        <a href="#home" className="font-extrabold tracking-tight text-lg">
-          APRO
-        </a>
+      <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
+        <a href="#home" className="font-extrabold text-lg tracking-tight">APRO</a>
 
-        {/* nav — horizontal scroll on narrow widths; single underbar highlight */}
-        <nav className="flex-1 overflow-x-auto">
-          <ul className="flex items-center gap-4 whitespace-nowrap">
-            {CANDIDATE_IDS.map((id) => {
-              const isActive = activeId === id;
-              return (
-                <li key={id} className="relative">
-                  <a
-                    href={`#${id}`}
-                    onClick={() => onNavClick(id, LABELS[id])}
-                    className={
-                      "px-1 py-2 text-sm transition-colors " +
-                      (isActive
-                        ? "text-black dark:text-white"
-                        : "text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white")
-                    }
-                  >
-                    {LABELS[id]}
-                  </a>
-                  {/* single underbar (no duplicated highlight) */}
-                  <div
-                    className={`absolute left-0 right-0 -bottom-0.5 h-[2px] rounded-full transition-opacity ${
-                      isActive ? "opacity-100" : "opacity-0"
-                    }`}
-                    style={{
-                      background:
-                        "linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(99,102,241,0.9) 20%, rgba(16,185,129,0.9) 80%, rgba(0,0,0,0) 100%)",
-                    }}
-                  />
-                </li>
-              );
-            })}
-          </ul>
+        <nav className="relative hidden md:flex items-center gap-6">
+          {navItems.map(({ id, label }) => (
+            <a
+              key={id}
+              href={`#${id}`}
+              ref={(el) => (itemRefs.current[id] = el)}
+              className={`pb-1 transition-colors ${
+                active === id ? "text-black dark:text-white" : "text-zinc-600 dark:text-zinc-300 hover:text-black dark:hover:text-white"
+              }`}
+            >
+              {label}
+            </a>
+          ))}
+          {/* underline */}
+          <div
+            ref={barRef}
+            className="absolute -bottom-[1px] h-[2px] bg-black dark:bg-white rounded-full transition-transform duration-200"
+            style={{ width: 0 }}
+          />
         </nav>
 
-        <button
-          onClick={() => {
-            openLead("Header CTA");
-            trackEvent("contactOpen", { where: "header", label: "Talk to Sales" });
-          }}
-          className="hidden sm:inline-flex px-4 py-2 rounded-full bg-black text-white text-sm font-semibold dark:bg-white dark:text-black"
-        >
-          Talk to Sales
-        </button>
+        <div className="flex items-center gap-3">
+          <a
+            href="/brochure.pdf"
+            className="hidden sm:inline-flex px-3 py-2 rounded-full border border-black/30 dark:border-white/40 text-sm"
+          >
+            Brochure
+          </a>
+          <button
+            onClick={() => openLead("Header CTA")}
+            className="px-4 py-2 rounded-full bg-black text-white dark:bg-white dark:text-black text-sm font-semibold"
+          >
+            Talk to Sales
+          </button>
+        </div>
       </div>
     </header>
   );
 }
+
+export default Header;
