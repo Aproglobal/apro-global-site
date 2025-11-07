@@ -1,5 +1,6 @@
 import React from "react";
 import { trackEvent } from "../services/analytics";
+import { openLead } from "./LeadModal";
 
 export default function TcoCalculator() {
   return (
@@ -19,14 +20,17 @@ export default function TcoCalculator() {
         <div className="mt-6 flex flex-wrap gap-3">
           <button
             type="button"
-            onClick={() => trackEvent("tcoNotifyClick", { where: "tco_section" })}
+            onClick={() => {
+              trackEvent("tcoNotifyClick", { where: "tco_section" });
+              openLead("TCO Notify");
+            }}
             className="px-4 py-2 rounded-full bg-black text-white dark:bg-white dark:text-black text-sm"
           >
             Notify me when ready
           </button>
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent("lead:open", { detail: { source: "TCO CTA" } }))}
+            onClick={() => openLead("TCO CTA")}
             className="px-4 py-2 rounded-full border border-zinc-300 dark:border-zinc-700 text-sm"
           >
             Request a detailed ROI (PDF)
