@@ -4,10 +4,7 @@
 
 html, body, #root { height: 100%; }
 
-/* ✅ reCAPTCHA v3 배지 처리
-   - 데스크탑/태블릿: 좌하단 고정(CTA는 우하단이라 충돌 없음)
-   - 모바일(≤640px): 배지 숨김, 대신 페이지에 공식 문구를 표시 (App.tsx에 추가)
-*/
+/* ✅ reCAPTCHA v3 badge */
 .grecaptcha-badge {
   position: fixed !important;
   left: 16px !important;
@@ -16,18 +13,14 @@ html, body, #root { height: 100%; }
   z-index: 30 !important; /* CTA(z-40)와 겹치지 않게 낮춤 */
   transform: translateZ(0);
 }
-
 @media (max-width: 640px) {
-  .grecaptcha-badge {
-    display: none !important; /* 모바일은 공식 문구로 대체 */
-  }
+  .grecaptcha-badge { display: none !important; }
 }
 
-/* ✅ Hide horizontal scrollbar for header nav scroller (we use an ink-bar instead) */
-[data-nav-scroll] {
-  -ms-overflow-style: none;       /* IE/Edge */
-  scrollbar-width: none;          /* Firefox */
-}
-[data-nav-scroll]::-webkit-scrollbar {
-  display: none;                  /* Chrome/Safari */
-}
+/* Horizontal rail helpers */
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+.rail { overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+
+/* Small tweak: reduce link jitter on focus */
+:focus-visible { outline-offset: 2px; }
