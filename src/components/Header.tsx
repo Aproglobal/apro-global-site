@@ -86,7 +86,7 @@ export default function Header() {
     return (
       <button
         onClick={() => scrollToId(item.id)}
-        className={`px-3 py-2 rounded-full text-sm font-medium transition
+        className={`relative px-3 py-2 rounded-full text-sm font-medium transition
         ${isActive ? "text-black dark:text-white" : "text-zinc-600 dark:text-zinc-300 hover:text-black dark:hover:text-white"}`}
       >
         {item.label}
@@ -139,7 +139,7 @@ export default function Header() {
     <div className="md:hidden border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
       <div className="max-w-6xl mx-auto px-5 py-2">
         <div className="grid grid-cols-2 gap-2">
-          {ALL.map(item => (
+          {[...PRIMARY, ...SECONDARY].map(item => (
             <button
               key={item.id}
               onClick={() => scrollToId(item.id)}
