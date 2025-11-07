@@ -62,12 +62,14 @@ export default function ContactCompany() {
               <div className="font-semibold">KUKJE INTERTRADE Co., Ltd. (APRO)</div>
               <div>Floor 12, 124, Sagimakgol-ro, Jungwon-gu,</div>
               <div>Seongnam-si, Gyeonggi-do, Republic of Korea</div>
-              <div className="mt-2">Email: <a className="underline" href={`mailto:${salesEmail}`}>{salesEmail}</a></div>
+              <div className="mt-2">
+                Email: <a className="underline" href={`mailto:${salesEmail}`}>{salesEmail}</a>
+              </div>
             </div>
 
             <div className="mt-5 rounded-xl bg-zinc-100 dark:bg-zinc-800 p-4 text-xs text-zinc-600 dark:text-zinc-300">
               <div className="font-semibold mb-1">Note</div>
-              We are the official seller in Korea for <strong>John Deere</strong> carts and <strong>irrigation</strong>. 
+              We are the official seller in Korea for <strong>John Deere</strong> carts and <strong>irrigation</strong>.
               For international sourcing/exports, contact the sales team.
             </div>
           </div>
