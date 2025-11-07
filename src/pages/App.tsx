@@ -7,10 +7,12 @@ import SectionFrame from "../components/SectionFrame";
 import LeadModal, { openLead } from "../components/LeadModal";
 import ModelDetail from "../components/ModelDetail";
 
-// Content sections (keep your existing files)
+// Content sections
 import ModelGrid from "../components/ModelGrid";
 import CompareTable from "../components/CompareTable";
-import TechSection from "../components/TechSection";
+// Split tech into Performance + Technology
+import PerformanceSection from "../components/PerformanceSection";
+import TechnologySection from "../components/TechnologySection";
 import IndustriesSection from "../components/IndustriesSection";
 import ProductionTimeline from "../components/ProductionTimeline";
 import ServiceWarrantySection from "../components/ServiceWarrantySection";
@@ -200,7 +202,7 @@ export default function App() {
           </div>
         </section>
 
-        {/* MODELS + COMPARE (inside a stereoscopic card) */}
+        {/* MODELS + COMPARE */}
         <SectionFrame id="models">
           <div className="space-y-8">
             <ModelGrid />
@@ -211,9 +213,14 @@ export default function App() {
           </div>
         </SectionFrame>
 
-        {/* TECHNOLOGY */}
+        {/* PERFORMANCE (systems + feature gallery) */}
+        <SectionFrame id="performance">
+          <PerformanceSection copy={techCopy} />
+        </SectionFrame>
+
+        {/* TECHNOLOGY (systems + feature gallery) */}
         <SectionFrame id="technology">
-          <TechSection copy={techCopy} />
+          <TechnologySection copy={techCopy} />
         </SectionFrame>
 
         {/* INDUSTRIES */}
@@ -221,10 +228,7 @@ export default function App() {
           <IndustriesSection />
         </SectionFrame>
 
-        {/* PRODUCTION & DELIVERY TIMELINE
-            Note: your component only shows an image when provided.
-            If you only have "Factory release" and "On-site delivery & installation" pictures,
-            keep others' img undefined in data/timeline.ts and it will render cleanly. */}
+        {/* PRODUCTION & DELIVERY TIMELINE */}
         <SectionFrame id="timeline">
           <ProductionTimeline
             steps={TIMELINE_STEPS}
@@ -252,7 +256,6 @@ export default function App() {
         {/* TCO / ROI */}
         <SectionFrame id="tco" title="TCO / ROI">
           <div className="not-prose">
-            {/* Calculator is visible, no HTML comments */}
             <TcoCalculator />
           </div>
         </SectionFrame>
@@ -274,7 +277,7 @@ export default function App() {
           <SupportSection />
         </SectionFrame>
 
-        {/* CONTACT & COMPANY (wrap with an id so header anchor works) */}
+        {/* CONTACT & COMPANY */}
         <SectionFrame id="contact">
           <ContactCompany />
         </SectionFrame>
