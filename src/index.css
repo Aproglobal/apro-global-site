@@ -19,6 +19,15 @@ html, body, #root { height: 100%; }
 
 @media (max-width: 640px) {
   .grecaptcha-badge {
-    display: none !important; /* 모바일은 공식 문구로 대체(아래 2번) */
+    display: none !important; /* 모바일은 공식 문구로 대체 */
   }
+}
+
+/* ✅ Hide horizontal scrollbar for header nav scroller (we use an ink-bar instead) */
+[data-nav-scroll] {
+  -ms-overflow-style: none;       /* IE/Edge */
+  scrollbar-width: none;          /* Firefox */
+}
+[data-nav-scroll]::-webkit-scrollbar {
+  display: none;                  /* Chrome/Safari */
 }
