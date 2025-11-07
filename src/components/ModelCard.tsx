@@ -1,58 +1,38 @@
+// src/components/ModelCard.tsx
 import React from "react";
 
+
 export type ModelCardProps = {
-  title: string;
-  imageUrl?: string;
-  description?: string;
-  href?: string;
-  badge?: string;
+title?: string;
+imageUrl?: string;
+description?: string;
+href?: string;
+className?: string;
 };
 
-export default function ModelCard({
-  title,
-  imageUrl,
-  description,
-  href,
-  badge,
-}: ModelCardProps) {
-  const Card = (
-    <article className="group relative overflow-hidden rounded-2xl border border-gray-200 shadow-sm">
-      {imageUrl ? (
-        <img
-          src={imageUrl}
-          alt={title}
-          className="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-          loading="lazy"
-        />
-      ) : (
-        <div className="flex h-48 w-full items-center justify-center bg-gray-100 text-sm text-gray-500">
-          Image coming soon
-        </div>
-      )}
 
-      <div className="p-5">
-        <div className="mb-1 flex items-center gap-2">
-          <h3 className="text-lg font-semibold">{title}</h3>
-          {badge && (
-            <span className="rounded-full bg-gray-900 px-2 py-0.5 text-[10px] font-medium text-white">
-              {badge}
-            </span>
-          )}
-        </div>
-        {description && (
-          <p className="text-sm leading-6 text-gray-600">{description}</p>
-        )}
-      </div>
-    </article>
-  );
-
-  if (href) {
-    return (
-      <a href={href} className="block focus:outline-none focus:ring-2 focus:ring-black/50">
-        {Card}
-      </a>
-    );
-  }
-
-  return Card;
+export function ModelCard({ title = "Model", imageUrl, description, href = "#", className = "" }: ModelCardProps) {
+return (
+<article className={`rounded-2xl border border-gray-200 overflow-hidden bg-white ${className}`}>
+{imageUrl ? (
+<div className="aspect-[16/9] w-full bg-gray-100">
+<img src={imageUrl} alt={title} className="h-full w-full object-cover" />
+</div>
+) : (
+<div className="aspect-[16/9] w-full bg-gray-100" />
+)}
+<div className="p-4">
+<h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+{description ? <p className="mt-1 text-sm text-gray-600 line-clamp-2">{description}</p> : null}
+<div className="mt-4">
+<a href={href} className="inline-block rounded-xl bg-gray-900 px-3.5 py-2 text-sm text-white hover:bg-black">
+Learn more
+</a>
+</div>
+</div>
+</article>
+);
 }
+
+
+export default ModelCard;
