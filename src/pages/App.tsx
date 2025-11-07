@@ -8,16 +8,6 @@ import FleetSection from "../components/FleetSection";
 import SupportSection from "../components/SupportSection";
 import LeadModal, { openLead } from "../components/LeadModal";
 import ModelDetail from "../components/ModelDetail";
-import { getVariant } from "../utils/ab";// src/pages/App.tsx
-import React, { useEffect, useMemo, useState } from "react";
-import Header from "../components/Header";
-import ModelGrid from "../components/ModelGrid";
-import CompareTable from "../components/CompareTable";
-import TechSection from "../components/TechSection";
-import FleetSection from "../components/FleetSection";
-import SupportSection from "../components/SupportSection";
-import LeadModal, { openLead } from "../components/LeadModal";
-import ModelDetail from "../components/ModelDetail";
 import { getVariant } from "../utils/ab";
 import { setupScrollDepth, trackEvent, initAnalytics } from "../services/analytics";
 import { initThemeWatcher } from "../utils/theme";
@@ -36,26 +26,16 @@ import ResourcesSection from "../components/ResourcesSection";
 import TcoCalculator from "../components/TcoCalculator";
 import ConfiguratorSection from "../components/ConfiguratorSection";
 
-// JSON-LD (products)
-import ProductsJsonLd from "../seo/ProductsJsonLd";
-
-/** Custom event payloads used by CompareTable floating UI */
-type ComparePinnedDetail = { count: number };
-type CompareMiniDetail = { open: boolean };
-
-export default function App(): JSX.Element {
+export default function App() {
   const variant = getVariant();
 
   useEffect(() => {
-    // Analytics + scroll depth
     initAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
     setupScrollDepth();
-
-    // Theme auto-switch (with user override respected in Header)
     initThemeWatcher();
 
     // reCAPTCHA v3 preload
-    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
+    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
     if (siteKey) loadRecaptcha(siteKey);
   }, []);
 
@@ -64,31 +44,29 @@ export default function App(): JSX.Element {
 
   const techCopy = useMemo(() => getTechCopy(), []);
 
-  // Hide sticky CTA if compare table is "pinned" or mini panel is open
-  const [bottomBlocked, setBottomBlocked] = useState<boolean>(false);
+  // CompareTable가 하단을 차지할 때 플로팅 CTA 자동 숨김
+  const [bottomBlocked, setBottomBlocked] = useState(false);
   useEffect(() => {
     let pinnedCount = 0;
     let miniOpen = false;
-
     const recompute = () => setBottomBlocked(miniOpen || pinnedCount > 0);
 
     const onPinned = (e: Event) => {
-      const ce = e as CustomEvent<ComparePinnedDetail>;
-      pinnedCount = Number(ce.detail?.count ?? 0);
+      const ce = e as CustomEvent<{ count: number }>;
+      pinnedCount = Number(ce?.detail?.count ?? 0);
       recompute();
     };
-
     const onMini = (e: Event) => {
-      const ce = e as CustomEvent<CompareMiniDetail>;
-      miniOpen = Boolean(ce.detail?.open ?? false);
+      const ce = e as CustomEvent<{ open: boolean }>;
+      miniOpen = Boolean(ce?.detail?.open ?? false);
       recompute();
     };
 
-    window.addEventListener("compare:pinned", onPinned as EventListener);
-    window.addEventListener("compare:mini", onMini as EventListener);
+    window.addEventListener("compare:pinned" as any, onPinned as any);
+    window.addEventListener("compare:mini" as any, onMini as any);
     return () => {
-      window.removeEventListener("compare:pinned", onPinned as EventListener);
-      window.removeEventListener("compare:mini", onMini as EventListener);
+      window.removeEventListener("compare:pinned" as any, onPinned as any);
+      window.removeEventListener("compare:mini" as any, onMini as any);
     };
   }, []);
 
@@ -96,9 +74,7 @@ export default function App(): JSX.Element {
     <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
       <Header />
 
-      {/* Product JSON-LD for all APRO models */}
-      <ProductsJsonLd />
-
+      {/* Header가 설정하는 --header-h에 맞춰 상단 패딩 적용 (fallback 4rem) */}
       <main id="main" style={{ paddingTop: "var(--header-h, 4rem)" }}>
         {/* HERO */}
         <section id="home" className="relative scroll-mt-24" aria-label="Hero">
@@ -113,10 +89,10 @@ export default function App(): JSX.Element {
             <div className="absolute inset-0 bg-gradient-to-t from-white via-white/30 to-transparent dark:from-black dark:via-black/30 dark:to-transparent" />
             <div className="relative z-10 max-w-6xl mx-auto px-5 h-full flex flex-col justify-end pb-14">
               <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
-                APRO Golf Carts for Global Fleets
+                Electric Golf Carts, Built for Courses, Resorts & Venues Worldwide
               </h1>
               <p className="mt-3 max-w-2xl text-zinc-700 dark:text-zinc-200">
-                Lithium efficiency, robust chassis, and fleet-ready reliability for courses, resorts, and venues.
+                Smart guidance, flexible seating, and global after-sales support.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
@@ -173,7 +149,7 @@ export default function App(): JSX.Element {
         </section>
 
         {/* INDUSTRIES */}
-        <section id="industries" className="scroll-mt-24" aria-label="Use cases">
+        <section id="industries" className="scroll-mt-24" aria-label="Industries">
           <div className="border-t border-zinc-200 dark:border-zinc-800" />
           <IndustriesSection />
         </section>
@@ -185,7 +161,7 @@ export default function App(): JSX.Element {
         </section>
 
         {/* SERVICE & WARRANTY */}
-        <section id="service" className="scroll-mt-24" aria-label="Warranty & service">
+        <section id="service" className="scroll-mt-24" aria-label="Service and warranty">
           <div className="border-t border-zinc-200 dark:border-zinc-800" />
           <ServiceWarrantySection />
         </section>
@@ -221,7 +197,7 @@ export default function App(): JSX.Element {
         </section>
 
         {/* SUPPORT */}
-        <section id="support" className="scroll-mt-24" aria-label="Support / FAQ">
+        <section id="support" className="scroll-mt-24" aria-label="Support">
           <div className="border-t border-zinc-200 dark:border-zinc-800" />
           <SupportSection />
         </section>
@@ -239,7 +215,7 @@ export default function App(): JSX.Element {
               <a href={`mailto:${import.meta.env.VITE_SALES_EMAIL || "sales@example.com"}`} className="underline">
                 {import.meta.env.VITE_SALES_EMAIL || "sales@example.com"}
               </a>{" "}
-              or open the form below.
+              or open the form above.
             </p>
 
             <div className="mt-6 flex gap-3">
@@ -262,7 +238,7 @@ export default function App(): JSX.Element {
               </a>
             </div>
 
-            {/* reCAPTCHA policy notice */}
+            {/* reCAPTCHA 정책 고지 (모바일 배지 숨김시 필수) */}
             <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
               This site is protected by reCAPTCHA and the Google{" "}
               <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">
@@ -278,7 +254,7 @@ export default function App(): JSX.Element {
         </section>
       </main>
 
-      {/* Sticky CTA — hidden when compare is pinned/mini */}
+      {/* Sticky CTA — compare가 하단을 점유할 때는 자동 숨김 */}
       {!bottomBlocked && (
         <button
           onClick={() => {
@@ -304,9 +280,28 @@ export default function App(): JSX.Element {
               Address: Floor 12, 124, Sagimakgol-ro, Jungwon-gu, Seongnam-si, Gyeonggi-do, Republic of Korea
             </p>
 
+            {/* 고지 문구를 푸터에도 한 번 더 표기해두면 정책상 가장 안전 */}
             <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-500">
               This site is protected by reCAPTCHA and the Google{" "}
               <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">
+                Privacy Policy
+              </a>{" "}
+              and{" "}
+              <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="underline">
+                Terms of Service
+              </a>{" "}
+              apply.
+            </p>
+          </div>
+        </div>
+      </footer>
+
+      <LeadModal />
+      <ModelDetail />
+    </div>
+  );
+}
+lank" rel="noreferrer" className="underline">
                 Privacy Policy
               </a>{" "}
               and{" "}
