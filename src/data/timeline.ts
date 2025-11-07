@@ -1,4 +1,3 @@
-// src/data/timeline.ts
 export type Step = {
   day: number;
   title: string;
@@ -11,57 +10,24 @@ export type Step = {
 };
 
 export const TIMELINE_STEPS: Step[] = [
-  {
-    day: 1,
-    title: "Send quotation to customer",
-    note: "Formal price quote including scope, lead time, and commercial terms.",
-    img: "/timeline/day01.jpg",
-  },
-  {
-    day: 2,
-    title: "Issue Purchase Order (PO) template",
-    note: "Share our PO form so the customer can proceed upon approval.",
-    img: "/timeline/day02.jpg",
-  },
-  {
-    day: 3,
-    title: "Issue contract template",
-    note: "Provide contract document for review and signature.",
-    img: "/timeline/day03.jpg",
-  },
-  {
-    day: 4,
-    title: "Place production & option orders",
-    vendor: "DY Innovate / Hanyangsa",
-    note: "Cart production order to DY Innovate; option kit order to Hanyangsa.",
-    img: "/timeline/day04.jpg",
-  },
-  {
-    day: 20,
-    title: "Order cart numbers & logo decals",
-    vendor: "Mikelan Planning",
-    note: "Artwork proof and decal production (cart numbers and course logo).",
-    img: "/timeline/day20.jpg",
-  },
-  {
-    day: 21,
-    title: "Book trucks (dispatch)",
-    vendor: "Myungjin Logistics",
-    note: "Logistics scheduled about 10 days before factory release.",
-    img: "/timeline/day21.jpg",
-  },
+  { day: 1,  title: "Send quotation to customer", note: "Formal price quote including scope, lead time, and commercial terms." },
+  { day: 2,  title: "Issue Purchase Order (PO) template", note: "Share our PO form so the customer can proceed upon approval." },
+  { day: 3,  title: "Issue contract template", note: "Provide contract document for review and signature." },
+  { day: 4,  title: "Place production & option orders", vendor: "DY Innovate / Hanyangsa", note: "Cart production order to DY Innovate; option kit order to Hanyangsa." },
+  { day: 20, title: "Order cart numbers & logo decals", vendor: "Mikelan Planning", note: "Artwork proof and decal production (cart numbers and course logo)." },
+  { day: 21, title: "Book trucks (dispatch)", vendor: "Myungjin Logistics", note: "Logistics scheduled about 10 days before factory release." },
   {
     day: 29,
     title: "Factory release",
     vendor: "DY Innovate",
     note: "QC completed; units loaded and handed over for delivery.",
-    img: "/timeline/day29.jpg",
+    img: "/timeline/factory-release.jpg", // ✅ only provide images for these two
   },
   {
     day: 30,
     title: "On-site delivery & installation",
     vendor: "Hanyangsa",
     note: "Deliver carts; install option kits on site.",
-    img: "/timeline/day30.jpg",
+    img: "/timeline/on-site-delivery.jpg", // ✅ and this one
   },
 ];
