@@ -7,19 +7,14 @@ import SectionFrame from "../components/SectionFrame";
 import LeadModal, { openLead } from "../components/LeadModal";
 import ModelDetail from "../components/ModelDetail";
 
-// Models & Compare (keep existing)
+// Content sections
 import ModelGrid from "../components/ModelGrid";
 import CompareTable from "../components/CompareTable";
-
-// New immersive sections
-import PerformanceSection from "../components/PerformanceSection";
-import TechnologySection from "../components/TechnologySection";
-import IndustriesShowcase from "../components/IndustriesShowcase";
-import TimelineShowcase from "../components/TimelineShowcase";
-import ServiceWarrantyShowcase from "../components/ServiceWarrantyShowcase";
-import ChargingPowerShowcase from "../components/ChargingPowerShowcase";
-
-// Other sections you already have
+import FeatureGroupSection from "../components/FeatureGroupSection"; // <-- NEW
+import IndustriesSection from "../components/IndustriesSection";
+import ProductionTimeline from "../components/ProductionTimeline";
+import ServiceWarrantySection from "../components/ServiceWarrantySection";
+import ChargingPowerSection from "../components/ChargingPowerSection";
 import ResourcesSection from "../components/ResourcesSection";
 import TcoCalculator from "../components/TcoCalculator";
 import ConfiguratorSection from "../components/ConfiguratorSection";
@@ -28,7 +23,7 @@ import SupportSection from "../components/SupportSection";
 import ContactCompany from "../components/ContactCompany";
 
 // Data
-import { getTechCopy } from "../data/technology";
+import { TIMELINE_STEPS } from "../data/timeline";
 
 // SEO
 import SEO from "../components/SEO";
@@ -52,8 +47,6 @@ export default function App() {
 
   const primaryCta = "Talk to Sales";
   const secondaryCta = variant === "A" ? "Explore models" : "Download brochure";
-  // kept if you need text snippets anywhere else
-  const techCopy = useMemo(() => getTechCopy(), []);
 
   // Hide sticky CTA when compare section pins a mini view at bottom
   const [bottomBlocked, setBottomBlocked] = useState(false);
@@ -61,6 +54,7 @@ export default function App() {
     let pinnedCount = 0;
     let miniOpen = false;
     const recompute = () => setBottomBlocked(miniOpen || pinnedCount > 0);
+
     const onPinned = (e: Event) => {
       const ce = e as CustomEvent<{ count: number }>;
       pinnedCount = Number(ce?.detail?.count ?? 0);
@@ -71,6 +65,7 @@ export default function App() {
       miniOpen = Boolean(ce?.detail?.open ?? false);
       recompute();
     };
+
     window.addEventListener("compare:pinned" as any, onPinned as any);
     window.addEventListener("compare:mini" as any, onMini as any);
     return () => {
@@ -167,7 +162,7 @@ export default function App() {
                 <button
                   onClick={() => {
                     openLead("Hero CTA");
-                    trackEvent("heroCtaClick", { where: "hero", label: "Talk to Sales", ab_variant: variant });
+                    trackEvent("heroCtaClick", { where: "hero", label: primaryCta, ab_variant: variant });
                   }}
                   className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
                   aria-label="Open sales contact form"
@@ -204,7 +199,7 @@ export default function App() {
         </section>
 
         {/* MODELS + COMPARE */}
-        <SectionFrame id="models" title="Models">
+        <SectionFrame id="models">
           <div className="space-y-8">
             <ModelGrid />
             <div id="compare" className="sr-only" aria-hidden="true" />
@@ -213,38 +208,43 @@ export default function App() {
           </div>
         </SectionFrame>
 
-        {/* PERFORMANCE (split out) */}
-        <SectionFrame id="performance" title="Performance">
-          <PerformanceSection />
+        {/* PERFORMANCE (big, one-at-a-time gallery) */}
+        <SectionFrame id="performance" title="Performance" note="Powertrain, braking, and chassis dynamics engineered for courses.">
+          <FeatureGroupSection group="performance" />
         </SectionFrame>
 
-        {/* TECHNOLOGY (split out) */}
-        <SectionFrame id="technology" title="Technology">
-          <TechnologySection />
+        {/* TECHNOLOGY (big, one-at-a-time gallery) */}
+        <SectionFrame id="technology" title="Technology" note="Comfort, utility, and serviceability that simplify daily operations.">
+          <FeatureGroupSection group="technology" />
         </SectionFrame>
 
-        {/* INDUSTRIES (one at a time) */}
-        <SectionFrame id="industries" title="Industries">
-          <IndustriesShowcase />
+        {/* INDUSTRIES */}
+        <SectionFrame id="industries">
+          <IndustriesSection />
         </SectionFrame>
 
-        {/* PRODUCTION & DELIVERY TIMELINE (one step at a time) */}
-        <SectionFrame id="timeline" title="Production & Delivery Timeline" note="Domestic example; export flows may differ.">
-          <TimelineShowcase />
+        {/* PRODUCTION & DELIVERY TIMELINE */}
+        <SectionFrame id="timeline">
+          <ProductionTimeline
+            steps={TIMELINE_STEPS}
+            title="Production & Delivery Timeline"
+            note="Note: Domestic delivery flow. Export process may differ."
+            showSummary={true}
+          />
         </SectionFrame>
 
         {/* SERVICE & WARRANTY */}
-        <SectionFrame id="service" title="Service & Warranty">
-          <ServiceWarrantyShowcase />
+        <SectionFrame id="service">
+          <ServiceWarrantySection />
         </SectionFrame>
 
         {/* CHARGING & POWER */}
-        <SectionFrame id="charging" title="Charging & Power">
-          <ChargingPowerShowcase />
+        <SectionFrame id="charging">
+          <ChargingPowerSection />
         </SectionFrame>
 
         {/* RESOURCES */}
-        <SectionFrame id="resources" title="Resources">
+        <SectionFrame id="resources">
           <ResourcesSection />
         </SectionFrame>
 
@@ -263,17 +263,17 @@ export default function App() {
         </SectionFrame>
 
         {/* FLEET */}
-        <SectionFrame id="fleet" title="Fleet Solutions">
+        <SectionFrame id="fleet">
           <FleetSection />
         </SectionFrame>
 
         {/* SUPPORT */}
-        <SectionFrame id="support" title="Support">
+        <SectionFrame id="support">
           <SupportSection />
         </SectionFrame>
 
         {/* CONTACT & COMPANY */}
-        <SectionFrame id="contact" title="Contact">
+        <SectionFrame id="contact">
           <ContactCompany />
         </SectionFrame>
       </main>
