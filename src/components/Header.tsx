@@ -1,16 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { trackEvent } from "../services/analytics";
-import { openLead } from "./LeadModal";
-
-/** -------------------------------
- *  Config
- * --------------------------------*/
-type NavItem = { id: string; label: string };
-
-const LABELS: Record<string, string> = {
-  models: "Models",
-  technology: "Technology",
-  industries: "Industries",import React, {
+import React, {
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -32,7 +20,6 @@ const LABELS: Record<string, string> = {
   industries: "Industries",
   compare: "Compare",
   charging: "Charging",
-  tco: "TCO",
   resources: "Resources",
   support: "Support",
   timeline: "Timeline",
@@ -48,7 +35,6 @@ const CANDIDATE_IDS = [
   "industries",
   "compare",
   "charging",
-  "tco",
   "resources",
   "support",
   "timeline",
@@ -176,7 +162,7 @@ export default function Header() {
       const existing = CANDIDATE_IDS
         .map((id) => ({ id, el: document.getElementById(id) }))
         .filter(
-          (x): x is { id: string; el: HTMLElement } => !!x.el
+          (x): x is { id: string; el: HTMLElement } => !!x && !!x.el
         )
         .sort((a, b) => getDocTop(a.el) - getDocTop(b.el))
         .map(({ id }) => ({ id, label: LABELS[id] || id }));
@@ -208,7 +194,7 @@ export default function Header() {
               Math.abs(a.boundingClientRect.top) -
               Math.abs(b.boundingClientRect.top)
           );
-        if (visible.length) setActive(visible[0].target.id);
+        if (visible.length) setActive((visible[0].target as HTMLElement).id);
       },
       { root: null, rootMargin: "-30% 0px -30% 0px", threshold: [0, 0.2, 0.5, 1] }
     );
@@ -228,8 +214,7 @@ export default function Header() {
         (document.scrollingElement?.scrollHeight ||
           document.body.scrollHeight) -
           2;
-      if (atBottom && navItems.length)
-        setActive(navItems[navItems.length - 1].id);
+      if (atBottom && navItems.length) setActive(navItems[navItems.length - 1].id);
     };
     window.addEventListener("scroll", onScrollBottomFallback, { passive: true });
 
@@ -238,25 +223,6 @@ export default function Header() {
       window.removeEventListener("scroll", onScrollBottomFallback);
     };
   }, [navItems]);
-
-  /** Auto-center active pill in desktop scroll container */
-  useEffect(() => {
-    if (!desktopScrollRef.current || !active) return;
-    const container = desktopScrollRef.current;
-    const btn =
-      container.querySelector<HTMLButtonElement>(
-        `[aria-current="page"]`
-      );
-    if (!btn) return;
-    const cRect = container.getBoundingClientRect();
-    const bRect = btn.getBoundingClientRect();
-    const offset =
-      bRect.left - cRect.left - (cRect.width / 2 - bRect.width / 2);
-    container.scrollBy({
-      left: offset,
-      behavior: "smooth",
-    });
-  }, [active]);
 
   /** Lock body when mobile drawer open */
   useEffect(() => {
@@ -281,12 +247,7 @@ export default function Header() {
     trackEvent("nav_click", { id, where: "header" });
     const el = document.getElementById(id);
     if (el) {
-      const prefersReduced =
-        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      el.scrollIntoView({
-        behavior: prefersReduced ? "auto" : "smooth",
-        block: "start",
-      });
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
       history.pushState({}, "", `#${id}`);
     }
   }, []);
@@ -299,22 +260,11 @@ export default function Header() {
   const Brand = useMemo(
     () => (
       <a
-        href="#home"
+        href="#top"
         onClick={(e) => {
           e.preventDefault();
-          const prefersReduced =
-            window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-          const el = document.getElementById("home");
-          if (el) {
-            el.scrollIntoView({
-              behavior: prefersReduced ? "auto" : "smooth",
-              block: "start",
-            });
-            history.pushState({}, "", "#home");
-          } else {
-            window.scrollTo({ top: 0, behavior: prefersReduced ? "auto" : "smooth" });
-            history.pushState({}, "", "#");
-          }
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          history.pushState({}, "", "#top");
         }}
         className="inline-flex items-center gap-2 font-extrabold tracking-tight text-lg lg:text-xl whitespace-nowrap"
         aria-label="APRO Home"
@@ -354,7 +304,7 @@ export default function Header() {
             {/* Left: Brand */}
             <div className="flex-none">{Brand}</div>
 
-            {/* Center: Desktop Nav (scrollable, 중앙 고정 & 로고 겹침 방지) */}
+            {/* Center: Desktop Nav */}
             <div className="relative hidden lg:flex flex-1 min-w-0 items-center justify-center px-2">
               <div className="pointer-events-none absolute left-0 top-0 h-full w-6 bg-gradient-to-r from-white/90 dark:from-black/70 to-transparent" />
               <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-white/90 dark:from-black/70 to-transparent" />
@@ -363,7 +313,7 @@ export default function Header() {
                 className="mx-auto overflow-x-auto overscroll-x-contain"
                 style={{
                   scrollbarWidth: "thin",
-                  maxWidth: "min(760px, calc(100vw - 280px))", // 좌우(로고/우측버튼) 공간 고려
+                  maxWidth: "min(760px, calc(100vw - 280px))",
                 }}
               >
                 <ul className="flex items-center gap-1 whitespace-nowrap pr-6">
@@ -418,7 +368,7 @@ export default function Header() {
                 Talk to Sales
               </button>
 
-              {/* Hamburger (mobile only) — 항상 우측 고정 */}
+              {/* Hamburger (mobile only) */}
               <button
                 type="button"
                 className="inline-flex lg:hidden items-center justify-center w-10 h-10 rounded-full border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
@@ -534,6 +484,7 @@ export default function Header() {
           </div>
         </div>
       </header>
+      {/* ✅ Spacer 제거 (헤더 높이는 CSS 변수로 보정) */}
     </>
   );
 }
