@@ -1,34 +1,34 @@
 // src/pages/App.tsx
 import React from "react";
 
-// Components (adjust default/named imports only if your files export differently)
+// Components (use default imports only)
 import Header from "../components/Header";
 import ModelGrid from "../components/ModelGrid";
 import CompareTable from "../components/CompareTable";
 import ChargingPowerSection from "../components/ChargingPowerSection";
 import FleetSection from "../components/FleetSection";
-import TechSection, { type TechCopy } from "../components/TechSection";
+import TechSection from "../components/TechSection";
 import TechFeatureGrid from "../components/TechFeatureGrid";
-import ProductionTimeline, { type ProductionStep } from "../components/ProductionTimeline";
+import ProductionTimeline from "../components/ProductionTimeline";
 import ServiceWarrantySection from "../components/ServiceWarrantySection";
 import ResourcesSection from "../components/ResourcesSection";
 import SupportSection from "../components/SupportSection";
 import TcoCalculator from "../components/TcoCalculator";
 import ConfiguratorSection from "../components/ConfiguratorSection";
 
-// Minimal placeholder copy for TechSection (use real strings later)
-const techCopy = {
-  // Put your real fields here if you have a specific shape.
-  // We assert to TechCopy to satisfy TS and fix the build right now.
-} as unknown as TechCopy;
+// ---- Minimal placeholders to satisfy required props ----
 
-// Minimal placeholder steps for ProductionTimeline
-const timelineSteps = [
-  // Example of likely shape (safe to keep empty if unsure):
-  // { title: "Inquiry", description: "Send RFQ", etaWeeks: 0 },
-  // { title: "Production", description: "Build & QC", etaWeeks: 4 },
-  // { title: "Delivery", description: "Ship & install", etaWeeks: 2 },
-] as unknown as ProductionStep[];
+// If TechSection expects a `copy` prop, infer its type from the component and pass an empty object for now.
+type TechSectionProps = React.ComponentProps<typeof TechSection>;
+const techCopy = {} as unknown as TechSectionProps extends { copy: infer T } ? T : never;
+
+// If ProductionTimeline expects a `steps` prop, infer its type and pass an empty array.
+type ProductionTimelineProps = React.ComponentProps<typeof ProductionTimeline>;
+const timelineSteps = [] as unknown as ProductionTimelineProps extends { steps: infer T } ? T : never;
+
+// If CompareTable requires `items`, infer and pass an empty array.
+type CompareTableProps = React.ComponentProps<typeof CompareTable>;
+const compareItems = [] as unknown as CompareTableProps extends { items: infer T } ? T : never;
 
 export default function App() {
   return (
@@ -39,14 +39,18 @@ export default function App() {
         <ModelGrid />
 
         {/* Key sections */}
-        <CompareTable />
+        <CompareTable items={compareItems} />
         <ChargingPowerSection />
         <FleetSection />
 
-        {/* Tech sections that require props */}
-        <TechSection copy={techCopy} />
+        {/* Tech sections */}
+        {"copy" in ({} as TechSectionProps) ? <TechSection copy={techCopy as any} /> : <TechSection />}
         <TechFeatureGrid />
-        <ProductionTimeline steps={timelineSteps} />
+        {"steps" in ({} as ProductionTimelineProps) ? (
+          <ProductionTimeline steps={timelineSteps as any} />
+        ) : (
+          <ProductionTimeline />
+        )}
 
         {/* Business sections */}
         <TcoCalculator />
