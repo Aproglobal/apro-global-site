@@ -1,98 +1,64 @@
 // src/components/PerformanceSection.tsx
-import React, { useMemo } from "react";
-import Carousel from "./ui/Carousel";
-import type { TechCopy } from "../data/technology";
-import { TECH_FEATURES, type TechItem } from "../data/tech_features";
+import React from "react";
+import StageCarousel, { StageItem } from "./StageCarousel";
 
-const SYSTEM_IDS = ["powertrain", "suspension", "safety"];
-const FEATURE_KEYS = ["motor_46kw", "hydraulic_disc", "independent_suspension", "macpherson", "hill_climb"];
-
-function systemImg(id: string) {
-  return `/tech/systems/${id}.jpg`;
-}
-
-function SystemCard({ id, title, bullets }: { id: string; title: string; bullets: string[] }) {
-  return (
-    <article className="rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.35)]">
-      <div className="relative aspect-[4/3] md:aspect-[16/9] bg-zinc-100 dark:bg-zinc-900">
-        <img
-          src={systemImg(id)}
-          alt={title}
-          loading="lazy"
-          className="absolute inset-0 w-full h-full object-cover"
-          onError={(e) => (e.currentTarget.style.display = "none")}
-        />
-        <div className="absolute left-3 top-3 rounded-full bg-black/75 text-white text-[11px] px-2 py-1">{title}</div>
-      </div>
-      <div className="p-5">
-        <ul className="space-y-1 text-sm text-zinc-700 dark:text-zinc-300">
-          {bullets.map((b, i) => (
-            <li key={i} className="pl-4 relative">
-              <span className="absolute left-0 top-2 h-1.5 w-1.5 rounded-full bg-zinc-400" />
-              <span className="block translate-x-1">{b}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </article>
-  );
-}
-
-function FeatureCard({ f }: { f: TechItem }) {
-  return (
-    <article className="rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.35)]">
-      <div className="relative aspect-[4/3] md:aspect-[16/9] bg-black">
-        <img src={f.img} alt={f.title} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
-      </div>
-      <div className="p-5">
-        <h3 className="text-lg font-semibold">{f.title}</h3>
-        {f.desc ? <p className="text-sm text-zinc-700 dark:text-zinc-300 mt-1">{f.desc}</p> : null}
-      </div>
-    </article>
-  );
-}
-
-export default function PerformanceSection({ copy }: { copy: TechCopy }) {
-  const systems = (copy.sections ?? []).filter((s) => SYSTEM_IDS.includes(s.id));
-  const features = useMemo<TechItem[]>(
-    () => TECH_FEATURES.filter((t) => FEATURE_KEYS.includes(t.key)),
-    []
-  );
+export default function PerformanceSection() {
+  const items: StageItem[] = [
+    {
+      id: "powertrain",
+      img: "/assets/tech/powertrain.jpg", // TODO: replace with your image
+      alt: "Powerful lithium powertrain",
+      title: "Powertrain & Battery",
+      subtitle: "High-efficiency lithium system",
+      description:
+        "Long-life lithium packs, optimized BMS, and robust driveline deliver confident torque with stable voltage under load.",
+      kpis: [
+        { label: "Battery", value: "Lithium (LFP)" },
+        { label: "Capacity", value: "Up to 105 Ah" },
+        { label: "Controller", value: "High-current MOSFET" },
+        { label: "Charging", value: "On/Off-board AC options" },
+      ],
+      note: "Specs vary by model/market.",
+    },
+    {
+      id: "suspension",
+      img: "/assets/tech/suspension.jpg",
+      alt: "Advanced suspension & chassis",
+      title: "Suspension & Chassis",
+      subtitle: "Stable, durable ride",
+      description:
+        "Independent suspension and reinforced chassis geometry keep passengers comfortable across fairways and paths.",
+      kpis: [
+        { label: "Front", value: "Independent" },
+        { label: "Rear", value: "Multi-link / Leaf" },
+        { label: "Brakes", value: "Hydraulic + Parking" },
+        { label: "Frame", value: "Anti-corrosion coated" },
+      ],
+    },
+    {
+      id: "motorcontrol",
+      img: "/assets/tech/motor-control.jpg",
+      alt: "Motor control system",
+      title: "Motor Control System",
+      subtitle: "Smooth, predictable acceleration",
+      description:
+        "Refined torque mapping and regen logic provide responsive starts, hill confidence, and effortless low-speed maneuvering.",
+      kpis: [
+        { label: "Rated Power", value: "Model-dependent" },
+        { label: "Regen", value: "Energy recovery" },
+        { label: "Modes", value: "Course / Service" },
+        { label: "Protection", value: "Thermal / Current" },
+      ],
+    },
+  ];
 
   return (
-    <section id="performance" className="py-2">
-      <div className="mb-5">
-        <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">Performance</h2>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">Powertrain, suspension, braking—image-led and swipeable.</p>
-      </div>
-
-      {systems.length > 0 && (
-        <>
-          <h3 className="text-base font-semibold mb-2">Systems</h3>
-          <Carousel
-            ariaLabel="Performance systems"
-            items={systems.map((s) => (
-              <SystemCard key={s.id} id={s.id} title={s.title} bullets={s.bullets} />
-            ))}
-            itemClassName="w-[88vw] sm:w-[520px] md:w-[760px] lg:w-[980px]"
-            showCount
-          />
-        </>
-      )}
-
-      {features.length > 0 && (
-        <>
-          <h3 className="text-base font-semibold mt-8 mb-2">Feature Gallery</h3>
-          <Carousel
-            ariaLabel="Performance features"
-            items={features.map((f) => (
-              <FeatureCard key={f.key} f={f} />
-            ))}
-            itemClassName="w-[88vw] sm:w-[520px] md:w-[760px] lg:w-[980px]"
-            showCount
-          />
-        </>
-      )}
-    </section>
+    <div>
+      <StageCarousel
+        items={items}
+        ariaLabel="Performance features"
+        controlsPosition="right"
+      />
+    </div>
   );
 }
