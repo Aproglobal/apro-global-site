@@ -1,32 +1,50 @@
-import React from "react";
+// src/components/ProductionTimeline.tsx
+import React, { useMemo } from "react";
+import Carousel from "./ui/Carousel";
 import type { Step } from "../data/timeline";
 
 type Props = {
   steps: Step[];
   title?: string;
   note?: string;
-  /** Highlight by day number (1..N). Omit to disable emphasis. */
-  progressDay?: number;
-  /** Show top summary boxes (lead time, phases) */
-  showSummary?: boolean;
+  progressDay?: number; // kept for API compatibility
+  showSummary?: boolean; // kept for API compatibility
 };
-
-function statusOf(day: number, progressDay?: number): "neutral" | "done" | "current" | "upcoming" {
-  if (!progressDay) return "neutral";
-  if (day < progressDay) return "done";
-  if (day === progressDay) return "current";
-  return "upcoming";
-}
 
 function pad2(n: number) {
   return String(n).padStart(2, "0");
 }
 
-function SquareImage({ src, alt }: { src: string; alt: string }) {
+function TimelineCard({ s }: { s: Step }) {
   return (
-    <div className="mt-3 w-full max-w-[320px] mx-auto aspect-square overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
-      <img src={src} alt={alt} width={300} height={300} loading="lazy" draggable={false} className="w-full h-full object-cover" />
-    </div>
+    <article
+      className="
+        rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800
+        bg-white dark:bg-zinc-950 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.35)]
+      "
+    >
+      {/* Big visual first (only two images in your case; others will just show a subtle placeholder) */}
+      <div className="relative aspect-[4/3] md:aspect-[16/9] bg-zinc-100 dark:bg-zinc-900">
+        {s.img ? (
+          <img src={s.img} alt={s.title} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-zinc-400 text-sm">
+            No image provided
+          </div>
+        )}
+        <div className="absolute left-3 top-3 rounded-full bg-black/75 text-white text-[11px] px-2 py-1">
+          Day {pad2(s.day)}
+        </div>
+      </div>
+
+      <div className="p-5">
+        <h3 className="text-lg font-semibold">{s.title}</h3>
+        {s.vendor ? (
+          <p className="mt-1 text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Vendor: {s.vendor}</p>
+        ) : null}
+        {s.note ? <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">{s.note}</p> : null}
+      </div>
+    </article>
   );
 }
 
@@ -34,127 +52,24 @@ export default function ProductionTimeline({
   steps,
   title = "Production & Delivery Timeline",
   note = "Note: Domestic delivery flow. Export process may differ.",
-  progressDay,
-  showSummary = true,
 }: Props) {
+  const items = useMemo(() => steps, [steps]);
+
   return (
-    <section id="timeline" className="py-20 bg-white text-black dark:bg-black dark:text-white scroll-mt-24">
-      <div className="max-w-6xl mx-auto px-5">
-        <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">{title}</h2>
-        {note ? <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{note}</p> : null}
-
-        {/* Overview summary */}
-        {showSummary && (
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-3">
-            {[
-              { label: "Typical Lead Time", val: "~30 days" },
-              { label: "Contract Phase", val: "Quotation → PO → Contract (Days 1–3)" },
-              { label: "Production & Prep", val: "Orders & Artwork (Days 4–21)" },
-              { label: "Delivery", val: "Factory Release → On-site Install (Days 29–30)" },
-            ].map((b, i) => (
-              <div
-                key={i}
-                className="
-                  rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 
-                  bg-white dark:bg-zinc-950/90
-                  transition-all duration-200
-                  hover:shadow-md hover:-translate-y-0.5 hover:border-black/15 dark:hover:border-white/20
-                  motion-reduce:transition-none motion-reduce:hover:translate-y-0
-                "
-              >
-                <div className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{b.label}</div>
-                <div className="mt-1 text-sm font-semibold">{b.val}</div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Mobile list */}
-        <ol className="mt-8 space-y-4 md:hidden">
-          {steps.map((s) => {
-            const st = statusOf(s.day, progressDay);
-            const borderClass =
-              st === "current"
-                ? "border-black dark:border-white"
-                : st === "done"
-                ? "border-emerald-500 dark:border-emerald-400"
-                : "border-zinc-200 dark:border-zinc-800";
-            return (
-              <li key={s.day} className={`rounded-2xl border p-4 bg-white dark:bg-zinc-950 ${borderClass}`}>
-                {s.img ? <SquareImage src={s.img} alt={s.title} /> : null}
-
-                <div className="mt-3 flex items-center gap-3">
-                  <span
-                    className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-[11px] font-medium border min-w-[78px] text-center tracking-wide ${
-                      st === "current"
-                        ? "border-black dark:border-white"
-                        : st === "done"
-                        ? "border-emerald-500 dark:border-emerald-400"
-                        : "border-zinc-300 dark:border-zinc-700"
-                    }`}
-                  >
-                    Day {pad2(s.day)}
-                  </span>
-                  <h3 className="text-sm font-semibold">{s.title}</h3>
-                </div>
-
-                {s.vendor ? <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">Vendor: {s.vendor}</p> : null}
-                {s.note ? <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">{s.note}</p> : null}
-              </li>
-            );
-          })}
-        </ol>
-
-        {/* Desktop grid */}
-        <div className="mt-10 hidden md:block">
-          <div className="relative">
-            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-zinc-200 dark:bg-zinc-800 z-0" />
-            <div className="relative z-10 grid grid-cols-4 gap-6">
-              {steps.map((s, i) => {
-                const st = statusOf(s.day, progressDay);
-                const cardBorder =
-                  st === "current"
-                    ? "border-black dark:border-white shadow-xl"
-                    : st === "done"
-                    ? "border-emerald-500/60 dark:border-emerald-400/60"
-                    : "border-zinc-200 dark:border-zinc-800";
-
-                return (
-                  <div key={s.day} className={`relative ${i % 2 === 0 ? "mb-12" : "mt-12"}`}>
-                    <div
-                      className={`
-                        rounded-2xl border p-5 bg-white dark:bg-zinc-950 transition-shadow ${cardBorder}
-                        transition-all duration-200 hover:-translate-y-0.5
-                        motion-reduce:transition-none motion-reduce:hover:translate-y-0
-                      `}
-                    >
-                      {s.img ? <SquareImage src={s.img} alt={s.title} /> : null}
-
-                      <div className="mt-3 flex items-center gap-3">
-                        <span
-                          className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-[11px] font-medium border min-w-[78px] text-center tracking-wide ${
-                            st === "current"
-                              ? "border-black dark:border-white"
-                              : st === "done"
-                              ? "border-emerald-500 dark:border-emerald-400"
-                              : "border-zinc-300 dark:border-zinc-700"
-                          }`}
-                        >
-                          Day {pad2(s.day)}
-                        </span>
-                        <h3 className="text-sm font-semibold">{s.title}</h3>
-                      </div>
-
-                      {s.vendor ? <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">Vendor: {s.vendor}</p> : null}
-                      {s.note ? <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">{s.note}</p> : null}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+    <section id="timeline" className="py-2">
+      <div className="mb-5">
+        <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">{title}</h2>
+        {note ? <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{note}</p> : null}
       </div>
+
+      <Carousel
+        ariaLabel="Production & Delivery"
+        items={items.map((s) => (
+          <TimelineCard key={s.day} s={s} />
+        ))}
+        itemClassName="w-[88vw] sm:w-[520px] md:w-[760px] lg:w-[980px]"
+        showCount
+      />
     </section>
   );
 }

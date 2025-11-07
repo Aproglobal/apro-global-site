@@ -4,16 +4,17 @@ run-name: "Build & Deploy • ${{ github.ref_name }} • by ${{ github.actor }}"
 on:
   push:
     branches:
-      - '**'         # all branches
+      - '**'
   workflow_dispatch:
 
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-
-    # Only one live deployment at a time (preview can run concurrently per-branch)
+    permissions:
+      contents: read
+    # Concurrency per-branch so different branches don't cancel each other
     concurrency:
-      group: deploy-live
+      group: deploy-${{ github.ref_name }}
       cancel-in-progress: true
 
     steps:
@@ -25,7 +26,15 @@ jobs:
         with:
           node-version: '20'
 
-      # --- Build-time env for Vite (client-exposed) ---
+      - name: Restore npm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # --- Build-time env for Vite (frontend public vars) ---
       - name: Create .env for build
         run: |
           cat << 'EOF' > .env
@@ -38,6 +47,8 @@ jobs:
           cat .env | sed 's/=\(.*\)/=[HIDDEN]/'
 
       - name: Install deps
+        env:
+          npm_config_cache: ~/.npm
         run: |
           if [ -f package-lock.json ]; then
             npm ci
@@ -45,31 +56,62 @@ jobs:
             npm install
           fi
 
-      # 🔧 Self-heal: ensure @vitejs/plugin-react is installed (prevents build break)
-      - name: Ensure @vitejs/plugin-react
+      # --- Ensure Vite React plugin (fixes prior CI error) ---
+      - name: Ensure @vitejs/plugin-react present
         shell: bash
         run: |
           if ! npm ls @vitejs/plugin-react >/dev/null 2>&1; then
-            echo "Installing @vitejs/plugin-react (not found in node_modules)"
+            echo "Installing @vitejs/plugin-react (dev dep)"
             npm i -D @vitejs/plugin-react@^4
           else
             echo "@vitejs/plugin-react already present"
           fi
 
+      # --- Optional premium icon set (your request) ---
+      - name: Ensure lucide-react present
+        shell: bash
+        run: |
+          if ! npm ls lucide-react >/dev/null 2>&1; then
+            echo "Installing lucide-react (not found in node_modules)"
+            npm i lucide-react@latest
+          else
+            echo "lucide-react already present"
+          fi
+
+      # --- Auto-generate sitemap with fresh <lastmod> ---
+      # Overwrites public/sitemap.xml each run (Vite copies /public → /dist)
+      - name: Generate sitemap.xml (UTC today)
+        run: |
+          TODAY=$(date -u +%Y-%m-%d)
+          mkdir -p public
+          cat > public/sitemap.xml <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+            <url>
+              <loc>https://apro.kukjeint.com/</loc>
+              <lastmod>${TODAY}</lastmod>
+              <changefreq>weekly</changefreq>
+              <priority>1.0</priority>
+            </url>
+          </urlset>
+          EOF
+          echo "Sitemap generated with lastmod=${TODAY}"
+
       - name: Build
         run: npm run build
 
-      # ✅ Verify GA ID is injected (check the GA_ID variable assignment)
       - name: Verify GA ID replaced
         run: |
-          test -f dist/index.html || (echo "❌ dist/index.html not found" && exit 1)
-          if grep -Eq "var GA_ID\s*=\s*['\"]G-[A-Z0-9]+['\"]" dist/index.html; then
-            echo "✅ GA ID is present in dist/index.html"
+          if [ ! -f dist/index.html ]; then
+            echo "❌ dist/index.html not found. Is Vite output 'dist'?" && exit 1
+          fi
+          if grep -q "googletagmanager.com/gtag/js?id=G-" dist/index.html; then
+            echo "✅ GA ID found in dist/index.html"
           else
-            echo "❌ GA ID not found (expected var GA_ID = 'G-XXXX')" && exit 1
+            echo "❌ GA ID NOT found in dist/index.html"; exit 1
           fi
 
-      # ---- Functions(+ Firestore Indexes): run on all branches (as you requested) ----
+      # ---- Functions(+ Firestore Indexes): run on all branches if secrets exist ----
       - name: Sync & Deploy Firestore Indexes + Functions
         shell: bash
         env:
@@ -82,7 +124,6 @@ jobs:
           RECAPTCHA_SECRET: ${{ secrets.RECAPTCHA_SECRET }}
         run: |
           set -euo pipefail
-
           # 0) Skip if required secrets are missing
           missing=()
           [ -z "${SENDGRID_API_KEY:-}" ]  && missing+=("SENDGRID_API_KEY")
@@ -94,14 +135,14 @@ jobs:
             exit 0
           fi
 
-          # 1) ADC for Firebase CLI
+          # 1) ADC via service account
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/gcp.json"
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$GOOGLE_APPLICATION_CREDENTIALS"
 
           # 2) Firebase CLI
           npm i -g firebase-tools@latest
 
-          # 3) Sync secrets to Firebase Secret Manager
+          # 3) Mirror GH secrets → Firebase Secret Manager
           sync_secret () {
             local NAME="$1"
             local VAL="$(printenv "$NAME" || true)"
@@ -119,31 +160,39 @@ jobs:
           sync_secret SALES_BCC
           sync_secret RECAPTCHA_SECRET
 
-          # 4) Build functions
+          # 4) Build & deploy functions
           pushd functions
             if [ -f package-lock.json ]; then npm ci; else npm install; fi
             npm run build
           popd
 
-          # 5) Deploy indexes + functions
           firebase deploy \
             --only "firestore:indexes,functions" \
             --project "$FIREBASE_PROJECT_ID" \
             --non-interactive --force
 
-      # ---- Hosting: PREVIEW for every branch (channel = branch name) ----
-      - name: Deploy to Firebase Hosting (Preview Channel)
+      # ---- Compute safe channel id from branch (lowercase, dash-only, <=20 chars) ----
+      - name: Prepare Preview Channel ID
+        id: preview
+        shell: bash
+        run: |
+          BRANCH="${{ github.ref_name }}"
+          SLUG=$(echo "$BRANCH" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9-]+/-/g' | sed -E 's/^-+|-+$//g' | cut -c1-20)
+          if [ -z "$SLUG" ]; then SLUG="preview"; fi
+          echo "PREVIEW_CHANNEL=$SLUG" >> $GITHUB_ENV
+          echo "Using preview channel: $SLUG"
+
+      # ---- Hosting: branch preview (channel = sanitized branch) ----
+      - name: Deploy to Firebase Hosting (Preview)
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
-          channelId: ${{ github.ref_name }}
-          expires: 7d
+          channelId: ${{ env.PREVIEW_CHANNEL }}
 
-      # ---- Hosting: LIVE also from selected branches (main/master/1107) ----
+      # ---- Hosting: always LIVE (you asked to deploy live on branch too) ----
       - name: Deploy to Firebase Hosting (LIVE)
-        if: ${{ github.ref_name == 'main' || github.ref_name == 'master' || github.ref_name == '1107' }}
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}

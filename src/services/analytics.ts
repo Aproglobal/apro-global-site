@@ -1,18 +1,20 @@
 /* src/services/analytics.ts */
-
 type EventParams = Record<string, any>;
 
 declare global {
   interface Window {
+    dataLayer?: any[];
     gtag?: (...args: any[]) => void;
-    __GA_ID__?: string; // 런타임 폴백
+    __GA_ID__?: string; // runtime fallback
+    RUNTIME_CONFIG?: { VITE_GA_MEASUREMENT_ID?: string };
+    __gaLoaded?: boolean;
   }
 }
 
-const getGtag = () => (typeof window !== "undefined" ? window.gtag : undefined);
 const isAllowedHost = () => {
   if (typeof window === "undefined") return false;
   const h = window.location.hostname;
+  // include web.app / firebaseapp.com previews, live, and localhost
   return (
     h === "apro.kukjeint.com" ||
     h.endsWith(".web.app") ||
@@ -20,55 +22,90 @@ const isAllowedHost = () => {
     h === "localhost"
   );
 };
-const getGaId = () =>
-  (import.meta as any)?.env?.VITE_GA_MEASUREMENT_ID ||
-  (typeof window !== "undefined" ? window.__GA_ID__ : undefined);
 
-/** GA4 초기화 */
-export function initAnalytics(measurementId?: string): Promise<void> {
-  if (typeof window === "undefined") return Promise.resolve();
-  if (!isAllowedHost()) return Promise.resolve(); // 허용 외 호스트는 조용히 패스
+function resolveGaId(): string | undefined {
+  const fromVite =
+    (import.meta as any)?.env?.VITE_GA_MEASUREMENT_ID as string | undefined;
+  const fromRuntimeCfg = window.RUNTIME_CONFIG?.VITE_GA_MEASUREMENT_ID;
+  const fromWindow = window.__GA_ID__;
+  const fromMeta =
+    document.querySelector('meta[name="ga-id"]')?.getAttribute("content") ||
+    undefined;
+  return fromVite || fromRuntimeCfg || fromWindow || fromMeta;
+}
 
-  const id = measurementId ?? getGaId();
+function ensureGaScript(id: string) {
+  if (document.getElementById("ga-script")) return;
+  const s = document.createElement("script");
+  s.id = "ga-script";
+  s.async = true;
+  s.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(
+    id
+  )}`;
+  document.head.appendChild(s);
+
+  window.dataLayer = window.dataLayer || [];
+  window.gtag =
+    window.gtag ||
+    function (...args: any[]) {
+      window.dataLayer!.push(args);
+    };
+}
+
+/** GA4 init (non-fatal if missing) */
+export async function initAnalytics(measurementId?: string): Promise<void> {
+  if (typeof window === "undefined") return;
+  if (!isAllowedHost()) return;
+
+  if (window.__gaLoaded) return;
+
+  const id = measurementId ?? resolveGaId();
   if (!id) {
     console.warn("[analytics] Missing VITE_GA_MEASUREMENT_ID.");
-    return Promise.resolve();
+    return;
   }
-  const g = getGtag();
-  g?.("js", new Date() as any);
-  g?.("config", id);
-  return Promise.resolve();
+
+  ensureGaScript(id);
+  window.gtag!("js", new Date());
+  window.gtag!("config", id, { send_page_view: false });
+  window.__gaLoaded = true;
 }
 
-/** 공통 이벤트 */
+/** Basic event */
 export function trackEvent(eventName: string, params?: EventParams) {
-  getGtag()?.("event", eventName, params ?? {});
+  window.gtag?.("event", eventName, params ?? {});
 }
 
-/** 페이지뷰 */
+/** Page view */
 export function trackPageView(path?: string) {
-  const g = getGtag();
-  if (!g) return;
-  const href = typeof window !== "undefined" ? window.location.href : path;
+  const href =
+    typeof window !== "undefined" ? window.location.href : path || "/";
   const pagePath =
-    path ?? (typeof window !== "undefined" ? window.location.pathname : undefined);
-  g("event", "page_view", {
+    path ?? (typeof window !== "undefined" ? window.location.pathname : "/");
+  const title =
+    typeof document !== "undefined" ? document.title : "APRO";
+
+  window.gtag?.("event", "page_view", {
     page_location: href,
     page_path: pagePath,
-    page_title: typeof document !== "undefined" ? document.title : undefined,
+    page_title: title,
   });
 }
 
-/** SPA 페이지뷰(옵션) */
+/** SPA page views (hash/popstate/history) */
 export function setupSpaPageviews(routerOrGetter?: any) {
   if (typeof window === "undefined") return;
 
-  const send = () => trackPageView(window.location?.href || undefined);
+  const send = () =>
+    trackPageView(
+      (window.location.pathname || "/") +
+        (window.location.search || "") +
+        (window.location.hash || "")
+    );
 
   try {
     if (typeof routerOrGetter === "function") {
-      const path = routerOrGetter();
-      trackPageView(path);
+      trackPageView(routerOrGetter());
     } else {
       send();
     }
@@ -94,10 +131,10 @@ export function setupSpaPageviews(routerOrGetter?: any) {
 
   patch("pushState");
   patch("replaceState");
-  window.addEventListener("popstate", () => send());
+  window.addEventListener("popstate", () => send(), { passive: true });
 }
 
-/** 스크롤 깊이(옵션) */
+/** Optional scroll depth */
 export function setupScrollDepth(
   breakpoints: number[] = [25, 50, 75, 100],
   eventName = "scroll_depth"
@@ -105,7 +142,6 @@ export function setupScrollDepth(
   if (typeof window === "undefined") return;
 
   const sent = new Set<number>();
-
   const onScroll = () => {
     const doc = document.documentElement;
     const body = document.body;
