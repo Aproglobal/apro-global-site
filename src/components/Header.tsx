@@ -9,314 +9,307 @@ const LINKS: LinkItem[] = [
   { href: "#technology", label: "Technology" },
   { href: "#industries", label: "Industries" },
   { href: "#timeline", label: "Timeline" },
-  { href: "#service", label: "Service" },
-  { href: "#charging", label: "Charging" },
-  { href: "#resources", label: "Resources" },import React, { useEffect, useMemo, useState } from "react";
-import { Menu, X, ChevronDown } from "lucide-react";
-import { openLead } from "./LeadModal"; // CTA: opens your existing lead modal
-
-/**
- * Modern APRO Header
- * - Sticky, glassy, compact-on-scroll
- * - Scroll progress indicator
- * - Centered primary nav + "More" overflow menu
- * - Mobile drawer
- * - Accessible (keyboard, ARIA), SSR-safe
- *
- * Tailwind required. No external UI deps.
- */
+  { href: "#service", label: "Service" },// src/components/Header.tsx
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import { Menu, X, ChevronDown, Phone } from "lucide-react";
+import { openLead } from "./LeadModal"; // same folder
 
 type NavItem = {
   label: string;
-  href?: string;
-  onClick?: () => void;
+  href: string;
   external?: boolean;
 };
 
-// -- Tune these lists for your IA -------------------------------------------
 const PRIMARY_LINKS: NavItem[] = [
   { label: "Models", href: "#models" },
   { label: "Technology", href: "#technology" },
   { label: "Industries", href: "#industries" },
   { label: "Resources", href: "#resources" },
-  { label: "Support", href: "#support" },
-  { label: "About", href: "#about" },
 ];
 
 const MORE_LINKS: NavItem[] = [
+  { label: "Support", href: "#support" },
+  { label: "Compare", href: "#compare" },
   { label: "TCO Calculator", href: "#tco" },
-  { label: "Fleet", href: "#fleet" },
-  { label: "Warranty & Service", href: "#service" },
-  { label: "Configurator", href: "#configurator" },
+  { label: "Warranty", href: "#warranty" },
 ];
-// ---------------------------------------------------------------------------
 
-function useScrollState() {
+function cx(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(" ");
+}
+
+export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement | null>(null);
 
+  // Scroll effects: shrink + progress
   useEffect(() => {
     const onScroll = () => {
       const y = window.scrollY || 0;
       setScrolled(y > 8);
-      const doc = document.documentElement;
-      const total = (doc.scrollHeight - doc.clientHeight) || 1;
-      const p = Math.min(100, Math.max(0, (y / total) * 100));
-      setProgress(p);
+      const h = document.documentElement;
+      const total = (h.scrollHeight - h.clientHeight) || 1;
+      setProgress(Math.min(100, Math.max(0, (y / total) * 100)));
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  return { scrolled, progress };
-}
-
-function classNames(...xs: Array<string | false | null | undefined>) {
-  return xs.filter(Boolean).join(" ");
-}
-
-export default function Header() {
-  const { scrolled, progress } = useScrollState();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
-
+  // Click outside for "More"
   useEffect(() => {
-    // lock body scroll when mobile drawer open
-    if (mobileOpen) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = prev;
-      };
+    if (!moreOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (!moreRef.current) return;
+      if (!moreRef.current.contains(e.target as Node)) setMoreOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [moreOpen]);
+
+  const onLead = useCallback(() => {
+    try {
+      openLead("header");
+    } catch {
+      // no-op if not wired yet
     }
-  }, [mobileOpen]);
+  }, []);
 
-  const headerClasses = useMemo(
-    () =>
-      classNames(
-        "sticky top-0 z-50 transition-all duration-300",
-        "border-b border-transparent",
-        scrolled
-          ? "backdrop-blur bg-white/70 dark:bg-slate-900/60 border-slate-200/60 dark:border-slate-800/60 shadow-sm"
-          : "bg-transparent"
-      ),
-    [scrolled]
-  );
-
-  const barStyle: React.CSSProperties = {
-    width: `${progress}%`,
-    background: "var(--brand, linear-gradient(90deg,#10b981,#22d3ee))",
-  };
-
-  const NavLink: React.FC<{ item: NavItem; onClick?: () => void }> = ({ item, onClick }) => (
-    <a
-      href={item.href || "#"}
-      onClick={(e) => {
-        if (item.onClick) {
-          e.preventDefault();
-          item.onClick();
-        }
-        onClick?.();
-      }}
-      target={item.external ? "_blank" : undefined}
-      rel={item.external ? "noopener noreferrer" : undefined}
-      className={classNames(
-        "group relative inline-flex items-center px-3 py-2 text-sm font-medium",
-        "text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white"
-      )}
-    >
-      {item.label}
-      <span
-        className="pointer-events-none absolute inset-x-2 -bottom-0.5 h-px scale-x-0 bg-current opacity-40 transition-transform duration-200 group-hover:scale-x-100"
-        aria-hidden
-      />
-    </a>
-  );
+  const onNavClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
+    const href = (e.currentTarget.getAttribute("href") || "").trim();
+    if (href.startsWith("#")) {
+      e.preventDefault();
+      const id = href.slice(1);
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      setMobileOpen(false);
+    }
+  }, []);
 
   return (
-    <header className={headerClasses} role="banner">
-      {/* Scroll progress bar */}
-      <div className="h-0.5 w-full" aria-hidden>
-        <div className="h-full" style={barStyle} />
-      </div>
-
+    <>
+      {/* Top scroll progress */}
       <div
-        className={classNames(
-          "mx-auto flex w-full max-w-7xl items-center gap-3 px-4 md:px-6",
-          scrolled ? "h-14" : "h-16"
-        )}
-      >
-        {/* Left: Brand */}
-        <a
-          href="/"
-          className="flex items-center gap-2 font-black tracking-wider text-slate-900 dark:text-white"
-          aria-label="APRO – Home"
-        >
-          {/* If you have a logo image, swap this text for <img .../> */}
-          <span className="text-lg md:text-xl">APRO</span>
-        </a>
+        className="fixed left-0 top-0 z-[60] h-0.5 bg-[var(--brand,#0ea5e9)] transition-[width] duration-150 ease-out"
+        style={{ width: `${progress}%` }}
+        aria-hidden="true"
+      />
 
-        {/* Center: Primary nav (desktop) */}
-        <nav className="mx-auto hidden md:flex items-center">
-          <ul className="flex items-center gap-1">
-            {PRIMARY_LINKS.map((item) => (
-              <li key={item.label}>
-                <NavLink item={item} />
-              </li>
+      <header
+        className={cx(
+          "fixed inset-x-0 top-0 z-50 transition-all",
+          "border-b border-white/10",
+          scrolled
+            ? "backdrop-blur bg-white/60 dark:bg-neutral-900/60"
+            : "backdrop-blur-0 bg-transparent"
+        )}
+        role="navigation"
+        aria-label="Primary"
+      >
+        <div
+          className={cx(
+            "mx-auto flex items-center gap-3 px-4 sm:px-6",
+            "transition-[height,padding] duration-200",
+            scrolled ? "h-14" : "h-20"
+          )}
+        >
+          {/* Left: brand */}
+          <a
+            href="/"
+            className={cx(
+              "font-semibold tracking-tight",
+              "text-neutral-900 dark:text-white",
+              "select-none"
+            )}
+            aria-label="APRO — Home"
+          >
+            APRO
+          </a>
+
+          {/* Center: nav (desktop) */}
+          <nav className="ml-auto hidden md:flex items-center gap-1">
+            {PRIMARY_LINKS.map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
+                onClick={onNavClick}
+                className={cx(
+                  "rounded-xl px-3 py-2 text-sm font-medium",
+                  "text-neutral-700 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white",
+                  "hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                )}
+              >
+                {link.label}
+              </a>
             ))}
 
             {/* More dropdown */}
-            {MORE_LINKS.length > 0 && (
-              <li className="relative">
-                <button
-                  type="button"
-                  onClick={() => setMoreOpen((v) => !v)}
-                  onBlur={() => setTimeout(() => setMoreOpen(false), 150)}
-                  className={classNames(
-                    "inline-flex items-center gap-1 px-3 py-2 text-sm font-medium",
-                    "text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white"
-                  )}
-                  aria-haspopup="menu"
-                  aria-expanded={moreOpen}
-                >
-                  More <ChevronDown className="h-4 w-4" />
-                </button>
-                {moreOpen && (
-                  <div
-                    role="menu"
-                    className="absolute left-0 mt-2 min-w-[14rem] overflow-hidden rounded-xl border border-slate-200/70 bg-white/90 backdrop-blur-md shadow-lg dark:border-slate-800/60 dark:bg-slate-900/90"
-                  >
-                    {MORE_LINKS.map((m) => (
-                      <a
-                        key={m.label}
-                        href={m.href || "#"}
-                        onClick={(e) => {
-                          if (m.onClick) {
-                            e.preventDefault();
-                            m.onClick();
-                          }
-                          setMoreOpen(false);
-                        }}
-                        className="block px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-200 dark:hover:bg-slate-800/60"
-                        role="menuitem"
-                      >
-                        {m.label}
-                      </a>
-                    ))}
-                  </div>
+            <div className="relative" ref={moreRef}>
+              <button
+                type="button"
+                onClick={() => setMoreOpen((v) => !v)}
+                className={cx(
+                  "group inline-flex items-center gap-1 rounded-xl px-3 py-2 text-sm font-medium",
+                  "text-neutral-700 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white",
+                  "hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
                 )}
-              </li>
-            )}
-          </ul>
-        </nav>
+                aria-haspopup="menu"
+                aria-expanded={moreOpen}
+                aria-controls="more-menu"
+              >
+                More
+                <ChevronDown
+                  className={cx(
+                    "h-4 w-4 transition-transform",
+                    moreOpen ? "rotate-180" : "rotate-0"
+                  )}
+                  aria-hidden="true"
+                />
+              </button>
 
-        {/* Right: CTAs */}
-        <div className="ml-auto flex items-center gap-2">
-          <button
-            onClick={() => openLead("header")}
-            className={classNames(
-              "hidden md:inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold",
-              "text-white shadow-sm",
-              "bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800",
-              "dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-slate-900"
-            )}
-          >
-            Talk to Sales
-          </button>
+              {moreOpen && (
+                <div
+                  id="more-menu"
+                  role="menu"
+                  className={cx(
+                    "absolute right-0 mt-2 w-56 overflow-hidden rounded-2xl border border-black/5",
+                    "bg-white/90 backdrop-blur shadow-lg dark:bg-neutral-900/90"
+                  )}
+                >
+                  <ul className="py-2">
+                    {MORE_LINKS.map((link) => (
+                      <li key={link.label}>
+                        <a
+                          href={link.href}
+                          onClick={onNavClick}
+                          className={cx(
+                            "block px-3 py-2 text-sm",
+                            "text-neutral-700 hover:text-neutral-900 hover:bg-black/5",
+                            "dark:text-neutral-300 dark:hover:text-white dark:hover:bg-white/10"
+                          )}
+                          role="menuitem"
+                        >
+                          {link.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
 
-          {/* Mobile menu button */}
-          <button
-            type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 md:hidden"
-            aria-label="Open menu"
-            aria-expanded={mobileOpen}
-            onClick={() => setMobileOpen(true)}
-          >
-            <Menu className="h-5 w-5 text-slate-900 dark:text-white" />
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Drawer */}
-      <div
-        className={classNames(
-          "fixed inset-0 z-50 md:hidden transition-opacity",
-          mobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
-        )}
-        aria-hidden={!mobileOpen}
-      >
-        {/* Backdrop */}
-        <div
-          className={classNames(
-            "absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity",
-            mobileOpen ? "opacity-100" : "opacity-0"
-          )}
-          onClick={() => setMobileOpen(false)}
-        />
-
-        {/* Panel */}
-        <aside
-          className={classNames(
-            "absolute right-0 top-0 h-full w-[82%] max-w-sm",
-            "bg-white dark:bg-slate-900 shadow-xl",
-            "transition-transform duration-300",
-            mobileOpen ? "translate-x-0" : "translate-x-full"
-          )}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="flex items-center justify-between px-4 py-4">
-            <span className="font-black tracking-wider text-slate-900 dark:text-white">APRO</span>
+            {/* CTA */}
             <button
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-              aria-label="Close menu"
-              onClick={() => setMobileOpen(false)}
+              onClick={onLead}
+              className={cx(
+                "ml-2 inline-flex items-center gap-2 rounded-2xl px-3.5 py-2 text-sm font-semibold",
+                "text-white bg-[var(--brand,#0ea5e9)] hover:opacity-90 active:opacity-100",
+                "shadow-sm"
+              )}
             >
-              <X className="h-5 w-5 text-slate-900 dark:text-white" />
+              <Phone className="h-4 w-4" aria-hidden="true" />
+              Talk to Sales
             </button>
-          </div>
-
-          <nav className="px-2 pb-6">
-            <ul className="space-y-1">
-              {[...PRIMARY_LINKS, ...MORE_LINKS].map((item) => (
-                <li key={item.label}>
-                  <a
-                    href={item.href || "#"}
-                    onClick={(e) => {
-                      if (item.onClick) {
-                        e.preventDefault();
-                        item.onClick();
-                      }
-                      setMobileOpen(false);
-                    }}
-                    className="block rounded-lg px-3 py-3 text-base font-medium text-slate-800 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800/60"
-                  >
-                    {item.label}
-                  </a>
-                </li)
-              ))}
-            </ul>
-
-            <div className="mt-4 border-t border-slate-200/70 pt-4 dark:border-slate-800/60">
-              <button
-                onClick={() => {
-                  openLead("header-mobile");
-                  setMobileOpen(false);
-                }}
-                className="inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-base font-semibold text-white shadow-sm hover:bg-emerald-700 active:bg-emerald-800 dark:bg-emerald-500 dark:text-slate-900 dark:hover:bg-emerald-400"
-              >
-                Talk to Sales
-              </button>
-            </div>
           </nav>
 
-          <div className="px-4 pb-6 text-xs text-slate-500/80">
-            © {new Date().getFullYear()} APRO. All rights reserved.
+          {/* Right: mobile controls */}
+          <div className="ml-auto md:hidden">
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              className={cx(
+                "inline-flex items-center justify-center rounded-xl p-2",
+                "text-neutral-700 hover:text-neutral-900 hover:bg-black/5",
+                "dark:text-neutral-300 dark:hover:text-white dark:hover:bg-white/10",
+                "transition-colors"
+              )}
+              aria-label="Open menu"
+            >
+              <Menu className="h-6 w-6" aria-hidden="true" />
+            </button>
           </div>
-        </aside>
-      </div>
-    </header>
+        </div>
+      </header>
+
+      {/* Mobile overlay & drawer */}
+      <div
+        className={cx(
+          "fixed inset-0 z-[55] bg-black/30 backdrop-blur-sm transition-opacity",
+          mobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}
+        onClick={() => setMobileOpen(false)}
+        aria-hidden={!mobileOpen}
+      />
+
+      <aside
+        className={cx(
+          "fixed right-0 top-0 z-[60] h-full w-[82%] max-w-sm",
+          "bg-white dark:bg-neutral-900 shadow-2xl",
+          "transition-transform duration-200",
+          mobileOpen ? "translate-x-0" : "translate-x-full"
+        )}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mobile menu"
+      >
+        <div className="flex h-14 items-center justify-between px-4 border-b border-black/5 dark:border-white/10">
+          <span className="font-semibold">Menu</span>
+          <button
+            type="button"
+            onClick={() => setMobileOpen(false)}
+            className="rounded-xl p-2 hover:bg-black/5 dark:hover:bg-white/10"
+            aria-label="Close menu"
+          >
+            <X className="h-5 w-5" aria-hidden="true" />
+          </button>
+        </div>
+
+        <nav className="px-4 py-3">
+          <ul className="space-y-1">
+            {[...PRIMARY_LINKS, ...MORE_LINKS].map((link) => (
+              <li key={link.label}>
+                <a
+                  href={link.href}
+                  onClick={onNavClick}
+                  className={cx(
+                    "block rounded-xl px-3 py-2 text-base font-medium",
+                    "text-neutral-800 hover:text-neutral-950 hover:bg-black/5",
+                    "dark:text-neutral-200 dark:hover:text-white dark:hover:bg-white/10",
+                    "transition-colors"
+                  )}
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-3 border-t border-black/5 dark:border-white/10 pt-3">
+            <button
+              type="button"
+              onClick={() => {
+                onLead();
+                setMobileOpen(false);
+              }}
+              className={cx(
+                "w-full inline-flex items-center justify-center gap-2 rounded-2xl px-3.5 py-2.5 text-sm font-semibold",
+                "text-white bg-[var(--brand,#0ea5e9)] hover:opacity-90 active:opacity-100",
+                "shadow-sm"
+              )}
+            >
+              <Phone className="h-4 w-4" aria-hidden="true" />
+              Talk to Sales
+            </button>
+          </div>
+        </nav>
+      </aside>
+
+      {/* Spacer so content isn't hidden under fixed header */}
+      <div aria-hidden="true" className={cx(scrolled ? "h-14" : "h-20")} />
+    </>
   );
 }
