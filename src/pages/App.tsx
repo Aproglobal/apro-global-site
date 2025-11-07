@@ -1,328 +1,417 @@
-// src/pages/App.tsx
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Header from "../components/Header";
-import { openLead } from "../components/LeadModal";
-import { trackEvent } from "../services/analytics";
-import { ArrowRight, Phone, Mail, MapPin, Building2, CalendarClock, Users2, Network } from "lucide-react";
+import ModelGrid from "../components/ModelGrid";
+import CompareTable from "../components/CompareTable";
+import TechSection from "../components/TechSection";
+import FleetSection from "../components/FleetSection";
+import SupportSection from "../components/SupportSection";
+import LeadModal, { openLead } from "../components/LeadModal";
+import ModelDetail from "../components/ModelDetail";
+import { getVariant } from "../utils/ab";
+import {
+  setupScrollDepth,
+  trackEvent,
+  initAnalytics,
+} from "../services/analytics";
+import { initThemeWatcher } from "../utils/theme";
+import { loadRecaptcha } from "../lib/recaptcha";
+import { getTechCopy } from "../data/technology";
 
-// Simple section shell to keep spacing consistent and avoid "map on undefined"
-function Section({
-  id,
-  title,
-  subtitle,
-  children,
-}: {
-  id: string;
-  title: string;
-  subtitle?: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <section id={id} className="scroll-mt-[calc(var(--header-h,64px)+24px)] py-16 lg:py-24">
-      <div className="max-w-6xl mx-auto px-5">
-        <div className="mb-10">
-          <h2 className="text-2xl lg:text-3xl font-extrabold tracking-tight">{title}</h2>
-          {subtitle && (
-            <p className="text-zinc-600 dark:text-zinc-300 mt-2">{subtitle}</p>
-          )}
-        </div>
-        {children}
-      </div>
-    </section>
-  );
-}
+// Production timeline
+import ProductionTimeline from "../components/ProductionTimeline";
+import { TIMELINE_STEPS } from "../data/timeline";
+
+// NEW sections
+import IndustriesSection from "../components/IndustriesSection";
+import ServiceWarrantySection from "../components/ServiceWarrantySection";
+import ChargingPowerSection from "../components/ChargingPowerSection";
+import ResourcesSection from "../components/ResourcesSection";
+import TcoCalculator from "../components/TcoCalculator";
+import ConfiguratorSection from "../components/ConfiguratorSection";
+
+// SEO
+import SEO from "../components/SEO";
 
 export default function App() {
+  const variant = getVariant();
+
+  useEffect(() => {
+    initAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
+    setupScrollDepth();
+    initThemeWatcher();
+
+    // reCAPTCHA v3 preload
+    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
+    if (siteKey) loadRecaptcha(siteKey);
+  }, []);
+
+  const primaryCta = "Talk to Sales";
+  const secondaryCta = variant === "A" ? "Explore models" : "Download brochure";
+
+  const techCopy = useMemo(() => getTechCopy(), []);
+
+  // CompareTable가 하단을 차지할 때 플로팅 CTA 자동 숨김
+  const [bottomBlocked, setBottomBlocked] = useState(false);
+  useEffect(() => {
+    let pinnedCount = 0;
+    let miniOpen = false;
+    const recompute = () => setBottomBlocked(miniOpen || pinnedCount > 0);
+
+    const onPinned = (e: Event) => {
+      const ce = e as CustomEvent<{ count: number }>;
+      pinnedCount = Number(ce?.detail?.count ?? 0);
+      recompute();
+    };
+    const onMini = (e: Event) => {
+      const ce = e as CustomEvent<{ open: boolean }>;
+      miniOpen = Boolean(ce?.detail?.open ?? false);
+      recompute();
+    };
+
+    window.addEventListener("compare:pinned" as any, onPinned as any);
+    window.addEventListener("compare:mini" as any, onMini as any);
+    return () => {
+      window.removeEventListener("compare:pinned" as any, onPinned as any);
+      window.removeEventListener("compare:mini" as any, onMini as any);
+    };
+  }, []);
+
+  // SEO constants
+  const siteName = "APRO — Electric Golf Carts";
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const canonical = origin + "/";
+  const salesEmail =
+    import.meta.env.VITE_SALES_EMAIL || "sales@example.com";
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "KUKJE INTERTRADE Co., Ltd. (APRO)",
+      url: canonical,
+      logo: origin + "/assets/logo.png",
+      email: salesEmail,
+      brand: { "@type": "Brand", name: "APRO" },
+      contactPoint: [
+        {
+          "@type": "ContactPoint",
+          contactType: "sales",
+          email: salesEmail,
+          areaServed: "KR, US, JP, EU, SEA",
+          availableLanguage: ["en", "ko", "ja"],
+        },
+      ],
+      sameAs: [],
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: siteName,
+      url: canonical,
+      potentialAction: {
+        "@type": "SearchAction",
+        target: canonical + "?q={search_term_string}",
+        "query-input": "required name=search_term_string",
+      },
+    },
+  ];
+
   return (
-    <div className="min-h-dvh bg-white text-black dark:bg-black dark:text-white">
-      {/* Premium sticky header (your updated Header.tsx) */}
+    <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
+      <SEO
+        title="APRO Electric Golf Carts — Lithium, VIP & Fleet Solutions"
+        description="APRO builds electric golf carts for courses, resorts, and venues worldwide—smart guidance, flexible seating, and global after-sales support."
+        canonical={canonical}
+        og={{
+          title: "APRO Electric Golf Carts",
+          description:
+            "Lithium fleets, VIP/Semi-VIP options, and global support.",
+          url: canonical,
+          image: "/assets/og.jpg",
+          siteName: "APRO",
+        }}
+        twitter={{
+          card: "summary_large_image",
+          site: "@yourbrand",
+          creator: "@yourteam",
+          image: "/assets/og.jpg",
+        }}
+        jsonLd={jsonLd}
+      />
+
       <Header />
 
-      {/* Hero */}
-      <main id="main" className="pt-[calc(var(--header-h,64px)+12px)]">
-        <section
-          id="top"
-          className="relative overflow-hidden py-20 lg:py-28"
-          aria-label="APRO Golf Cart Solutions"
-        >
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-zinc-100/60 to-transparent dark:from-zinc-900/40" />
-          <div className="max-w-6xl mx-auto px-5 relative">
-            <div className="grid lg:grid-cols-2 gap-10 items-center">
-              <div>
-                <h1 className="text-3xl lg:text-5xl font-extrabold tracking-tight leading-tight">
-                  APRO — Modern Electric Golf Carts & Course Solutions
-                </h1>
-                <p className="mt-4 text-zinc-600 dark:text-zinc-300 text-base lg:text-lg">
-                  Premium lithium carts, smart guidance, and nationwide service footprint backed by
-                  Kukje Intertrade’s 25+ years in golf course operations.
-                </p>
-                <div className="mt-7 flex flex-wrap gap-3">
-                  <button
-                    onClick={() => {
-                      openLead("Hero CTA");
-                      trackEvent("cta_click", { where: "hero", label: "Talk to Sales" });
-                    }}
-                    className="inline-flex items-center gap-2 rounded-full px-5 h-11 text-sm font-semibold bg-black text-white dark:bg-white dark:text-black hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 dark:focus-visible:ring-white/20"
-                  >
-                    Talk to Sales <ArrowRight size={16} />
-                  </button>
+      {/* consume header height variable */}
+      <main id="main" style={{ paddingTop: "var(--header-h, 4rem)" }}>
+        {/* HERO */}
+        <section id="home" className="relative scroll-mt-24" aria-label="Hero">
+          <div className="relative h-[72vh] md:h-[84vh] w-full">
+            <img
+              src="/assets/hero.jpg"
+              alt="APRO Golf Carts"
+              className="absolute inset-0 w-full h-full object-cover"
+              loading="eager"
+              fetchPriority="high"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/30 to-transparent dark:from-black dark:via-black/30 dark:to-transparent" />
+            <div className="relative z-10 max-w-6xl mx-auto px-5 h-full flex flex-col justify-end pb-14">
+              <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
+                Electric Golf Carts, Built for Courses, Resorts & Venues Worldwide
+              </h1>
+              <p className="mt-3 max-w-2xl text-zinc-700 dark:text-zinc-200">
+                Smart guidance, flexible seating, and global after-sales support.
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  onClick={() => {
+                    openLead("Hero CTA");
+                    trackEvent("heroCtaClick", {
+                      where: "hero",
+                      label: primaryCta,
+                      ab_variant: variant,
+                    });
+                  }}
+                  className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
+                  aria-label="Open sales contact form"
+                >
+                  {primaryCta}
+                </button>
+
+                {secondaryCta === "Explore models" ? (
                   <a
                     href="#models"
-                    className="inline-flex items-center gap-2 rounded-full px-5 h-11 text-sm font-semibold border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70"
+                    onClick={() =>
+                      trackEvent("modelExploreClick", {
+                        where: "hero",
+                        label: secondaryCta,
+                        ab_variant: variant,
+                      })
+                    }
+                    className="px-5 py-3 rounded-full border border-black/40 text-black dark:border-white/60 dark:text-white"
+                    aria-label="Jump to models section"
                   >
-                    Explore Models
+                    {secondaryCta}
                   </a>
-                </div>
-              </div>
-
-              <div className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                {/* Visual placeholder — replace with your hero image/video if desired */}
-                <div className="aspect-video bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-200 via-white to-white dark:from-zinc-800 dark:via-zinc-900 dark:to-black flex items-center justify-center">
-                  <span className="text-zinc-500 dark:text-zinc-400 text-sm">
-                    Hero Visual (replace later)
-                  </span>
-                </div>
+                ) : (
+                  <a
+                    href="/brochure.pdf"
+                    onClick={() =>
+                      trackEvent("brochureDownload", {
+                        file: "/brochure.pdf",
+                        where: "hero",
+                        ab_variant: variant,
+                      })
+                    }
+                    className="px-5 py-3 rounded-full border border-black/40 text-black dark:border-white/60 dark:text-white"
+                    aria-label="Download brochure"
+                  >
+                    {secondaryCta}
+                  </a>
+                )}
               </div>
             </div>
           </div>
         </section>
 
-        {/* The nav in Header.tsx auto-highlights by IDs below */}
-        <Section id="models" title="Models" subtitle="Electric 5-seaters, VIP, long/short-deck options.">
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
-            <p className="text-zinc-600 dark:text-zinc-300">
-              Your model grid/content lives here. (Placeholder to avoid runtime errors.)
-            </p>
-          </div>
-        </Section>
+        {/* MODELS + COMPARE */}
+        <section id="models" className="scroll-mt-24" aria-label="Models">
+          <ModelGrid />
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <CompareTable />
+        </section>
 
-        <Section id="technology" title="Technology" subtitle="Smart guidance, lithium power, safety systems.">
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
-            <p className="text-zinc-600 dark:text-zinc-300">
-              Technology highlights placeholder.
-            </p>
-          </div>
-        </Section>
+        {/* TECHNOLOGY */}
+        <section id="technology" className="scroll-mt-24" aria-label="Technology">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <TechSection copy={techCopy} />
+        </section>
 
-        <Section id="industries" title="Industries" subtitle="Golf courses, resorts, industrial campuses.">
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
-            <p className="text-zinc-600 dark:text-zinc-300">Industries content placeholder.</p>
-          </div>
-        </Section>
+        {/* INDUSTRIES */}
+        <section id="industries" className="scroll-mt-24" aria-label="Industries">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <IndustriesSection />
+        </section>
 
-        <Section id="compare" title="Compare" subtitle="Lithium vs lead-acid, VIP vs standard, TCO.">
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
-            <p className="text-zinc-600 dark:text-zinc-300">Comparison table placeholder.</p>
-          </div>
-        </Section>
+        {/* PRODUCTION TIMELINE */}
+        <section id="timeline" className="scroll-mt-24" aria-label="Production timeline">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <ProductionTimeline steps={TIMELINE_STEPS} />
+        </section>
 
-        <Section id="charging" title="Charging" subtitle="Charging power options & best practices.">
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
-            <p className="text-zinc-600 dark:text-zinc-300">Charging section placeholder.</p>
-          </div>
-        </Section>
+        {/* SERVICE & WARRANTY */}
+        <section id="service" className="scroll-mt-24" aria-label="Service and warranty">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <ServiceWarrantySection />
+        </section>
 
-        <Section id="resources" title="Resources" subtitle="Brochures, certifications, case studies.">
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
-            <p className="text-zinc-600 dark:text-zinc-300">Resources placeholder.</p>
-          </div>
-        </Section>
+        {/* CHARGING & POWER */}
+        <section id="charging" className="scroll-mt-24" aria-label="Charging and power">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <ChargingPowerSection />
+        </section>
 
-        <Section id="support" title="Support" subtitle="Nationwide service centers & maintenance programs.">
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
-            <p className="text-zinc-600 dark:text-zinc-300">Support placeholder.</p>
-          </div>
-        </Section>
+        {/* RESOURCES */}
+        <section id="resources" className="scroll-mt-24" aria-label="Resources">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <ResourcesSection />
+        </section>
 
-        <Section id="timeline" title="Timeline" subtitle="Production & delivery schedule.">
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
-            <p className="text-zinc-600 dark:text-zinc-300">Timeline placeholder.</p>
-          </div>
-        </Section>
+        {/* TCO / ROI */}
+        <section id="tco" className="scroll-mt-24" aria-label="Total cost of ownership">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <TcoCalculator />
+        </section>
 
-        <Section id="configurator" title="Configurator" subtitle="Build your fleet spec.">
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
-            <p className="text-zinc-600 dark:text-zinc-300">Configurator placeholder.</p>
-          </div>
-        </Section>
+        {/* CONFIGURATOR */}
+        <section id="configurator" className="scroll-mt-24" aria-label="Configurator">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <ConfiguratorSection />
+        </section>
 
-        <Section id="fleet" title="Fleet" subtitle="Fleet management & deployment options.">
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
-            <p className="text-zinc-600 dark:text-zinc-300">Fleet placeholder.</p>
-          </div>
-        </Section>
+        {/* FLEET */}
+        <section id="fleet" className="scroll-mt-24" aria-label="Fleet">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <FleetSection />
+        </section>
 
-        <Section id="service" title="Service" subtitle="Warranty, extended coverage, on-site repair.">
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
-            <p className="text-zinc-600 dark:text-zinc-300">Service placeholder.</p>
-          </div>
-        </Section>
+        {/* SUPPORT */}
+        <section id="support" className="scroll-mt-24" aria-label="Support">
+          <div className="border-t border-zinc-200 dark:border-zinc-800" />
+          <SupportSection />
+        </section>
 
-        {/* CONTACT — contains Company / History / Organization / Partners as requested */}
-        <Section
+        {/* CONTACT */}
+        <section
           id="contact"
-          title="Contact & Company"
-          subtitle="Kukje Intertrade Co., Ltd. — national footprint, premium partners."
+          className="scroll-mt-24 py-20 bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white"
+          aria-label="Contact"
         >
-          <div className="grid lg:grid-cols-2 gap-6">
-            {/* Company Overview */}
-            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Building2 className="opacity-70" size={18} />
-                <h3 className="font-semibold">Company Overview</h3>
-              </div>
-              <ul className="space-y-2 text-sm leading-6">
-                <li><strong>Company:</strong> Kukje Intertrade Co., Ltd.</li>
-                <li><strong>CEO:</strong> Dong Hyun Lee</li>
-                <li>
-                  <strong>Core Lines:</strong> Golf course maintenance equipment (John Deere); Signature Control Systems (irrigation); APRO electric guidance golf carts (DY Innovate); plus Wiedenmann, TURFCO, REDEXIM, T.W.T, snow equipment and more.
-                </li>
-              </ul>
-              <div className="mt-4 grid sm:grid-cols-2 gap-3 text-sm">
-                <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-3">
-                  <div className="flex items-center gap-2 font-medium mb-1">
-                    <MapPin size={16} /> Headquarters (Seongnam)
-                  </div>
-                  <div>SKn Techno Park Biz Center #1208, 124 Sagimakgol-ro, Jungwon-gu</div>
-                  <div>TEL 031-739-3200 · FAX 031-739-3232~3</div>
-                </div>
-                <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-3">
-                  <div className="flex items-center gap-2 font-medium mb-1">
-                    <MapPin size={16} /> Service Plant (Icheon)
-                  </div>
-                  <div>435 Noseong-ro, Seolseong-myeon</div>
-                  <div>TEL 031-643-3077 · FAX 031-643-3087</div>
-                </div>
-                <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-3">
-                  <div className="flex items-center gap-2 font-medium mb-1">
-                    <MapPin size={16} /> Yeongnam Branch (Gyeongsan)
-                  </div>
-                  <div>61 Bulgulsa-gil, Wachon-myeon</div>
-                  <div>TEL 053-856-3360 · FAX 053-856-3361</div>
-                </div>
-                <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-3">
-                  <div className="flex items-center gap-2 font-medium mb-1">
-                    <MapPin size={16} /> Honam Branch (Jeongeup)
-                  </div>
-                  <div>77 Cheomdan-gwahak-ro, Ipam-myeon</div>
-                  <div>TEL 063-538-7501 · FAX 063-538-7502</div>
-                </div>
-                <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-3">
-                  <div className="flex items-center gap-2 font-medium mb-1">
-                    <MapPin size={16} /> Southern Branch (Jinju)
-                  </div>
-                  <div>497 Museonsan-ro, Geumgok-myeon</div>
-                  <div>TEL 055-761-1811 · FAX 055-731-1811</div>
-                </div>
-                <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-3">
-                  <div className="flex items-center gap-2 font-medium mb-1">
-                    <MapPin size={16} /> Jeju Agent (Jeju-si)
-                  </div>
-                  <div>561, Samdo-1-dong</div>
-                  <div>TEL 064-757-3877</div>
-                </div>
-              </div>
-              <div className="mt-3">
-                <a
-                  href="https://www.kukjeint.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-sm underline underline-offset-4"
-                >
-                  www.kukjeint.com
-                </a>
-              </div>
+          <div className="max-w-6xl mx-auto px-5">
+            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+              Contact
+            </h2>
+            <p className="mt-2 text-zinc-700 max-w-2xl dark:text-zinc-200">
+              Email us at{" "}
+              <a
+                href={`mailto:${import.meta.env.VITE_SALES_EMAIL || "sales@example.com"}`}
+                className="underline"
+              >
+                {import.meta.env.VITE_SALES_EMAIL || "sales@example.com"}
+              </a>{" "}
+              or open the form above.
+            </p>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => {
+                  openLead("Contact CTA");
+                  trackEvent("contactOpen", {
+                    where: "contact_section",
+                    label: "Talk to Sales",
+                  });
+                }}
+                className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
+              >
+                Talk to Sales
+              </button>
+
+              <a
+                href="/brochure.pdf"
+                onClick={() =>
+                  trackEvent("brochureDownload", {
+                    file: "/brochure.pdf",
+                    where: "contact_section",
+                  })
+                }
+                className="px-5 py-3 rounded-full border border-black/30 dark:border-white/40"
+              >
+                Download brochure (PDF)
+              </a>
             </div>
 
-            {/* History */}
-            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <CalendarClock className="opacity-70" size={18} />
-                <h3 className="font-semibold">Company History (Highlights)</h3>
-              </div>
-              <ul className="text-sm space-y-2 leading-6">
-                <li><strong>2025.01</strong> Yeongnam Branch relocated to Gyeongsan (Wachon-myeon).</li>
-                <li><strong>2023.11</strong> New Service Plant in Icheon (relocated from Gonjiam).</li>
-                <li><strong>2020.01</strong> Southern Branch opened (Jinju).</li>
-                <li><strong>2019.07</strong> Honam Branch relocated to Jeongeup. <em>2019.01</em> John Deere Asia “Star Dealer”.</li>
-                <li><strong>2017</strong> John Deere Asia “Top Dealer”; Certified “Innovative SME”.</li>
-                <li><strong>2014</strong> Began KT cart-telematics business.</li>
-                <li><strong>2013–2004</strong> Multiple John Deere/SANYO Asia dealer awards.</li>
-                <li><strong>2002</strong> Incorporated; started John Deere & SANYO dealer business.</li>
-              </ul>
-            </div>
-
-            {/* Organization */}
-            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Users2 className="opacity-70" size={18} />
-                <h3 className="font-semibold">Organization (Overview)</h3>
-              </div>
-              <p className="text-sm text-zinc-600 dark:text-zinc-300">
-                CEO; Vice President, Auditor, Advisors; Management, Planning; Service Division
-                (Jeju Agent, Special Care, Yeongnam, Honam); Cart Division (Jeju Agent, Special Care, Yeongnam, Honam);
-                Irrigation; Central Services (Production Mgmt, Service, Golf Cart Service).
-              </p>
-            </div>
-
-            {/* Partners */}
-            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Network className="opacity-70" size={18} />
-                <h3 className="font-semibold">Partners</h3>
-              </div>
-              <ul className="text-sm space-y-2 leading-6">
-                <li>
-                  <strong>John Deere:</strong> Official equipment supplier to PGA; TPC courses use JD for
-                  tournament-grade maintenance.
-                </li>
-                <li>
-                  <strong>Signature Control Systems / Weathermatic:</strong> Advanced irrigation systems widely adopted
-                  in Korea and abroad.
-                </li>
-                <li>
-                  <strong>DY Innovate (APRO):</strong> Next-gen electric golf carts, refined design and tech—built on
-                  domestic engineering with Kukje Intertrade’s course know-how.
-                </li>
-              </ul>
-            </div>
+            {/* reCAPTCHA policy note */}
+            <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+              This site is protected by reCAPTCHA and the Google{" "}
+              <a
+                href="https://policies.google.com/privacy"
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                Privacy Policy
+              </a>{" "}
+              and{" "}
+              <a
+                href="https://policies.google.com/terms"
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                Terms of Service
+              </a>{" "}
+              apply.
+            </p>
           </div>
-
-          {/* Contact CTA */}
-          <div className="mt-8 flex flex-wrap gap-3">
-            <a
-              href="tel:0317393200"
-              className="inline-flex items-center gap-2 rounded-full px-4 h-10 text-sm font-semibold border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70"
-              onClick={() => trackEvent("contact_click", { via: "phone" })}
-            >
-              <Phone size={16} /> 031-739-3200
-            </a>
-            <a
-              href="mailto:sales@kukjeint.com"
-              className="inline-flex items-center gap-2 rounded-full px-4 h-10 text-sm font-semibold border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/70"
-              onClick={() => trackEvent("contact_click", { via: "email" })}
-            >
-              <Mail size={16} /> sales@kukjeint.com
-            </a>
-            <button
-              onClick={() => {
-                openLead("Contact Section CTA");
-                trackEvent("cta_click", { where: "contact", label: "Talk to Sales" });
-              }}
-              className="inline-flex items-center gap-2 rounded-full px-5 h-10 text-sm font-semibold bg-black text-white dark:bg-white dark:text-black hover:opacity-90"
-            >
-              Talk to Sales <ArrowRight size={16} />
-            </button>
-          </div>
-        </Section>
-
-        {/* Footer (simple) */}
-        <footer className="border-t border-zinc-200 dark:border-zinc-800 py-10">
-          <div className="max-w-6xl mx-auto px-5 text-sm text-zinc-600 dark:text-zinc-400">
-            © {new Date().getFullYear()} Kukje Intertrade Co., Ltd. All rights reserved.
-          </div>
-        </footer>
+        </section>
       </main>
+
+      {/* Sticky CTA — compare가 하단을 점유할 때는 자동 숨김 */}
+      {!bottomBlocked && (
+        <button
+          onClick={() => {
+            openLead("Sticky CTA");
+            trackEvent("contactOpen", {
+              where: "sticky_cta",
+              label: "Talk to Sales",
+            });
+          }}
+          aria-label="Talk to Sales"
+          className="fixed bottom-[calc(env(safe-area-inset-bottom)+88px)] right-6 px-5 py-3 rounded-full bg-black text-white font-semibold shadow-lg dark:bg-white dark:text-black z-40"
+        >
+          Talk to Sales
+        </button>
+      )}
+
+      <footer className="border-t border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
+        <div className="max-w-6xl mx-auto px-5 py-6 text-sm text-zinc-600 dark:text-zinc-400">
+          © {new Date().getFullYear()} APRO. All rights reserved.
+          <div className="mt-4">
+            <h3 className="text-xs font-semibold tracking-wider uppercase text-zinc-500 dark:text-zinc-500">
+              Company information
+            </h3>
+            <p className="mt-1">KUKJE INTERTRADE Co., Ltd.</p>
+            <p className="mt-1">
+              Address: Floor 12, 124, Sagimakgol-ro, Jungwon-gu, Seongnam-si,
+              Gyeonggi-do, Republic of Korea
+            </p>
+
+            <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-500">
+              This site is protected by reCAPTCHA and the Google{" "}
+              <a
+                href="https://policies.google.com/privacy"
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                Privacy Policy
+              </a>{" "}
+              and{" "}
+              <a
+                href="https://policies.google.com/terms"
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                Terms of Service
+              </a>{" "}
+              apply.
+            </p>
+          </div>
+        </div>
+      </footer>
+
+      <LeadModal />
+      <ModelDetail />
     </div>
   );
 }
