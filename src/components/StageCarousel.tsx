@@ -1,218 +1,117 @@
 // src/components/StageCarousel.tsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
+export type StageKPI = { label: string; value: string };
 export type StageItem = {
-  id?: string;
+  id: string;
   img: string;
-  alt?: string;
+  alt: string;
   title: string;
   subtitle?: string;
   description?: string;
-  kpis?: Array<{ label: string; value: string }>;
-  note?: string;
-  cta?: { label: string; href?: string; onClick?: () => void };
-  below?: React.ReactNode; // optional custom block under description
-};
-
-type Props = {
-  items: StageItem[];
-  onChange?(index: number): void;
-  initialIndex?: number;
-  imgClassName?: string; // override image sizing if needed
-  controlsPosition?: "right" | "inside"; // "right" by default
-  ariaLabel?: string;
+  kpis?: StageKPI[];
 };
 
 export default function StageCarousel({
   items,
-  onChange,
-  initialIndex = 0,
-  imgClassName,
-  controlsPosition = "right",
-  ariaLabel = "Feature gallery",
-}: Props) {
-  const [index, setIndex] = useState(() => {
-    const safe = Number.isFinite(initialIndex) ? initialIndex : 0;
-    return Math.min(Math.max(0, safe), Math.max(0, items.length - 1));
-  });
+  ariaLabel = "Feature carousel",
+}: {
+  items: StageItem[];
+  ariaLabel?: string;
+}) {
+  const [index, setIndex] = useState(0);
+  const count = items.length;
+  const safeIndex = useMemo(() => Math.min(Math.max(index, 0), count - 1), [index, count]);
 
-  const total = items.length;
-  const go = (i: number) => setIndex((cur) => {
-    const next = (i + total) % total;
-    return next;
-  });
-  const next = () => go(index + 1);
-  const prev = () => go(index - 1);
-
-  // announce to parent
-  useEffect(() => { onChange?.(index); }, [index, onChange]);
-
-  // keyboard navigation
-  const rootRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    const el = rootRef.current;
-    if (!el) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (["ArrowRight", "ArrowDown", "PageDown"].includes(e.key)) { e.preventDefault(); next(); }
-      else if (["ArrowLeft", "ArrowUp", "PageUp"].includes(e.key)) { e.preventDefault(); prev(); }
-      else if (e.key === "Home") { e.preventDefault(); go(0); }
-      else if (e.key === "End") { e.preventDefault(); go(total - 1); }
-    };
-    el.addEventListener("keydown", onKey);
-    return () => el.removeEventListener("keydown", onKey);
-  }, [total, index]);
+    setIndex((i) => Math.min(i, count - 1));
+  }, [count]);
 
-  const active = items[index] ?? items[0];
+  const go = (i: number) => setIndex(((i % count) + count) % count);
+  const next = () => go(safeIndex + 1);
+  const prev = () => go(safeIndex - 1);
 
-  const numberButton = (i: number) => {
-    const isActive = i === index;
-    return (
-      <button
-        key={i}
-        type="button"
-        aria-label={`Go to item ${i + 1} of ${total}`}
-        onClick={() => go(i)}
-        className={[
-          "w-9 h-9 rounded-full grid place-items-center text-xs font-semibold border",
-          isActive
-            ? "bg-black text-white border-black dark:bg-white dark:text-black dark:border-white"
-            : "bg-white/70 dark:bg-zinc-900/70 backdrop-blur border-zinc-300 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 hover:opacity-90",
-        ].join(" ")}
-      >
-        {i + 1}
-      </button>
-    );
-  };
+  const current = items[safeIndex];
 
   return (
-    <div
-      ref={rootRef}
-      tabIndex={0}
-      role="region"
-      aria-roledescription="carousel"
-      aria-label={ariaLabel}
-      aria-live="polite"
-      className="relative"
-    >
-      {/* Visual */}
-      <div className="relative">
-        <div className="aspect-[16/9] w-full overflow-hidden rounded-3xl shadow-[0_20px_60px_-20px_rgba(0,0,0,0.35)]">
+    <section aria-label={ariaLabel}>
+      {/* Image stage */}
+      <div className="relative rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
+        <div className="aspect-[16/9] w-full bg-zinc-200 dark:bg-zinc-800">
           <img
-            src={active.img}
-            alt={active.alt || active.title}
-            className={[
-              "w-full h-full object-cover object-center",
-              imgClassName || "md:object-cover",
-            ].join(" ")}
-            draggable={false}
+            src={current.img}
+            alt={current.alt}
+            className="w-full h-full object-cover"
+            loading="lazy"
           />
         </div>
 
-        {/* Right-side controls (desktop) */}
-        {controlsPosition === "right" && total > 1 && (
-          <div className="hidden md:flex flex-col items-center gap-2 absolute right-3 top-1/2 -translate-y-1/2 z-20">
-            <button
-              type="button"
-              onClick={prev}
-              aria-label="Previous"
-              className="w-10 h-10 rounded-xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur border border-zinc-300 dark:border-zinc-700 grid place-items-center hover:opacity-90"
-            >
-              <ChevronUp size={18} />
-            </button>
-            <div className="flex flex-col items-center gap-2">
-              {Array.from({ length: total }).map((_, i) => numberButton(i))}
-            </div>
-            <button
-              type="button"
-              onClick={next}
-              aria-label="Next"
-              className="w-10 h-10 rounded-xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur border border-zinc-300 dark:border-zinc-700 grid place-items-center hover:opacity-90"
-            >
-              <ChevronDown size={18} />
-            </button>
-          </div>
-        )}
+        {/* Right-corner controls: arrows + numbers */}
+        <div className="absolute right-3 top-3 md:top-auto md:bottom-3 flex md:flex-col items-center gap-2">
+          <button
+            type="button"
+            onClick={prev}
+            aria-label="Previous"
+            className="inline-grid place-items-center w-9 h-9 rounded-xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-700 hover:bg-white dark:hover:bg-zinc-800 shadow-md"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            type="button"
+            onClick={next}
+            aria-label="Next"
+            className="inline-grid place-items-center w-9 h-9 rounded-xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-700 hover:bg-white dark:hover:bg-zinc-800 shadow-md"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
 
-        {/* Mobile controls (bottom bar) */}
-        {total > 1 && (
-          <div className="md:hidden absolute inset-x-3 bottom-3 z-20">
-            <div className="rounded-2xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur border border-zinc-300 dark:border-zinc-700 px-2 py-2 flex items-center justify-between">
+          {/* Number pager (1..N) */}
+          <div className="hidden md:flex flex-col gap-1 mt-2 items-center">
+            {items.map((_, i) => (
               <button
+                key={i}
                 type="button"
-                onClick={prev}
-                aria-label="Previous"
-                className="w-9 h-9 rounded-xl grid place-items-center hover:opacity-80"
+                onClick={() => go(i)}
+                aria-label={`Go to item ${i + 1}`}
+                className={[
+                  "w-9 h-8 rounded-lg text-xs font-semibold border transition",
+                  i === safeIndex
+                    ? "bg-black text-white border-black dark:bg-white dark:text-black dark:border-white"
+                    : "bg-white/90 dark:bg-zinc-900/90 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-800",
+                ].join(" ")}
               >
-                <ChevronLeft />
+                {i + 1}
               </button>
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar px-2">
-                {Array.from({ length: total }).map((_, i) => numberButton(i))}
-              </div>
-              <button
-                type="button"
-                onClick={next}
-                aria-label="Next"
-                className="w-9 h-9 rounded-xl grid place-items-center hover:opacity-80"
-              >
-                <ChevronRight />
-              </button>
-            </div>
+            ))}
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Text block */}
+      {/* Info under image */}
       <div className="mt-6">
-        <h4 className="text-xl md:text-2xl font-extrabold tracking-tight">{active.title}</h4>
-        {active.subtitle && (
-          <p className="mt-1 text-sm font-medium text-zinc-600 dark:text-zinc-300">{active.subtitle}</p>
-        )}
-        {active.description && (
-          <p className="mt-3 text-zinc-700 dark:text-zinc-200 leading-relaxed">{active.description}</p>
-        )}
+        <h4 className="text-2xl md:text-3xl font-extrabold tracking-tight">{current.title}</h4>
+        {current.subtitle ? (
+          <p className="mt-1 text-zinc-600 dark:text-zinc-300">{current.subtitle}</p>
+        ) : null}
+        {current.description ? (
+          <p className="mt-4 text-sm md:text-base text-zinc-700 dark:text-zinc-200">{current.description}</p>
+        ) : null}
 
-        {active.kpis?.length ? (
-          <ul className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-            {active.kpis.map((k, i) => (
+        {current.kpis?.length ? (
+          <ul className="mt-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {current.kpis.map((k, i) => (
               <li
                 key={i}
-                className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/60 px-4 py-3"
+                className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/70 px-4 py-3"
               >
                 <div className="text-[11px] uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{k.label}</div>
-                <div className="text-base font-semibold">{k.value}</div>
+                <div className="text-sm font-semibold mt-0.5">{k.value}</div>
               </li>
             ))}
           </ul>
         ) : null}
-
-        {active.note && (
-          <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">{active.note}</p>
-        )}
-
-        {active.below}
-
-        {active.cta && (
-          <div className="mt-5">
-            {active.cta.href ? (
-              <a
-                href={active.cta.href}
-                className="inline-block px-5 py-3 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold"
-              >
-                {active.cta.label}
-              </a>
-            ) : (
-              <button
-                type="button"
-                onClick={active.cta.onClick}
-                className="px-5 py-3 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold"
-              >
-                {active.cta.label}
-              </button>
-            )}
-          </div>
-        )}
       </div>
-    </div>
+    </section>
   );
 }
