@@ -4,14 +4,12 @@ run-name: "Build & Deploy • ${{ github.ref_name }} • by ${{ github.actor }}"
 on:
   push:
     branches:
-      - '**'         # all branches
+      - '**'
   workflow_dispatch:
 
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-
-    # Only one live deployment at a time (preview can run concurrently per-branch)
     concurrency:
       group: deploy-live
       cancel-in-progress: true
@@ -25,7 +23,7 @@ jobs:
         with:
           node-version: '20'
 
-      # --- Build-time env for Vite (client-exposed) ---
+      # --- Build-time env for Vite (frontend public vars) ---
       - name: Create .env for build
         run: |
           cat << 'EOF' > .env
@@ -45,31 +43,50 @@ jobs:
             npm install
           fi
 
-      # 🔧 Self-heal: ensure @vitejs/plugin-react is installed (prevents build break)
-      - name: Ensure @vitejs/plugin-react
-        shell: bash
+      # --- Ensure optional UI deps present for CI builds (premium icons) ---
+      - name: Ensure lucide-react present
         run: |
-          if ! npm ls @vitejs/plugin-react >/dev/null 2>&1; then
-            echo "Installing @vitejs/plugin-react (not found in node_modules)"
-            npm i -D @vitejs/plugin-react@^4
+          if ! npm ls lucide-react >/dev/null 2>&1; then
+            echo "Installing lucide-react (not found in node_modules)"
+            npm i lucide-react@latest
           else
-            echo "@vitejs/plugin-react already present"
+            echo "lucide-react already present"
           fi
+
+      # --- Auto-generate sitemap with fresh <lastmod> ---
+      # Overwrites public/sitemap.xml each run (Vite copies /public → /dist)
+      - name: Generate sitemap.xml (UTC today)
+        run: |
+          TODAY=$(date -u +%Y-%m-%d)
+          mkdir -p public
+          cat > public/sitemap.xml <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+            <url>
+              <loc>https://apro.kukjeint.com/</loc>
+              <lastmod>${TODAY}</lastmod>
+              <changefreq>weekly</changefreq>
+              <priority>1.0</priority>
+            </url>
+          </urlset>
+          EOF
+          echo "Sitemap generated with lastmod=${TODAY}"
 
       - name: Build
         run: npm run build
 
-      # ✅ Verify GA ID is injected (check the GA_ID variable assignment)
       - name: Verify GA ID replaced
         run: |
-          test -f dist/index.html || (echo "❌ dist/index.html not found" && exit 1)
-          if grep -Eq "var GA_ID\s*=\s*['\"]G-[A-Z0-9]+['\"]" dist/index.html; then
-            echo "✅ GA ID is present in dist/index.html"
+          if [ ! -f dist/index.html ]; then
+            echo "❌ dist/index.html not found. Is Vite output 'dist'?" && exit 1
+          fi
+          if grep -q "googletagmanager.com/gtag/js?id=G-" dist/index.html; then
+            echo "✅ GA ID found in dist/index.html"
           else
-            echo "❌ GA ID not found (expected var GA_ID = 'G-XXXX')" && exit 1
+            echo "❌ GA ID NOT found in dist/index.html"; exit 1
           fi
 
-      # ---- Functions(+ Firestore Indexes): run on all branches (as you requested) ----
+      # ---- Functions(+ Firestore Indexes): run on all branches if secrets exist ----
       - name: Sync & Deploy Firestore Indexes + Functions
         shell: bash
         env:
@@ -82,8 +99,6 @@ jobs:
           RECAPTCHA_SECRET: ${{ secrets.RECAPTCHA_SECRET }}
         run: |
           set -euo pipefail
-
-          # 0) Skip if required secrets are missing
           missing=()
           [ -z "${SENDGRID_API_KEY:-}" ]  && missing+=("SENDGRID_API_KEY")
           [ -z "${SALES_TO:-}" ]         && missing+=("SALES_TO")
@@ -94,14 +109,11 @@ jobs:
             exit 0
           fi
 
-          # 1) ADC for Firebase CLI
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/gcp.json"
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$GOOGLE_APPLICATION_CREDENTIALS"
 
-          # 2) Firebase CLI
           npm i -g firebase-tools@latest
 
-          # 3) Sync secrets to Firebase Secret Manager
           sync_secret () {
             local NAME="$1"
             local VAL="$(printenv "$NAME" || true)"
@@ -119,31 +131,27 @@ jobs:
           sync_secret SALES_BCC
           sync_secret RECAPTCHA_SECRET
 
-          # 4) Build functions
           pushd functions
             if [ -f package-lock.json ]; then npm ci; else npm install; fi
             npm run build
           popd
 
-          # 5) Deploy indexes + functions
           firebase deploy \
             --only "firestore:indexes,functions" \
             --project "$FIREBASE_PROJECT_ID" \
             --non-interactive --force
 
-      # ---- Hosting: PREVIEW for every branch (channel = branch name) ----
-      - name: Deploy to Firebase Hosting (Preview Channel)
+      # ---- Hosting: branch preview (channel = branch) ----
+      - name: Deploy to Firebase Hosting (Preview channel = branch)
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
           channelId: ${{ github.ref_name }}
-          expires: 7d
 
-      # ---- Hosting: LIVE also from selected branches (main/master/1107) ----
+      # ---- Hosting: always LIVE (you asked to deploy live on branch too) ----
       - name: Deploy to Firebase Hosting (LIVE)
-        if: ${{ github.ref_name == 'main' || github.ref_name == 'master' || github.ref_name == '1107' }}
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
