@@ -3,15 +3,12 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type Props = {
   children: React.ReactNode;
-  /** Optional: fixed height background fades to imitate Audi */
-  edgeFades?: boolean;
-  /** optional aria-label */
   ariaLabel?: string;
-  /** Add custom class to rail container */
   className?: string;
+  edgeFades?: boolean;
 };
 
-export default function HorizontalRail({ children, edgeFades = true, ariaLabel, className }: Props) {
+export default function HorizontalRail({ children, ariaLabel, className, edgeFades = true }: Props) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
@@ -71,7 +68,7 @@ export default function HorizontalRail({ children, edgeFades = true, ariaLabel, 
       <div
         ref={ref}
         aria-label={ariaLabel}
-        className="scrollbar-none overflow-x-auto snap-x snap-mandatory flex gap-4 py-2 rail"
+        className="scrollbar-none overflow-x-auto snap-x snap-mandatory flex gap-4 py-2"
       >
         {children}
       </div>
