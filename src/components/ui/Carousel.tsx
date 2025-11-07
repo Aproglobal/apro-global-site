@@ -7,7 +7,7 @@ type CarouselProps = {
   ariaLabel?: string;
   id?: string;
   className?: string;
-  itemClassName?: string; // e.g. "w-[88vw] md:w-[720px]"
+  itemClassName?: string; // e.g. "w-[88vw] md:w-[760px]"
   showCount?: boolean;
 };
 
@@ -16,7 +16,7 @@ export default function Carousel({
   ariaLabel,
   id,
   className = "",
-  itemClassName = "w-[88vw] md:w-[760px] lg:w-[900px]",
+  itemClassName = "w-[88vw] md:w-[760px] lg:w-[980px]",
   showCount = true,
 }: CarouselProps) {
   const trackRef = useRef<HTMLDivElement | null>(null);
@@ -76,10 +76,7 @@ export default function Carousel({
       {/* Track */}
       <div
         ref={trackRef}
-        className="
-          overflow-x-auto scroll-smooth no-scrollbar
-          snap-x snap-mandatory flex gap-4 px-1
-        "
+        className="overflow-x-auto scroll-smooth snap-x snap-mandatory flex gap-4 px-1"
       >
         {items.map((node, i) => (
           <div key={i} className={`shrink-0 snap-center ${itemClassName}`}>
