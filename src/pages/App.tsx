@@ -1,20 +1,35 @@
-import React, { useEffect, useMemo, useState, Suspense } from "react";
-import { Header } from "../components/Header";
-import { DotRail } from "../components/DotRail";
+import React, { useEffect, useMemo, useState } from "react";
+import Header from "../components/Header";
+import ModelGrid from "../components/ModelGrid";
+import CompareTable from "../components/CompareTable";
+import TechSection from "../components/TechSection";
+import FleetSection from "../components/FleetSection";
+import SupportSection from "../components/SupportSection";
 import LeadModal, { openLead } from "../components/LeadModal";
 import ModelDetail from "../components/ModelDetail";
-import ModelGrid from "../components/ModelGrid";
-const LazyCompareTable = React.lazy(() => import("../components/CompareTable"));
-import TechSection from "../components/TechSection";
-import ProductionTimeline from "../components/ProductionTimeline";
-import { TIMELINE_STEPS } from "../data/timeline";
-import ContactCompany from "../components/ContactCompany";
-
 import { getVariant } from "../utils/ab";
 import { setupScrollDepth, trackEvent, initAnalytics } from "../services/analytics";
 import { initThemeWatcher } from "../utils/theme";
 import { loadRecaptcha } from "../lib/recaptcha";
 import { getTechCopy } from "../data/technology";
+
+// Production timeline (horizontal rail)
+import ProductionTimeline from "../components/ProductionTimeline";
+import { TIMELINE_STEPS } from "../data/timeline";
+
+// Sections you already have
+import IndustriesSection from "../components/IndustriesSection";
+import ServiceWarrantySection from "../components/ServiceWarrantySection";
+import ChargingPowerSection from "../components/ChargingPowerSection";
+import ResourcesSection from "../components/ResourcesSection";
+import TcoCalculator from "../components/TcoCalculator";
+import ConfiguratorSection from "../components/ConfiguratorSection";
+
+// New: unified frame + consolidated contact
+import SectionFrame from "../components/SectionFrame";
+import ContactCompany from "../components/ContactCompany";
+
+// SEO
 import SEO from "../components/SEO";
 
 export default function App() {
@@ -32,8 +47,31 @@ export default function App() {
   const secondaryCta = variant === "A" ? "Explore models" : "Download brochure";
   const techCopy = useMemo(() => getTechCopy(), []);
 
-  // Compare modal
-  const [compareOpen, setCompareOpen] = useState(false);
+  // hide sticky CTA when compare occupies bottom
+  const [bottomBlocked, setBottomBlocked] = useState(false);
+  useEffect(() => {
+    let pinnedCount = 0;
+    let miniOpen = false;
+    const recompute = () => setBottomBlocked(miniOpen || pinnedCount > 0);
+
+    const onPinned = (e: Event) => {
+      const ce = e as CustomEvent<{ count: number }>;
+      pinnedCount = Number(ce?.detail?.count ?? 0);
+      recompute();
+    };
+    const onMini = (e: Event) => {
+      const ce = e as CustomEvent<{ open: boolean }>;
+      miniOpen = Boolean(ce?.detail?.open ?? false);
+      recompute();
+    };
+
+    window.addEventListener("compare:pinned" as any, onPinned as any);
+    window.addEventListener("compare:mini" as any, onMini as any);
+    return () => {
+      window.removeEventListener("compare:pinned" as any, onPinned as any);
+      window.removeEventListener("compare:mini" as any, onMini as any);
+    };
+  }, []);
 
   // SEO constants
   const siteName = "APRO — Electric Golf Carts";
@@ -73,9 +111,6 @@ export default function App() {
     },
   ];
 
-  // Tech drawer
-  const [showTechMore, setShowTechMore] = useState(false);
-
   return (
     <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
       <SEO
@@ -89,20 +124,13 @@ export default function App() {
           image: "/assets/og.jpg",
           siteName: "APRO",
         }}
-        twitter={{
-          card: "summary_large_image",
-          site: "@yourbrand",
-          creator: "@yourteam",
-          image: "/assets/og.jpg",
-        }}
+        twitter={{ card: "summary_large_image", site: "@yourbrand", creator: "@yourteam", image: "/assets/og.jpg" }}
         jsonLd={jsonLd}
       />
 
       <Header />
 
-      {/* Right-side dot rail */}
-      <DotRail ids={["home", "models", "technology", "timeline", "contact"]} />
-
+      {/* consume header height variable */}
       <main id="main" style={{ paddingTop: "var(--header-h, 4rem)" }}>
         {/* HERO */}
         <section id="home" className="relative scroll-mt-24" aria-label="Hero">
@@ -138,9 +166,7 @@ export default function App() {
                 {secondaryCta === "Explore models" ? (
                   <a
                     href="#models"
-                    onClick={() =>
-                      trackEvent("modelExploreClick", { where: "hero", label: secondaryCta, ab_variant: variant })
-                    }
+                    onClick={() => trackEvent("modelExploreClick", { where: "hero", label: secondaryCta, ab_variant: variant })}
                     className="px-5 py-3 rounded-full border border-black/40 text-black dark:border-white/60 dark:text-white"
                     aria-label="Jump to models section"
                   >
@@ -149,9 +175,7 @@ export default function App() {
                 ) : (
                   <a
                     href="/brochure.pdf"
-                    onClick={() =>
-                      trackEvent("brochureDownload", { file: "/brochure.pdf", where: "hero", ab_variant: variant })
-                    }
+                    onClick={() => trackEvent("brochureDownload", { file: "/brochure.pdf", where: "hero", ab_variant: variant })}
                     className="px-5 py-3 rounded-full border border-black/40 text-black dark:border-white/60 dark:text-white"
                     aria-label="Download brochure"
                   >
@@ -163,156 +187,82 @@ export default function App() {
           </div>
         </section>
 
-        {/* MODELS — compact + Compare (modal) */}
-        <section id="models" className="scroll-mt-24 py-16" aria-label="Models">
-          <div className="max-w-6xl mx-auto px-5">
-            <div className="flex items-end justify-between gap-6">
-              <div>
-                <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Models</h2>
-                <p className="mt-2 text-zinc-700 dark:text-zinc-300">
-                  Lithium fleets, VIP/Semi-VIP seating, smart guidance—built for performance and uptime.
-                </p>
-              </div>
-              <div className="hidden md:flex gap-3">
-                <button
-                  onClick={() => setCompareOpen(true)}
-                  className="px-4 py-2 rounded-full border border-black/30 dark:border-white/40"
-                >
-                  Compare models
-                </button>
-                <a
-                  href="#contact"
-                  className="px-4 py-2 rounded-full bg-black text-white dark:bg-white dark:text-black"
-                  onClick={() => trackEvent("contactOpen", { where: "models_top" })}
-                >
-                  Ask an expert
-                </a>
-              </div>
-            </div>
-
-            <div className="mt-8">
-              <ModelGrid />
-            </div>
-
-            {/* Mobile actions */}
-            <div className="mt-6 md:hidden flex gap-3">
-              <button
-                onClick={() => setCompareOpen(true)}
-                className="px-4 py-2 rounded-full border border-black/30 dark:border-white/40 w-full"
-              >
-                Compare models
-              </button>
-              <a
-                href="#contact"
-                className="px-4 py-2 rounded-full bg-black text-white dark:bg-white dark:text-black w-full text-center"
-                onClick={() => trackEvent("contactOpen", { where: "models_mobile" })}
-              >
-                Ask an expert
-              </a>
-            </div>
+        {/* MODELS + COMPARE */}
+        <SectionFrame id="models" title="Models & Compare">
+          <div className="space-y-8">
+            <ModelGrid />
+            <div className="border-t border-zinc-200 dark:border-zinc-800" />
+            <CompareTable />
           </div>
-        </section>
+        </SectionFrame>
 
-        {/* TECHNOLOGY — short + drawer */}
-        <section id="technology" className="scroll-mt-24 py-16" aria-label="Technology">
-          <div className="max-w-6xl mx-auto px-5">
-            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Technology</h2>
-            <p className="mt-2 text-zinc-700 dark:text-zinc-300 max-w-3xl">
-              {techCopy?.highlights?.[0] || "High-efficiency powertrain, durable chassis, guidance-ready electronics."}
-            </p>
+        {/* TECHNOLOGY */}
+        <SectionFrame id="technology" title="Technology">
+          <TechSection copy={techCopy} />
+        </SectionFrame>
 
-            <div className="mt-6">
-              <button
-                onClick={() => setShowTechMore((v) => !v)}
-                className="px-4 py-2 rounded-full border border-black/30 dark:border-white/40"
-                aria-expanded={showTechMore}
-                aria-controls="tech-more"
-              >
-                {showTechMore ? "Hide details" : "Learn more"}
-              </button>
-            </div>
+        {/* INDUSTRIES */}
+        <SectionFrame id="industries" title="Industries">
+          <IndustriesSection />
+        </SectionFrame>
 
-            {showTechMore && (
-              <div id="tech-more" className="mt-8 border rounded-2xl border-zinc-200 dark:border-zinc-800 p-4 md:p-6">
-                <TechSection copy={techCopy} />
-              </div>
-            )}
-          </div>
-        </section>
+        {/* TIMELINE (Audi-style horizontal rail) */}
+        <SectionFrame id="timeline" title="Production & Delivery">
+          <ProductionTimeline steps={TIMELINE_STEPS} progressDay={30} />
+        </SectionFrame>
 
-        {/* TIMELINE — trimmed to 2 steps (only images you have) */}
-        <section id="timeline" className="scroll-mt-24 py-16" aria-label="Production & Delivery Timeline">
-          <div className="max-w-6xl mx-auto px-5">
-            <div className="flex items-end justify-between gap-6">
-              <div>
-                <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Production & Delivery</h2>
-                <p className="mt-2 text-zinc-700 dark:text-zinc-300">
-                  From factory release to on-site delivery & installation.
-                </p>
-              </div>
-              <a
-                href="#contact"
-                className="hidden md:inline-flex px-4 py-2 rounded-full bg-black text-white dark:bg-white dark:text-black"
-              >
-                Plan your delivery
-              </a>
-            </div>
+        {/* SERVICE & WARRANTY */}
+        <SectionFrame id="service" title="Service & Warranty">
+          <ServiceWarrantySection />
+        </SectionFrame>
 
-            <div className="mt-8">
-              <ProductionTimeline steps={TIMELINE_STEPS} />
-            </div>
-          </div>
-        </section>
+        {/* CHARGING & POWER */}
+        <SectionFrame id="charging" title="Charging & Power">
+          <ChargingPowerSection />
+        </SectionFrame>
 
-        {/* CONTACT + COMPANY (no partners) */}
-        <section id="contact" className="scroll-mt-24" aria-label="Contact & Company">
-          <ContactCompany />
-        </section>
+        {/* RESOURCES */}
+        <SectionFrame id="resources" title="Resources">
+          <ResourcesSection />
+        </SectionFrame>
+
+        {/* TCO / ROI */}
+        <SectionFrame id="tco" title="TCO / ROI">
+          <TcoCalculator />
+        </SectionFrame>
+
+        {/* CONFIGURATOR */}
+        <SectionFrame id="configurator" title="Configurator">
+          <ConfiguratorSection />
+        </SectionFrame>
+
+        {/* FLEET */}
+        <SectionFrame id="fleet" title="Fleet Solutions">
+          <FleetSection />
+        </SectionFrame>
+
+        {/* SUPPORT */}
+        <SectionFrame id="support" title="Support">
+          <SupportSection />
+        </SectionFrame>
+
+        {/* Consolidated “Contact & Company” (no partners) */}
+        <ContactCompany />
       </main>
 
-      {/* Compare Modal (lazy) */}
-      {compareOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          onClick={() => setCompareOpen(false)}
+      {/* Sticky CTA — hidden when compare pins at bottom */}
+      {!bottomBlocked && (
+        <button
+          onClick={() => {
+            openLead("Sticky CTA");
+            trackEvent("contactOpen", { where: "sticky_cta", label: "Talk to Sales" });
+          }}
+          aria-label="Talk to Sales"
+          className="fixed bottom-[calc(env(safe-area-inset-bottom)+88px)] right-6 px-5 py-3 rounded-full bg-black text-white font-semibold shadow-lg dark:bg-white dark:text-black z-40"
         >
-          <div className="absolute inset-0 bg-black/60" />
-          <div
-            className="relative z-10 bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-[95vw] max-w-6xl max-h-[85vh] overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800">
-              <h3 className="text-lg font-semibold">Compare Models</h3>
-              <button
-                onClick={() => setCompareOpen(false)}
-                aria-label="Close"
-                className="px-3 py-1 rounded-full border border-black/20 dark:border-white/30"
-              >
-                Close
-              </button>
-            </div>
-            <div className="p-2 md:p-4 overflow-auto">
-              <Suspense fallback={<div className="p-6 text-sm opacity-70">Loading…</div>}>
-                <LazyCompareTable />
-              </Suspense>
-            </div>
-          </div>
-        </div>
+          Talk to Sales
+        </button>
       )}
-
-      {/* Sticky CTA */}
-      <button
-        onClick={() => {
-          openLead("Sticky CTA");
-          trackEvent("contactOpen", { where: "sticky_cta", label: "Talk to Sales" });
-        }}
-        aria-label="Talk to Sales"
-        className="fixed bottom-[calc(env(safe-area-inset-bottom)+88px)] right-6 px-5 py-3 rounded-full bg-black text-white font-semibold shadow-lg dark:bg-white dark:text-black z-40"
-      >
-        Talk to Sales
-      </button>
 
       <footer className="border-t border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
         <div className="max-w-6xl mx-auto px-5 py-6 text-sm text-zinc-600 dark:text-zinc-400">
@@ -325,6 +275,7 @@ export default function App() {
             <p className="mt-1">
               Address: Floor 12, 124, Sagimakgol-ro, Jungwon-gu, Seongnam-si, Gyeonggi-do, Republic of Korea
             </p>
+
             <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-500">
               This site is protected by reCAPTCHA and the Google{" "}
               <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">
