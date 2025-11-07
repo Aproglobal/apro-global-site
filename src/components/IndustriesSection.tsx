@@ -1,5 +1,6 @@
 import React from "react";
 import { trackEvent } from "../services/analytics";
+import { openLead } from "./LeadModal";
 
 type Industry = {
   id: string;
@@ -48,9 +49,7 @@ export default function IndustriesSection() {
       <div className="max-w-6xl mx-auto px-5">
         <div className="flex items-end justify-between gap-4">
           <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Industries</h2>
-          <span className="text-xs text-zinc-600 dark:text-zinc-400">
-            Select an industry to see outcomes and suggested configurations.
-          </span>
+          <span className="text-xs text-zinc-600 dark:text-zinc-400">Pick an industry to see relevant outcomes.</span>
         </div>
 
         <ul className="mt-8 grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
@@ -106,8 +105,11 @@ export default function IndustriesSection() {
                 <div className="mt-6">
                   <button
                     type="button"
-                    onClick={() => trackEvent("industryCardClick", { industry_id: it.id, label: it.name })}
-                    className="px-4 py-2 rounded-full bg-black text-white dark:bg-white dark:text-black text-sm w-full sm:w-auto transition hover:opacity-90"
+                    onClick={() => {
+                      trackEvent("industryCardClick", { industry_id: it.id, label: it.name });
+                      if (!it.comingSoon) openLead(`Industry ${it.id}`);
+                    }}
+                    className="px-4 py-2 rounded-full bg-black text-white dark:bg-white dark:text-black text-sm w-full sm:w-auto transition hover:opacity-90 disabled:opacity-60"
                     disabled={it.comingSoon}
                     aria-disabled={it.comingSoon}
                   >
