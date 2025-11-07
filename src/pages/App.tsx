@@ -1,34 +1,20 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, Suspense } from "react";
 import { Header } from "../components/Header";
-import ModelGrid from "../components/ModelGrid";
-import CompareTable from "../components/CompareTable";
-import TechSection from "../components/TechSection";
-import FleetSection from "../components/FleetSection";
-import SupportSection from "../components/SupportSection";
+import { DotRail } from "../components/DotRail";
 import LeadModal, { openLead } from "../components/LeadModal";
 import ModelDetail from "../components/ModelDetail";
+import ModelGrid from "../components/ModelGrid";
+const LazyCompareTable = React.lazy(() => import("../components/CompareTable"));
+import TechSection from "../components/TechSection";
+import ProductionTimeline from "../components/ProductionTimeline";
+import { TIMELINE_STEPS } from "../data/timeline";
+import ContactCompany from "../components/ContactCompany";
+
 import { getVariant } from "../utils/ab";
 import { setupScrollDepth, trackEvent, initAnalytics } from "../services/analytics";
 import { initThemeWatcher } from "../utils/theme";
 import { loadRecaptcha } from "../lib/recaptcha";
 import { getTechCopy } from "../data/technology";
-
-// Production timeline
-import ProductionTimeline from "../components/ProductionTimeline";
-import { TIMELINE_STEPS } from "../data/timeline";
-
-// Sections
-import IndustriesSection from "../components/IndustriesSection";
-import ServiceWarrantySection from "../components/ServiceWarrantySection";
-import ChargingPowerSection from "../components/ChargingPowerSection";
-import ResourcesSection from "../components/ResourcesSection";
-import TcoCalculator from "../components/TcoCalculator";
-import ConfiguratorSection from "../components/ConfiguratorSection";
-
-// ✅ Consolidated section (Contact + Company / no partners)
-import ContactCompany from "../components/ContactCompany";
-
-// SEO
 import SEO from "../components/SEO";
 
 export default function App() {
@@ -38,41 +24,16 @@ export default function App() {
     initAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
     setupScrollDepth();
     initThemeWatcher();
-
     const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
     if (siteKey) loadRecaptcha(siteKey);
   }, []);
 
   const primaryCta = "Talk to Sales";
   const secondaryCta = variant === "A" ? "Explore models" : "Download brochure";
-
   const techCopy = useMemo(() => getTechCopy(), []);
 
-  // Hide sticky CTA when compare occupies the bottom
-  const [bottomBlocked, setBottomBlocked] = useState(false);
-  useEffect(() => {
-    let pinnedCount = 0;
-    let miniOpen = false;
-    const recompute = () => setBottomBlocked(miniOpen || pinnedCount > 0);
-
-    const onPinned = (e: Event) => {
-      const ce = e as CustomEvent<{ count: number }>;
-      pinnedCount = Number(ce?.detail?.count ?? 0);
-      recompute();
-    };
-    const onMini = (e: Event) => {
-      const ce = e as CustomEvent<{ open: boolean }>;
-      miniOpen = Boolean(ce?.detail?.open ?? false);
-      recompute();
-    };
-
-    window.addEventListener("compare:pinned" as any, onPinned as any);
-    window.addEventListener("compare:mini" as any, onMini as any);
-    return () => {
-      window.removeEventListener("compare:pinned" as any, onPinned as any);
-      window.removeEventListener("compare:mini" as any, onMini as any);
-    };
-  }, []);
+  // Compare modal
+  const [compareOpen, setCompareOpen] = useState(false);
 
   // SEO constants
   const siteName = "APRO — Electric Golf Carts";
@@ -112,6 +73,9 @@ export default function App() {
     },
   ];
 
+  // Tech drawer
+  const [showTechMore, setShowTechMore] = useState(false);
+
   return (
     <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
       <SEO
@@ -136,7 +100,9 @@ export default function App() {
 
       <Header />
 
-      {/* consume header height variable */}
+      {/* Right-side dot rail */}
+      <DotRail ids={["home", "models", "technology", "timeline", "contact"]} />
+
       <main id="main" style={{ paddingTop: "var(--header-h, 4rem)" }}>
         {/* HERO */}
         <section id="home" className="relative scroll-mt-24" aria-label="Hero">
@@ -197,94 +163,156 @@ export default function App() {
           </div>
         </section>
 
-        {/* MODELS */}
-        <section id="models" className="scroll-mt-24" aria-label="Models">
-          <ModelGrid />
+        {/* MODELS — compact + Compare (modal) */}
+        <section id="models" className="scroll-mt-24 py-16" aria-label="Models">
+          <div className="max-w-6xl mx-auto px-5">
+            <div className="flex items-end justify-between gap-6">
+              <div>
+                <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Models</h2>
+                <p className="mt-2 text-zinc-700 dark:text-zinc-300">
+                  Lithium fleets, VIP/Semi-VIP seating, smart guidance—built for performance and uptime.
+                </p>
+              </div>
+              <div className="hidden md:flex gap-3">
+                <button
+                  onClick={() => setCompareOpen(true)}
+                  className="px-4 py-2 rounded-full border border-black/30 dark:border-white/40"
+                >
+                  Compare models
+                </button>
+                <a
+                  href="#contact"
+                  className="px-4 py-2 rounded-full bg-black text-white dark:bg-white dark:text-black"
+                  onClick={() => trackEvent("contactOpen", { where: "models_top" })}
+                >
+                  Ask an expert
+                </a>
+              </div>
+            </div>
+
+            <div className="mt-8">
+              <ModelGrid />
+            </div>
+
+            {/* Mobile actions */}
+            <div className="mt-6 md:hidden flex gap-3">
+              <button
+                onClick={() => setCompareOpen(true)}
+                className="px-4 py-2 rounded-full border border-black/30 dark:border-white/40 w-full"
+              >
+                Compare models
+              </button>
+              <a
+                href="#contact"
+                className="px-4 py-2 rounded-full bg-black text-white dark:bg-white dark:text-black w-full text-center"
+                onClick={() => trackEvent("contactOpen", { where: "models_mobile" })}
+              >
+                Ask an expert
+              </a>
+            </div>
+          </div>
         </section>
 
-        {/* COMPARE — dedicate its own anchor to match nav */}
-        <section id="compare" className="scroll-mt-24" aria-label="Compare">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <CompareTable />
+        {/* TECHNOLOGY — short + drawer */}
+        <section id="technology" className="scroll-mt-24 py-16" aria-label="Technology">
+          <div className="max-w-6xl mx-auto px-5">
+            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Technology</h2>
+            <p className="mt-2 text-zinc-700 dark:text-zinc-300 max-w-3xl">
+              {techCopy?.highlights?.[0] || "High-efficiency powertrain, durable chassis, guidance-ready electronics."}
+            </p>
+
+            <div className="mt-6">
+              <button
+                onClick={() => setShowTechMore((v) => !v)}
+                className="px-4 py-2 rounded-full border border-black/30 dark:border-white/40"
+                aria-expanded={showTechMore}
+                aria-controls="tech-more"
+              >
+                {showTechMore ? "Hide details" : "Learn more"}
+              </button>
+            </div>
+
+            {showTechMore && (
+              <div id="tech-more" className="mt-8 border rounded-2xl border-zinc-200 dark:border-zinc-800 p-4 md:p-6">
+                <TechSection copy={techCopy} />
+              </div>
+            )}
+          </div>
         </section>
 
-        {/* TECHNOLOGY */}
-        <section id="technology" className="scroll-mt-24" aria-label="Technology">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <TechSection copy={techCopy} />
+        {/* TIMELINE — trimmed to 2 steps (only images you have) */}
+        <section id="timeline" className="scroll-mt-24 py-16" aria-label="Production & Delivery Timeline">
+          <div className="max-w-6xl mx-auto px-5">
+            <div className="flex items-end justify-between gap-6">
+              <div>
+                <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Production & Delivery</h2>
+                <p className="mt-2 text-zinc-700 dark:text-zinc-300">
+                  From factory release to on-site delivery & installation.
+                </p>
+              </div>
+              <a
+                href="#contact"
+                className="hidden md:inline-flex px-4 py-2 rounded-full bg-black text-white dark:bg-white dark:text-black"
+              >
+                Plan your delivery
+              </a>
+            </div>
+
+            <div className="mt-8">
+              <ProductionTimeline steps={TIMELINE_STEPS} />
+            </div>
+          </div>
         </section>
 
-        {/* INDUSTRIES */}
-        <section id="industries" className="scroll-mt-24" aria-label="Industries">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <IndustriesSection />
+        {/* CONTACT + COMPANY (no partners) */}
+        <section id="contact" className="scroll-mt-24" aria-label="Contact & Company">
+          <ContactCompany />
         </section>
-
-        {/* PRODUCTION TIMELINE */}
-        <section id="timeline" className="scroll-mt-24" aria-label="Production timeline">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <ProductionTimeline steps={TIMELINE_STEPS} />
-        </section>
-
-        {/* SERVICE & WARRANTY */}
-        <section id="service" className="scroll-mt-24" aria-label="Service and warranty">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <ServiceWarrantySection />
-        </section>
-
-        {/* CHARGING & POWER */}
-        <section id="charging" className="scroll-mt-24" aria-label="Charging and power">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <ChargingPowerSection />
-        </section>
-
-        {/* RESOURCES */}
-        <section id="resources" className="scroll-mt-24" aria-label="Resources">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <ResourcesSection />
-        </section>
-
-        {/* TCO / ROI */}
-        <section id="tco" className="scroll-mt-24" aria-label="Total cost of ownership">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <TcoCalculator />
-        </section>
-
-        {/* CONFIGURATOR */}
-        <section id="configurator" className="scroll-mt-24" aria-label="Configurator">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <ConfiguratorSection />
-        </section>
-
-        {/* FLEET */}
-        <section id="fleet" className="scroll-mt-24" aria-label="Fleet">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <FleetSection />
-        </section>
-
-        {/* SUPPORT */}
-        <section id="support" className="scroll-mt-24" aria-label="Support">
-          <div className="border-t border-zinc-200 dark:border-zinc-800" />
-          <SupportSection />
-        </section>
-
-        {/* ✅ Consolidated “Contact & Company” (no partners) */}
-        <ContactCompany />
       </main>
 
-      {/* Sticky CTA — hidden when compare pins at bottom */}
-      {!bottomBlocked && (
-        <button
-          onClick={() => {
-            openLead("Sticky CTA");
-            trackEvent("contactOpen", { where: "sticky_cta", label: "Talk to Sales" });
-          }}
-          aria-label="Talk to Sales"
-          className="fixed bottom-[calc(env(safe-area-inset-bottom)+88px)] right-6 px-5 py-3 rounded-full bg-black text-white font-semibold shadow-lg dark:bg-white dark:text-black z-40"
+      {/* Compare Modal (lazy) */}
+      {compareOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          onClick={() => setCompareOpen(false)}
         >
-          Talk to Sales
-        </button>
+          <div className="absolute inset-0 bg-black/60" />
+          <div
+            className="relative z-10 bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-[95vw] max-w-6xl max-h-[85vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800">
+              <h3 className="text-lg font-semibold">Compare Models</h3>
+              <button
+                onClick={() => setCompareOpen(false)}
+                aria-label="Close"
+                className="px-3 py-1 rounded-full border border-black/20 dark:border-white/30"
+              >
+                Close
+              </button>
+            </div>
+            <div className="p-2 md:p-4 overflow-auto">
+              <Suspense fallback={<div className="p-6 text-sm opacity-70">Loading…</div>}>
+                <LazyCompareTable />
+              </Suspense>
+            </div>
+          </div>
+        </div>
       )}
+
+      {/* Sticky CTA */}
+      <button
+        onClick={() => {
+          openLead("Sticky CTA");
+          trackEvent("contactOpen", { where: "sticky_cta", label: "Talk to Sales" });
+        }}
+        aria-label="Talk to Sales"
+        className="fixed bottom-[calc(env(safe-area-inset-bottom)+88px)] right-6 px-5 py-3 rounded-full bg-black text-white font-semibold shadow-lg dark:bg-white dark:text-black z-40"
+      >
+        Talk to Sales
+      </button>
 
       <footer className="border-t border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
         <div className="max-w-6xl mx-auto px-5 py-6 text-sm text-zinc-600 dark:text-zinc-400">
@@ -297,7 +325,6 @@ export default function App() {
             <p className="mt-1">
               Address: Floor 12, 124, Sagimakgol-ro, Jungwon-gu, Seongnam-si, Gyeonggi-do, Republic of Korea
             </p>
-
             <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-500">
               This site is protected by reCAPTCHA and the Google{" "}
               <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline">
