@@ -1,9 +1,11 @@
 // src/components/TechnologySection.tsx
-import React from "react";
+import React, { useMemo } from "react";
 import StageCarousel, { StageItem } from "./StageCarousel";
+import TechFeatureTiles, { TechTile } from "./TechFeatureTiles";
 
 export default function TechnologySection() {
-  const items: StageItem[] = [
+  // Big one-at-a-time heroes (keep this concise, premium look)
+  const heroItems: StageItem[] = [
     {
       id: "safety",
       img: "/assets/tech/safety.jpg",
@@ -51,13 +53,62 @@ export default function TechnologySection() {
     },
   ];
 
+  // Thumbnail feature grid (the pieces you mentioned like 12V vehicle charger)
+  const tiles: TechTile[] = useMemo(
+    () => [
+      {
+        img: "/assets/tech/12v-vehicle-charger.jpg",
+        title: "12V Vehicle Charger",
+        caption: "Charge accessory batteries safely from main pack",
+      },
+      {
+        img: "/assets/tech/usb-ports.jpg",
+        title: "USB-A / USB-C Ports",
+        caption: "Front & rear device power, weather-protected",
+      },
+      {
+        img: "/assets/tech/led-lighting.jpg",
+        title: "LED Lighting Suite",
+        caption: "DRL, indicators, and night visibility",
+      },
+      {
+        img: "/assets/tech/proximity-sensor.jpg",
+        title: "Proximity Sensing",
+        caption: "Optional course compliance & safety alerts",
+      },
+      {
+        img: "/assets/tech/guidance.jpg",
+        title: "Guidance Module",
+        caption: "Area limits & routing (where supported)",
+      },
+      {
+        img: "/assets/tech/regen-brake.jpg",
+        title: "Regen Braking",
+        caption: "Energy recovery on descents",
+      },
+      {
+        img: "/assets/tech/hill-hold.jpg",
+        title: "Hill-Hold Logic",
+        caption: "Confident starts on slopes",
+      },
+      {
+        img: "/assets/tech/weather-enclosure.jpg",
+        title: "Weather Enclosure",
+        caption: "Rain/wind protection options",
+      },
+      // Add any other existing thumbnail items you were using:
+      // cupholders, seat options, bag storage, cooler box, mirrors, etc.
+    ],
+    []
+  );
+
   return (
     <div>
-      <StageCarousel
-        items={items}
-        ariaLabel="Technology features"
-        controlsPosition="right"
-      />
+      {/* 1) Premium, one-at-a-time hero with arrows + numbers on the right */}
+      <StageCarousel items={heroItems} ariaLabel="Technology features" controlsPosition="right" />
+
+      {/* 2) Detailed Features (thumbnails) — restores the old grid you liked */}
+      <TechFeatureTiles items={tiles} title="Detailed Features" />
     </div>
   );
 }
