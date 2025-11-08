@@ -1,114 +1,80 @@
 // src/services/analytics.ts
+type Gtag = (...args: any[]) => void;
+
 declare global {
   interface Window {
     dataLayer?: any[];
-    gtag?: (...args: any[]) => void;
+    gtag?: Gtag;
   }
 }
 
-let initialized = false;
-
-function getGaId(idFromParam?: string): string | undefined {
-  const id = idFromParam || (import.meta as any).env?.VITE_GA_MEASUREMENT_ID;
-  if (!id && (import.meta as any).env?.DEV) {
-    console.info("[analytics] Disabled (no VITE_GA_MEASUREMENT_ID).");
+function ensureGtag() {
+  if (!window.dataLayer) window.dataLayer = [];
+  if (!window.gtag) {
+    window.gtag = function gtag() {
+      window.dataLayer!.push(arguments);
+    };
   }
-  return id;
 }
 
-export function initAnalytics(idFromParam?: string) {
-  const id = getGaId(idFromParam);
-  if (!id || initialized) return;
-  initialized = true;
+/** Initialize GA4. Safe to call even if the ID is missing; it will no-op. */
+export function initAnalytics(measurementId?: string) {
+  if (!measurementId) {
+    console.warn("[analytics] Missing VITE_GA_MEASUREMENT_ID.");
+    return;
+  }
+  ensureGtag();
 
-  // Inject gtag script
-  const s1 = document.createElement("script");
-  s1.async = true;
-  s1.src = `https://www.googletagmanager.com/gtag/js?id=${id}`;
-  document.head.appendChild(s1);
+  // Inject GA4 script once
+  if (!document.querySelector(`script[src*="googletagmanager.com/gtag/js?id=${measurementId}"]`)) {
+    const s = document.createElement("script");
+    s.async = true;
+    s.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
+    document.head.appendChild(s);
+  }
 
-  window.dataLayer = window.dataLayer || [];
-  window.gtag = function gtag() {
-    window.dataLayer!.push(arguments);
-  };
-  window.gtag("js", new Date());
-  window.gtag("config", id, { anonymize_ip: true });
-}
-
-export function trackEvent(name: string, params?: Record<string, any>) {
-  if (!window.gtag) return;
-  window.gtag("event", name, params || {});
-}
-
-function sendPageview() {
-  if (!window.gtag) return;
-  const href = location.href;
-  const path = location.pathname + location.search + location.hash;
-  window.gtag("event", "page_view", {
-    page_location: href,
-    page_path: path,
-    page_title: document.title,
+  window.gtag!("js", new Date());
+  window.gtag!("config", measurementId, {
+    anonymize_ip: true,
+    send_page_view: false, // SPA: we control pageviews
   });
 }
 
-/**
- * Hooks History API + hashchange to send page_view in SPAs.
- * Safe to call multiple times; handlers are idempotent.
- */
-export function setupSpaPageviews() {
-  // If GA is not initialized yet, we still install hooks; calls just no-op until gtag exists.
-  // Hook pushState/replaceState once
-  const anyHist = history as any;
-  if (!anyHist.__ga_hooked) {
-    const origPush = history.pushState;
-    const origReplace = history.replaceState;
-
-    history.pushState = function (...args) {
-      const ret = origPush.apply(this, args as any);
-      queueMicrotask(sendPageview);
-      return ret;
-    };
-    history.replaceState = function (...args) {
-      const ret = origReplace.apply(this, args as any);
-      queueMicrotask(sendPageview);
-      return ret;
-    };
-
-    window.addEventListener("popstate", sendPageview);
-    window.addEventListener("hashchange", sendPageview);
-    anyHist.__ga_hooked = true;
-  }
-
-  // Fire an initial PV once (use a flag to avoid duplicates)
-  if (!(window as any).__ga_initial_pv_sent) {
-    (window as any).__ga_initial_pv_sent = true;
-    queueMicrotask(sendPageview);
-  }
+/** Fire a SPA pageview for the current (or provided) path. */
+export function trackSpaPageview(path?: string) {
+  const id = import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined;
+  if (!window.gtag || !id) return;
+  window.gtag("config", id, {
+    page_path: path ?? window.location.pathname + window.location.search,
+  });
 }
 
-/** Optional scroll depth tracking (25/50/75/100) */
+/** Basic event helper */
+export function trackEvent(name: string, params?: Record<string, any>) {
+  if (!window.gtag) return;
+  window.gtag("event", name, params ?? {});
+}
+
+/** Simple scroll-depth tracker (25/50/75/100 once per load) */
 export function setupScrollDepth() {
-  if (typeof window === "undefined") return;
-  let fired25 = false, fired50 = false, fired75 = false, fired100 = false;
+  const marks = [25, 50, 75, 100];
+  const fired = new Set<number>();
 
-  const handler = () => {
-    const h = document.documentElement;
-    const scrolled =
-      (h.scrollTop || document.body.scrollTop) + h.clientHeight;
-    const full = h.scrollHeight || 1;
-    const pct = Math.min(100, Math.round((scrolled / full) * 100));
+  const onScroll = () => {
+    const doc = document.documentElement;
+    const max = doc.scrollHeight - doc.clientHeight;
+    if (max <= 0) return;
 
-    const fire = (mark: number) => trackEvent("scroll_depth", { percent: mark });
-
-    if (!fired25 && pct >= 25) { fire(25); fired25 = true; }
-    if (!fired50 && pct >= 50) { fire(50); fired50 = true; }
-    if (!fired75 && pct >= 75) { fire(75); fired75 = true; }
-    if (!fired100 && pct >= 100) {
-      fire(100);
-      fired100 = true;
-      window.removeEventListener("scroll", handler);
+    const pct = Math.round((doc.scrollTop / max) * 100);
+    for (const m of marks) {
+      if (pct >= m && !fired.has(m)) {
+        fired.add(m);
+        trackEvent("scroll_depth", { percent: m });
+      }
+    }
+    if (fired.size === marks.length) {
+      window.removeEventListener("scroll", onScroll, { passive: true } as any);
     }
   };
-
-  window.addEventListener("scroll", handler, { passive: true });
+  window.addEventListener("scroll", onScroll, { passive: true } as any);
 }
