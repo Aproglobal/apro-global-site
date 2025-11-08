@@ -1,181 +1,114 @@
-/* src/services/analytics.ts */
-type EventParams = Record<string, any>;
-
+// src/services/analytics.ts
 declare global {
   interface Window {
     dataLayer?: any[];
     gtag?: (...args: any[]) => void;
-    __GA_ID__?: string; // runtime fallback
-    RUNTIME_CONFIG?: { VITE_GA_MEASUREMENT_ID?: string };
-    __gaLoaded?: boolean;
   }
 }
 
-const isAllowedHost = () => {
-  if (typeof window === "undefined") return false;
-  const h = window.location.hostname;
-  // include web.app / firebaseapp.com previews, live, and localhost
-  return (
-    h === "apro.kukjeint.com" ||
-    h.endsWith(".web.app") ||
-    h.endsWith(".firebaseapp.com") ||
-    h === "localhost"
-  );
-};
+let initialized = false;
 
-function resolveGaId(): string | undefined {
-  const fromVite =
-    (import.meta as any)?.env?.VITE_GA_MEASUREMENT_ID as string | undefined;
-  const fromRuntimeCfg = window.RUNTIME_CONFIG?.VITE_GA_MEASUREMENT_ID;
-  const fromWindow = window.__GA_ID__;
-  const fromMeta =
-    document.querySelector('meta[name="ga-id"]')?.getAttribute("content") ||
-    undefined;
-  return fromVite || fromRuntimeCfg || fromWindow || fromMeta;
+function getGaId(idFromParam?: string): string | undefined {
+  const id = idFromParam || (import.meta as any).env?.VITE_GA_MEASUREMENT_ID;
+  if (!id && (import.meta as any).env?.DEV) {
+    console.info("[analytics] Disabled (no VITE_GA_MEASUREMENT_ID).");
+  }
+  return id;
 }
 
-function ensureGaScript(id: string) {
-  if (document.getElementById("ga-script")) return;
-  const s = document.createElement("script");
-  s.id = "ga-script";
-  s.async = true;
-  s.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(
-    id
-  )}`;
-  document.head.appendChild(s);
+export function initAnalytics(idFromParam?: string) {
+  const id = getGaId(idFromParam);
+  if (!id || initialized) return;
+  initialized = true;
+
+  // Inject gtag script
+  const s1 = document.createElement("script");
+  s1.async = true;
+  s1.src = `https://www.googletagmanager.com/gtag/js?id=${id}`;
+  document.head.appendChild(s1);
 
   window.dataLayer = window.dataLayer || [];
-  window.gtag =
-    window.gtag ||
-    function (...args: any[]) {
-      window.dataLayer!.push(args);
-    };
+  window.gtag = function gtag() {
+    window.dataLayer!.push(arguments);
+  };
+  window.gtag("js", new Date());
+  window.gtag("config", id, { anonymize_ip: true });
 }
 
-/** GA4 init (non-fatal if missing) */
-export async function initAnalytics(measurementId?: string): Promise<void> {
-  if (typeof window === "undefined") return;
-  if (!isAllowedHost()) return;
-
-  if (window.__gaLoaded) return;
-
-  const id = measurementId ?? resolveGaId();
-  if (!id) {
-    console.warn("[analytics] Missing VITE_GA_MEASUREMENT_ID.");
-    return;
-  }
-
-  ensureGaScript(id);
-  window.gtag!("js", new Date());
-  window.gtag!("config", id, { send_page_view: false });
-  window.__gaLoaded = true;
+export function trackEvent(name: string, params?: Record<string, any>) {
+  if (!window.gtag) return;
+  window.gtag("event", name, params || {});
 }
 
-/** Basic event */
-export function trackEvent(eventName: string, params?: EventParams) {
-  window.gtag?.("event", eventName, params ?? {});
-}
-
-/** Page view */
-export function trackPageView(path?: string) {
-  const href =
-    typeof window !== "undefined" ? window.location.href : path || "/";
-  const pagePath =
-    path ?? (typeof window !== "undefined" ? window.location.pathname : "/");
-  const title =
-    typeof document !== "undefined" ? document.title : "APRO";
-
-  window.gtag?.("event", "page_view", {
+function sendPageview() {
+  if (!window.gtag) return;
+  const href = location.href;
+  const path = location.pathname + location.search + location.hash;
+  window.gtag("event", "page_view", {
     page_location: href,
-    page_path: pagePath,
-    page_title: title,
+    page_path: path,
+    page_title: document.title,
   });
 }
 
-/** SPA page views (hash/popstate/history) */
-export function setupSpaPageviews(routerOrGetter?: any) {
-  if (typeof window === "undefined") return;
+/**
+ * Hooks History API + hashchange to send page_view in SPAs.
+ * Safe to call multiple times; handlers are idempotent.
+ */
+export function setupSpaPageviews() {
+  // If GA is not initialized yet, we still install hooks; calls just no-op until gtag exists.
+  // Hook pushState/replaceState once
+  const anyHist = history as any;
+  if (!anyHist.__ga_hooked) {
+    const origPush = history.pushState;
+    const origReplace = history.replaceState;
 
-  const send = () =>
-    trackPageView(
-      (window.location.pathname || "/") +
-        (window.location.search || "") +
-        (window.location.hash || "")
-    );
-
-  try {
-    if (typeof routerOrGetter === "function") {
-      trackPageView(routerOrGetter());
-    } else {
-      send();
-    }
-  } catch {
-    send();
-  }
-
-  if (routerOrGetter && typeof routerOrGetter.afterEach === "function") {
-    routerOrGetter.afterEach((to: any) => {
-      const path = to?.fullPath ?? to?.path ?? window.location?.pathname;
-      trackPageView(path);
-    });
-  }
-
-  const patch = (type: "pushState" | "replaceState") => {
-    const orig = (history as any)[type];
-    (history as any)[type] = function (...args: any[]) {
-      const ret = orig.apply(this, args);
-      requestAnimationFrame(send);
+    history.pushState = function (...args) {
+      const ret = origPush.apply(this, args as any);
+      queueMicrotask(sendPageview);
       return ret;
     };
-  };
+    history.replaceState = function (...args) {
+      const ret = origReplace.apply(this, args as any);
+      queueMicrotask(sendPageview);
+      return ret;
+    };
 
-  patch("pushState");
-  patch("replaceState");
-  window.addEventListener("popstate", () => send(), { passive: true });
+    window.addEventListener("popstate", sendPageview);
+    window.addEventListener("hashchange", sendPageview);
+    anyHist.__ga_hooked = true;
+  }
+
+  // Fire an initial PV once (use a flag to avoid duplicates)
+  if (!(window as any).__ga_initial_pv_sent) {
+    (window as any).__ga_initial_pv_sent = true;
+    queueMicrotask(sendPageview);
+  }
 }
 
-/** Optional scroll depth */
-export function setupScrollDepth(
-  breakpoints: number[] = [25, 50, 75, 100],
-  eventName = "scroll_depth"
-) {
+/** Optional scroll depth tracking (25/50/75/100) */
+export function setupScrollDepth() {
   if (typeof window === "undefined") return;
+  let fired25 = false, fired50 = false, fired75 = false, fired100 = false;
 
-  const sent = new Set<number>();
-  const onScroll = () => {
-    const doc = document.documentElement;
-    const body = document.body;
+  const handler = () => {
+    const h = document.documentElement;
+    const scrolled =
+      (h.scrollTop || document.body.scrollTop) + h.clientHeight;
+    const full = h.scrollHeight || 1;
+    const pct = Math.min(100, Math.round((scrolled / full) * 100));
 
-    const scrollTop =
-      window.pageYOffset || doc.scrollTop || body.scrollTop || 0;
-    const docHeight = Math.max(
-      body.scrollHeight,
-      doc.scrollHeight,
-      body.offsetHeight,
-      doc.offsetHeight,
-      body.clientHeight,
-      doc.clientHeight
-    );
-    const winHeight =
-      window.innerHeight || doc.clientHeight || body.clientHeight || 0;
+    const fire = (mark: number) => trackEvent("scroll_depth", { percent: mark });
 
-    const pct = Math.min(
-      100,
-      Math.round(((scrollTop + winHeight) / docHeight) * 100)
-    );
-
-    for (const bp of breakpoints) {
-      if (!sent.has(bp) && pct >= bp) {
-        sent.add(bp);
-        trackEvent(eventName, { percent: bp });
-      }
-    }
-
-    if (sent.size === breakpoints.length) {
-      window.removeEventListener("scroll", onScroll);
+    if (!fired25 && pct >= 25) { fire(25); fired25 = true; }
+    if (!fired50 && pct >= 50) { fire(50); fired50 = true; }
+    if (!fired75 && pct >= 75) { fire(75); fired75 = true; }
+    if (!fired100 && pct >= 100) {
+      fire(100);
+      fired100 = true;
+      window.removeEventListener("scroll", handler);
     }
   };
 
-  window.addEventListener("scroll", onScroll, { passive: true });
-  onScroll();
+  window.addEventListener("scroll", handler, { passive: true });
 }
