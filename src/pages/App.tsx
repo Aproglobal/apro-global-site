@@ -223,8 +223,7 @@ const TECHNOLOGY_SLIDES: ReadonlyArray<Slide> = [
       "Parts, documentation and localization support for global operations."
     ],
   },
-
-  // Detailed tech features (former TechFeatureTiles), now big-image slides
+  // Detailed tech features (former tiles), now big-image slides
   {
     id: "tech-heated-seats",
     title: "Heated Seats (Front & Rear)",
@@ -305,7 +304,7 @@ const GUIDANCE_ELECTRONIC_SLIDES: ReadonlyArray<Slide> = [
   },
 ];
 
-// VOICE GUIDANCE — start/stop announcements (per your clarification)
+// VOICE GUIDANCE — start/stop announcements
 const GUIDANCE_VOICE_SLIDES: ReadonlyArray<Slide> = [
   {
     id: "v-start",
@@ -571,17 +570,29 @@ export default function App() {
         />
 
         {/* INDUSTRIES */}
-        <SectionFrame id="industries">
+        <SectionFrame
+          id="industries"
+          title="Industries"
+          note="Built for golf courses, resorts, hotels, and mixed-use venues."
+        >
           <IndustriesSection />
         </SectionFrame>
 
         {/* SERVICE & WARRANTY */}
-        <SectionFrame id="service">
+        <SectionFrame
+          id="service"
+          title="Service & Warranty"
+          note="Clear coverage, quick access to parts, and global support."
+        >
           <ServiceWarrantySection />
         </SectionFrame>
 
         {/* CHARGING & POWER */}
-        <SectionFrame id="charging">
+        <SectionFrame
+          id="charging"
+          title="Charging & Power"
+          note="Lithium options, typical 4–5 h charge, smart daily operations."
+        >
           <ChargingPowerSection />
         </SectionFrame>
 
@@ -597,12 +608,16 @@ export default function App() {
         </SectionFrame>
 
         {/* SUPPORT */}
-        <SectionFrame id="support">
+        <SectionFrame
+          id="support"
+          title="Support"
+          note="Documentation, onboarding, and prompt help when you need it."
+        >
           <SupportSection />
         </SectionFrame>
 
         {/* CONTACT */}
-        <SectionFrame id="contact">
+        <SectionFrame id="contact" title="Contact" note="Talk to sales or request technical assistance.">
           <ContactCompany />
         </SectionFrame>
       </main>
