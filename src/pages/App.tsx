@@ -24,7 +24,7 @@ import SEO from "../components/SEO";
 import { getVariant } from "../utils/ab";
 import { initThemeWatcher } from "../utils/theme";
 import { loadRecaptcha } from "../lib/recaptcha";
-import { initAnalytics, setupScrollDepth, trackEvent } from "../services/analytics";
+import { initAnalytics, setupScrollDepth, trackEvent, trackSpaPageview } from "../services/analytics";
 
 /* ============================================================
    Lightweight, accessible gallery with arrows + numbered dots
@@ -147,7 +147,7 @@ function GalleryPager({
 
 /* ============================================================
    Content: Performance, Technology, Electronic & Voice Guidance
-   - Distributed “tech_features” details into proper slides.
+   (includes your “heated seats / 12V / etc.” tech details)
    ============================================================ */
 
 // PERFORMANCE — powertrain, battery, chassis/ride
@@ -177,9 +177,8 @@ const PERFORMANCE_SLIDES: ReadonlyArray<Slide> = [
   },
 ];
 
-// TECHNOLOGY — safety/sensing, body/storage, motor control, service/updates, plus the “heated seats / 12V / windscreen / bag holder” detail slides
+// TECHNOLOGY — safety/sensing, body/storage, motor control, service/updates, and detailed features
 const TECHNOLOGY_SLIDES: ReadonlyArray<Slide> = [
-  // Core technology group
   {
     id: "tech-safety",
     title: "Safety & Sensing",
@@ -224,8 +223,7 @@ const TECHNOLOGY_SLIDES: ReadonlyArray<Slide> = [
       "Parts, documentation and localization support for global operations."
     ],
   },
-
-  // Detailed tech features (from your tech_features.ts), now shown as big-image one-at-a-time slides
+  // Detailed tech features (former tiles), now big-image slides
   {
     id: "tech-heated-seats",
     title: "Heated Seats (Front & Rear)",
@@ -236,7 +234,7 @@ const TECHNOLOGY_SLIDES: ReadonlyArray<Slide> = [
       "Energy-optimized profiles maintain comfort without excessive draw."
     ],
   },
-    {
+  {
     id: "tech-12v-charger",
     title: "12V Vehicle Charger",
     subtitle: "Convenient power for devices and accessories",
@@ -306,7 +304,7 @@ const GUIDANCE_ELECTRONIC_SLIDES: ReadonlyArray<Slide> = [
   },
 ];
 
-// VOICE GUIDANCE — start + stop announcements (per your clarification)
+// VOICE GUIDANCE — start/stop announcements
 const GUIDANCE_VOICE_SLIDES: ReadonlyArray<Slide> = [
   {
     id: "v-start",
@@ -361,10 +359,15 @@ export default function App() {
   const variant = getVariant();
 
   useEffect(() => {
-    initAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
+    // GA (non-fatal if missing)
+    initAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined);
+    trackSpaPageview();
+
     setupScrollDepth();
     initThemeWatcher();
-    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
+
+    // reCAPTCHA (non-blocking)
+    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
     if (siteKey) loadRecaptcha(siteKey);
   }, []);
 
@@ -475,7 +478,7 @@ export default function App() {
               loading="eager"
               fetchPriority="high"
             />
-          <div className="absolute inset-0 bg-gradient-to-t from-white via-white/30 to-transparent dark:from-black dark:via-black/30 dark:to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/30 to-transparent dark:from-black dark:via-black/30 dark:to-transparent" />
             <div className="relative z-10 max-w-6xl mx-auto px-5 h-full flex flex-col justify-end pb-14">
               <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
                 Electric Golf Carts, Built for Courses, Resorts & Venues Worldwide
@@ -493,7 +496,7 @@ export default function App() {
                   className="px-5 py-3 rounded-full bg-black text-white font-semibold dark:bg-white dark:text-black"
                   aria-label="Open sales contact form"
                 >
-                  Talk to Sales
+                  {primaryCta}
                 </button>
 
                 {secondaryCta === "Explore models" ? (
@@ -567,34 +570,54 @@ export default function App() {
         />
 
         {/* INDUSTRIES */}
-        <SectionFrame id="industries">
+        <SectionFrame
+          id="industries"
+          title="Industries"
+          note="Built for golf courses, resorts, hotels, and mixed-use venues."
+        >
           <IndustriesSection />
         </SectionFrame>
 
         {/* SERVICE & WARRANTY */}
-        <SectionFrame id="service">
+        <SectionFrame
+          id="service"
+          title="Service & Warranty"
+          note="Clear coverage, quick access to parts, and global support."
+        >
           <ServiceWarrantySection />
         </SectionFrame>
 
         {/* CHARGING & POWER */}
-        <SectionFrame id="charging">
+        <SectionFrame
+          id="charging"
+          title="Charging & Power"
+          note="Lithium options, typical 4–5 h charge, smart daily operations."
+        >
           <ChargingPowerSection />
         </SectionFrame>
 
-        {/* CONFIGURATOR — Build Your Cart (Audi-style flow lives in this component) */}
-        <SectionFrame id="configurator" title="Build Your Cart" note="Select model, seating, battery, colors, wheels and premium options. Export your build or send it to sales.">
+        {/* CONFIGURATOR — Build Your Cart */}
+        <SectionFrame
+          id="configurator"
+          title="Build Your Cart"
+          note="Select model, seating, battery, colors, wheels and premium options. Export your build or send it to sales."
+        >
           <div className="not-prose">
             <ConfiguratorSection />
           </div>
         </SectionFrame>
 
         {/* SUPPORT */}
-        <SectionFrame id="support">
+        <SectionFrame
+          id="support"
+          title="Support"
+          note="Documentation, onboarding, and prompt help when you need it."
+        >
           <SupportSection />
         </SectionFrame>
 
         {/* CONTACT */}
-        <SectionFrame id="contact">
+        <SectionFrame id="contact" title="Contact" note="Talk to sales or request technical assistance.">
           <ContactCompany />
         </SectionFrame>
       </main>
