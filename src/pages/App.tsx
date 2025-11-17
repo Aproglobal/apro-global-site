@@ -16,6 +16,7 @@ import ChargingPowerSection from "../components/ChargingPowerSection";
 import SupportSection from "../components/SupportSection";
 import ContactCompany from "../components/ContactCompany";
 import ConfiguratorSection from "../components/ConfiguratorSection";
+import MapKoreaInteractive from "../components/MapKoreaInteractive"; // ⬅️ NEW
 
 // SEO
 import SEO from "../components/SEO";
@@ -124,7 +125,7 @@ function GalleryPager({
           ) : null}
         </div>
 
-        {/* Numbered dots in top-right corner */}
+        {/* Numbered dots */}
         <div className="absolute right-4 top-4 flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-xs text-white dark:bg-white/70 dark:text-black">
           {slides.map((_, i) => (
             <button
@@ -147,10 +148,9 @@ function GalleryPager({
 
 /* ============================================================
    Content: Performance, Technology, Electronic & Voice Guidance
-   (includes your “heated seats / 12V / etc.” tech details)
    ============================================================ */
 
-// PERFORMANCE — powertrain, battery, chassis/ride
+// PERFORMANCE
 const PERFORMANCE_SLIDES: ReadonlyArray<Slide> = [
   {
     id: "perf-powertrain",
@@ -177,7 +177,7 @@ const PERFORMANCE_SLIDES: ReadonlyArray<Slide> = [
   },
 ];
 
-// TECHNOLOGY — safety/sensing, body/storage, motor control, service/updates, and detailed features
+// TECHNOLOGY
 const TECHNOLOGY_SLIDES: ReadonlyArray<Slide> = [
   {
     id: "tech-safety",
@@ -223,7 +223,7 @@ const TECHNOLOGY_SLIDES: ReadonlyArray<Slide> = [
       "Parts, documentation and localization support for global operations."
     ],
   },
-  // Detailed tech features (former tiles), now big-image slides
+  // Detail slides
   {
     id: "tech-heated-seats",
     title: "Heated Seats (Front & Rear)",
@@ -266,7 +266,7 @@ const TECHNOLOGY_SLIDES: ReadonlyArray<Slide> = [
   },
 ];
 
-// ELECTRONIC GUIDANCE — wire/line guidance overview
+// ELECTRONIC GUIDANCE
 const GUIDANCE_ELECTRONIC_SLIDES: ReadonlyArray<Slide> = [
   {
     id: "eg-overview",
@@ -304,7 +304,7 @@ const GUIDANCE_ELECTRONIC_SLIDES: ReadonlyArray<Slide> = [
   },
 ];
 
-// VOICE GUIDANCE — start/stop announcements
+// VOICE GUIDANCE
 const GUIDANCE_VOICE_SLIDES: ReadonlyArray<Slide> = [
   {
     id: "v-start",
@@ -359,14 +359,10 @@ export default function App() {
   const variant = getVariant();
 
   useEffect(() => {
-    // GA (non-fatal if missing)
     initAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined);
     trackSpaPageview();
-
     setupScrollDepth();
     initThemeWatcher();
-
-    // reCAPTCHA (non-blocking)
     const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
     if (siteKey) loadRecaptcha(siteKey);
   }, []);
@@ -374,7 +370,7 @@ export default function App() {
   const primaryCta = "Talk to Sales";
   const secondaryCta = variant === "A" ? "Explore models" : "Download brochure";
 
-  // Sticky CTA suppression when compare mini opens (events fired by CompareTable)
+  // Sticky CTA suppression
   const [bottomBlocked, setBottomBlocked] = useState(false);
   useEffect(() => {
     let pinnedCount = 0;
@@ -537,7 +533,7 @@ export default function App() {
           </div>
         </SectionFrame>
 
-        {/* PERFORMANCE (big image, one at a time) */}
+        {/* PERFORMANCE */}
         <GalleryPager
           id="performance"
           title="Performance"
@@ -545,7 +541,7 @@ export default function App() {
           slides={PERFORMANCE_SLIDES}
         />
 
-        {/* TECHNOLOGY (big image, one at a time; includes heated seats / 12V / windscreen / bag holder) */}
+        {/* TECHNOLOGY */}
         <GalleryPager
           id="technology"
           title="Technology"
@@ -561,7 +557,7 @@ export default function App() {
           slides={GUIDANCE_ELECTRONIC_SLIDES}
         />
 
-        {/* VOICE GUIDANCE (start/stop announcements) */}
+        {/* VOICE GUIDANCE */}
         <GalleryPager
           id="tech-voice-guidance"
           title="Voice Guidance"
@@ -607,6 +603,15 @@ export default function App() {
           </div>
         </SectionFrame>
 
+        {/* ✅ NEW: Market presence map (right after configurator) */}
+        <SectionFrame
+          id="presence"
+          title="APRO Presence in South Korea"
+          note="Hover to see club names; bubble size reflects installed cart volumes."
+        >
+          <MapKoreaInteractive height={560} />
+        </SectionFrame>
+
         {/* SUPPORT */}
         <SectionFrame
           id="support"
@@ -622,7 +627,7 @@ export default function App() {
         </SectionFrame>
       </main>
 
-      {/* Sticky CTA — hidden when compare pins a bottom mini view */}
+      {/* Sticky CTA */}
       {!bottomBlocked && (
         <button
           onClick={() => {
