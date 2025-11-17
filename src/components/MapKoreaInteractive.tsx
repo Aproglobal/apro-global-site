@@ -1,5 +1,5 @@
 // src/components/MapKoreaInteractive.tsx
-import React, { useMemo, useState, useRef, useEffect } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import Map, { Layer, Source, Popup, NavigationControl, type MapLayerMouseEvent } from "react-map-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { clubsCollection } from "../data/clubsGeo";
@@ -7,11 +7,9 @@ import { clubsCollection } from "../data/clubsGeo";
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
 const KOREA_CENTER: [number, number] = [127.8, 36.5]; // lng, lat
 const KOREA_ZOOM = 5.6;
+const STYLE_URL = "mapbox://styles/mapbox/light-v11";
 
-// Style: use a Mapbox style or your custom Studio style
-const STYLE_URL = "mapbox://styles/mapbox/light-v11"; // feels premium and matches your UI
-
-// ---------- Layers ----------
+// Layers
 const clusterLayer: any = {
   id: "clusters",
   type: "circle",
@@ -20,18 +18,18 @@ const clusterLayer: any = {
   paint: {
     "circle-color": [
       "step",
-      ["get", "carts"],      // we’ll accumulate ‘carts’ via clusterProperties
-      "#A7F3D0", 50,         // low
-      "#34D399", 150,        // medium
-      "#059669"              // high
+      ["get", "carts"],
+      "#A7F3D0", 50,
+      "#34D399", 150,
+      "#059669"
     ],
     "circle-radius": [
       "interpolate", ["linear"], ["get", "carts"],
-      20, 16,   // carts 20 → radius 16
-      80, 26,   // carts 80 → radius 26
-      200, 40   // carts 200 → radius 40
+      20, 16,
+      80, 26,
+      200, 40
     ],
-    "circle-opacity": 0.8,
+    "circle-opacity": 0.85,
     "circle-stroke-width": 1,
     "circle-stroke-color": "#ffffff"
   }
@@ -43,10 +41,7 @@ const clusterCountLayer: any = {
   source: "clubs",
   filter: ["has", "point_count"],
   layout: {
-    "text-field": [
-      "format",
-      ["get", "carts"], { "font-scale": 1.0 }
-    ],
+    "text-field": ["to-string", ["get", "carts"]],
     "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
     "text-size": 12
   },
@@ -72,26 +67,23 @@ const unclusteredPointLayer: any = {
   }
 };
 
-// ---------- Component ----------
 export default function MapKoreaInteractive({
-  height = 520,
+  height = 560,
   fallbackSrc = "/assets/map-korea.png"
-}: {
-  height?: number;
-  fallbackSrc?: string;
-}) {
+}: { height?: number; fallbackSrc?: string; }) {
   const data = useMemo(() => clubsCollection(), []);
   const [popup, setPopup] = useState<any | null>(null);
   const mapRef = useRef<any>(null);
 
-  // alt+click to log lng/lat while you prepare data
+  // Alt+Click to read coordinates (handy while you fill CLUBS_GEO)
   const onAltClick = (e: MapLayerMouseEvent) => {
     if (!e.originalEvent.altKey) return;
     const { lng, lat } = e.lngLat;
+    // eslint-disable-next-line no-console
     console.log("lat/lng:", { lat: +lat.toFixed(6), lng: +lng.toFixed(6) });
   };
 
-  // If no token → static image fallback (still branded & fast)
+  // No token? Show a clean static fallback
   if (!MAPBOX_TOKEN) {
     return (
       <div className="relative">
@@ -116,9 +108,10 @@ export default function MapKoreaInteractive({
         initialViewState={{ longitude: KOREA_CENTER[0], latitude: KOREA_CENTER[1], zoom: KOREA_ZOOM }}
         style={{ width: "100%", height }}
         mapStyle={STYLE_URL}
+        interactiveLayerIds={["clusters", "unclustered-point"]}
         onClick={(e) => {
           onAltClick(e);
-          // click cluster to zoom in
+          // Zoom into clusters on click
           const features = e.features ?? [];
           const cluster = features.find((f: any) => f.layer?.id === "clusters");
           if (cluster && mapRef.current) {
@@ -130,7 +123,6 @@ export default function MapKoreaInteractive({
             });
           }
         }}
-        interactiveLayerIds={["clusters", "unclustered-point"]}
         onMouseMove={(e) => {
           const f = (e.features || []).find((x: any) => x.layer?.id === "unclustered-point");
           if (!f) { setPopup(null); return; }
@@ -143,10 +135,8 @@ export default function MapKoreaInteractive({
             models: p.models
           });
         }}
-        onMouseLeave={() => setPopup(null)}
       >
         <NavigationControl position="top-right" />
-
         <Source
           id="clubs"
           type="geojson"
@@ -154,8 +144,8 @@ export default function MapKoreaInteractive({
           cluster={true}
           clusterMaxZoom={13}
           clusterRadius={60}
-          // Sum 'total_carts' into cluster property 'carts'
           clusterProperties={{
+            // sum total_carts into property 'carts' for cluster bubbles
             carts: ["+", ["coalesce", ["get", "total_carts"], 0]]
           }}
         >
