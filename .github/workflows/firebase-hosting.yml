@@ -42,7 +42,7 @@ jobs:
           VITE_GA_MEASUREMENT_ID=${{ secrets.VITE_GA_MEASUREMENT_ID }}
           VITE_AB_DEFAULT=A
           VITE_RECAPTCHA_SITE_KEY=${{ secrets.VITE_RECAPTCHA_SITE_KEY }}
-          VITE_MAPBOX_TOKEN=${{ secrets.VITE_MAPBOX_TOKEN }} 
+          VITE_MAPBOX_TOKEN=${{ secrets.VITE_MAPBOX_TOKEN }}
           EOF
           echo ".env file created (values hidden):"
           cat .env | sed 's/=\(.*\)/=[HIDDEN]/'
@@ -77,6 +77,17 @@ jobs:
             npm i lucide-react@latest
           else
             echo "lucide-react already present"
+          fi
+
+      # --- Ensure map libs (react-map-gl / mapbox-gl) are present ---
+      - name: Ensure map libraries present
+        shell: bash
+        run: |
+          if ! npm ls react-map-gl >/dev/null 2>&1; then
+            echo "Installing react-map-gl & mapbox-gl"
+            npm i react-map-gl@^7 mapbox-gl@^3
+          else
+            echo "react-map-gl already present"
           fi
 
       # --- Auto-generate sitemap with fresh <lastmod> ---
